@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 import { Product, Order, Review, StoreSettings } from './types';
+import bundledStoreData from '../../data/store.json';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'store.json');
@@ -83,20 +84,57 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
     const rows = await sql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
     if (rows && rows.length > 0) {
       const parsed = rows[0].data as DatabaseSchema;
-      return {
-        products: parsed.products || [],
+      let cloudProducts = parsed.products || [];
+      let needsAutoSeed = false;
+
+      // If cloud DB was initialized with 0 products, auto-seed from bundled store.json
+      if (
+        cloudProducts.length === 0 &&
+        Array.isArray(bundledStoreData.products) &&
+        bundledStoreData.products.length > 0
+      ) {
+        console.log(`[AutoSeed] Seeding ${bundledStoreData.products.length} products to cloud database...`);
+        cloudProducts = bundledStoreData.products as Product[];
+        needsAutoSeed = true;
+      }
+
+      const mergedSettings = {
+        ...DEFAULT_SETTINGS,
+        ...(bundledStoreData.settings || {}),
+        ...(parsed.settings || {}),
+      };
+
+      const finalData: DatabaseSchema = {
+        products: cloudProducts,
         orders: parsed.orders || [],
         reviews: parsed.reviews || [],
-        settings: parsed.settings ? { ...DEFAULT_SETTINGS, ...parsed.settings } : DEFAULT_SETTINGS,
+        settings: mergedSettings,
       };
+
+      if (needsAutoSeed) {
+        await sql`
+          INSERT INTO yt_store_state (id, data, updated_at)
+          VALUES ('main', ${JSON.stringify(finalData)}::jsonb, CURRENT_TIMESTAMP)
+          ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP
+        `;
+      }
+
+      return finalData;
     } else {
       const initial: DatabaseSchema = {
-        products: [],
+        products: (bundledStoreData.products || []) as Product[],
         orders: [],
         reviews: [],
-        settings: DEFAULT_SETTINGS,
+        settings: {
+          ...DEFAULT_SETTINGS,
+          ...(bundledStoreData.settings || {}),
+        },
       };
-      await sql`INSERT INTO yt_store_state (id, data) VALUES ('main', ${JSON.stringify(initial)}::jsonb)`;
+      await sql`
+        INSERT INTO yt_store_state (id, data, updated_at)
+        VALUES ('main', ${JSON.stringify(initial)}::jsonb, CURRENT_TIMESTAMP)
+        ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP
+      `;
       return initial;
     }
   } catch (err) {
@@ -129,10 +167,13 @@ function getLocalData(): DatabaseSchema {
 
   if (!fs.existsSync(DATA_FILE)) {
     const initial: DatabaseSchema = {
-      products: [],
+      products: (bundledStoreData.products || []) as Product[],
       orders: [],
       reviews: [],
-      settings: DEFAULT_SETTINGS,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...(bundledStoreData.settings || {}),
+      },
     };
     fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2), 'utf-8');
     return initial;
@@ -142,17 +183,20 @@ function getLocalData(): DatabaseSchema {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     return {
-      products: parsed.products || [],
+      products: parsed.products || (bundledStoreData.products as Product[]) || [],
       orders: parsed.orders || [],
       reviews: parsed.reviews || [],
       settings: parsed.settings ? { ...DEFAULT_SETTINGS, ...parsed.settings } : DEFAULT_SETTINGS,
     };
   } catch {
     const fallback: DatabaseSchema = {
-      products: [],
+      products: (bundledStoreData.products || []) as Product[],
       orders: [],
       reviews: [],
-      settings: DEFAULT_SETTINGS,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...(bundledStoreData.settings || {}),
+      },
     };
     fs.writeFileSync(DATA_FILE, JSON.stringify(fallback, null, 2), 'utf-8');
     return fallback;
@@ -362,5 +406,40 @@ export const db = {
     };
     await saveData(data);
     return data.settings;
+  },
+
+  // Seed / Sync Data from bundled store.json
+  async seedInitialData(force: boolean = false): Promise<DatabaseSchema> {
+    const current = await getData();
+    const bundledProducts = (bundledStoreData.products || []) as Product[];
+
+    if (!force && current.products && current.products.length > 0) {
+      return current;
+    }
+
+    const mergedProducts = [...current.products];
+    for (const bp of bundledProducts) {
+      const idx = mergedProducts.findIndex((p) => p.id === bp.id);
+      if (idx !== -1) {
+        if (force) {
+          mergedProducts[idx] = bp;
+        }
+      } else {
+        mergedProducts.push(bp);
+      }
+    }
+
+    const finalData: DatabaseSchema = {
+      ...current,
+      products: mergedProducts.length > 0 ? mergedProducts : bundledProducts,
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...(bundledStoreData.settings || {}),
+        ...(current.settings || {}),
+      },
+    };
+
+    await saveData(finalData);
+    return finalData;
   },
 };

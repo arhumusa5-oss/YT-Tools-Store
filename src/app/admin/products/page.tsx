@@ -12,6 +12,7 @@ import {
   XCircle,
   ExternalLink,
   Package,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
@@ -20,6 +21,7 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -39,6 +41,31 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  const handleSyncFromSeed = async () => {
+    if (
+      !confirm(
+        'Do you want to sync/restore the 18 products from your local store to cloud? This will ensure all products are present.'
+      )
+    ) {
+      return;
+    }
+    try {
+      setSyncing(true);
+      const res = await fetch('/api/admin/seed', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Success: ${data.message}`);
+        fetchProducts();
+      } else {
+        alert(`Error: ${data.error || 'Failed to sync'}`);
+      }
+    } catch {
+      alert('Failed to connect to server.');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleToggleSoldOut = async (id: string) => {
     setTogglingId(id);
@@ -109,13 +136,26 @@ export default function AdminProductsPage() {
           </p>
         </div>
 
-        <Link
-          href="/admin/products/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold shadow-md shadow-orange-500/25 hover:opacity-90 transition self-start sm:self-auto"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Add New Product</span>
-        </Link>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={handleSyncFromSeed}
+            disabled={syncing}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#1C1C22] hover:bg-[#25252D] text-zinc-300 hover:text-white text-xs font-semibold border border-[#2D2D38] transition disabled:opacity-50"
+            title="Sync products from store data to cloud database"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-[#FF5500]' : ''}`} />
+            <span>{syncing ? 'Syncing...' : 'Sync Local Products'}</span>
+          </button>
+
+          <Link
+            href="/admin/products/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold shadow-md shadow-orange-500/25 hover:opacity-90 transition"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Add New Product</span>
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -149,10 +189,20 @@ export default function AdminProductsPage() {
         {loading ? (
           <div className="py-20 text-center text-xs text-zinc-500">Loading products...</div>
         ) : filtered.length === 0 ? (
-          <div className="py-20 text-center">
+          <div className="py-20 text-center px-4">
             <Package className="w-12 h-12 text-zinc-600 mx-auto mb-2" />
             <h3 className="text-sm font-bold text-white">No products found</h3>
-            <p className="text-xs text-zinc-500 mt-1">Try clearing your search query or add a new product.</p>
+            <p className="text-xs text-zinc-500 mt-1 mb-4">
+              Try clearing your search query or sync your 18 products from local store to cloud.
+            </p>
+            <button
+              onClick={handleSyncFromSeed}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF5500] hover:bg-[#E64A00] text-white text-xs font-bold transition shadow-lg shadow-orange-500/20"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
+              <span>{syncing ? 'Syncing...' : 'Restore 18 Local Products to Cloud'}</span>
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
