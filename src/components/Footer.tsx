@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { Play, ShieldCheck, Lock } from 'lucide-react';
+import { Play, ShieldCheck } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 export default function Footer() {
@@ -97,15 +97,6 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-[#e8e1e1] dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#6b7280] dark:text-zinc-500">
           <p>© {new Date().getFullYear()} YT Tools Store. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/admin/login"
-              className="flex items-center gap-1.5 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition py-1"
-            >
-              <Lock className="w-3 h-3" />
-              <span>Admin Portal</span>
-            </Link>
-          </div>
         </div>
       </div>
     </footer>
