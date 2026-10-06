@@ -34,6 +34,14 @@ export const metadata: Metadata = {
   title: 'YT Tools Store | Premium Creator Tools & Subscriptions',
   description: 'Official digital products, YouTube tools, and subscriptions store with instant delivery and replacement warranty.',
   keywords: 'YouTube tools, Canva Pro, VidIQ Boost, ChatGPT Plus, CapCut Pro, YouTube Premium, ElevenLabs, Pakistan digital store',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -44,6 +52,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-icon.svg" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
