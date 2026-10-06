@@ -24,6 +24,9 @@ export async function GET(request: Request) {
       );
     }
 
+    // Sort alphabetically (Abc wise: A to Z)
+    products.sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+
     return NextResponse.json({ success: true, products });
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });

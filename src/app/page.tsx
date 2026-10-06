@@ -13,14 +13,17 @@ import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import Footer from '@/components/Footer';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { Product } from '@/lib/types';
-import { Sparkles, PackageX, RefreshCw } from 'lucide-react';
+import { Sparkles, PackageX, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+
+const ITEMS_PER_PAGE = 8;
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Tools');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const { settings, setActiveProductModal } = useCart();
 
   const productsSectionRef = useRef<HTMLDivElement>(null);
@@ -124,6 +127,11 @@ export default function HomePage() {
     }, 280);
   };
 
+  // Reset to page 1 whenever user switches category or types in search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchQuery]);
+
   // Filter products by category (Tools vs Services) and search
   const filteredProducts = products.filter((prod) => {
     const isService = prod.category?.toLowerCase() === 'services';
@@ -143,6 +151,29 @@ export default function HomePage() {
 
     return matchesCategory && matchesSearch;
   });
+
+  // Sort alphabetically (Abc wise: A to Z)
+  const sortedProducts = [...filteredProducts].sort((a, b) =>
+    (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
+  );
+
+  // Pagination (8 items per page)
+  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedProducts = sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    if (productsSectionRef.current) {
+      const yOffset = -85;
+      const targetY = Math.max(
+        0,
+        productsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+      );
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+    }
+  };
 
   const handleSelectSuggestion = (product: Product) => {
     setSearchQuery(product.title);
@@ -298,11 +329,71 @@ export default function HomePage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredProducts.map((prod) => (
-                <ProductCard key={prod.id} product={prod} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {paginatedProducts.map((prod) => (
+                  <ProductCard key={prod.id} product={prod} />
+                ))}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-[#e8e1e1] dark:border-white/10">
+                  <div className="text-xs text-[#6b7280] dark:text-zinc-400 font-medium">
+                    Showing <span className="font-bold text-[#0a0a0a] dark:text-white">{startIndex + 1}</span>–
+                    <span className="font-bold text-[#0a0a0a] dark:text-white">
+                      {Math.min(startIndex + ITEMS_PER_PAGE, sortedProducts.length)}
+                    </span>{' '}
+                    of <span className="font-bold text-[#0a0a0a] dark:text-white">{sortedProducts.length}</span> items (A–Z)
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Previous Button */}
+                    <button
+                      type="button"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white dark:bg-[#101018] border-[#e8e1e1] dark:border-white/10 text-[#1f2937] dark:text-zinc-200 hover:border-[#660000] dark:hover:border-[#ff4d4d]"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>Previous</span>
+                    </button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                        const isActive = pageNum === currentPage;
+                        return (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`w-9 h-9 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                              isActive
+                                ? 'bg-gradient-to-r from-[#660000] to-[#800000] dark:from-[#ff4d4d] dark:to-[#cc0000] text-white shadow-md shadow-[#660000]/25'
+                                : 'bg-white dark:bg-[#101018] border border-[#e8e1e1] dark:border-white/10 text-[#4b5563] dark:text-zinc-300 hover:border-[#660000] dark:hover:border-[#ff4d4d]'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                      type="button"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white dark:bg-[#101018] border-[#e8e1e1] dark:border-white/10 text-[#1f2937] dark:text-zinc-200 hover:border-[#660000] dark:hover:border-[#ff4d4d]"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
