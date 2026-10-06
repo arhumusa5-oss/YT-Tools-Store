@@ -76,17 +76,60 @@ html.dark {
   --shadow-red: 0 12px 30px -6px rgba(102, 0, 0, 0.5);
 }
 
-/* Custom Blood Red Text Selection System (#660000) */
-::selection,
-*::selection {
+/* ==========================================================================
+   Content Protection - Non-Copyable & Anti-Text Dragging System
+   Prevents dragging to select/copy text across the entire store (Nexcore style)
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Disable drag on all images */
+img {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
+/* Allow text selection ONLY in form inputs & textareas for typing & searching */
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+input::selection,
+textarea::selection {
   background-color: #660000 !important;
   color: #ffffff !important;
 }
 
-::-moz-selection,
-*::-moz-selection {
+input::-moz-selection,
+textarea::-moz-selection {
   background-color: #660000 !important;
   color: #ffffff !important;
+}
+
+/* For elements that explicitly need to be selectable (e.g. order tracking ID, code) */
+.selectable,
+.allow-select,
+pre,
+code {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 html {

@@ -67,12 +67,31 @@ export default function RootLayout({
                     document.documentElement.classList.remove('dark');
                   }
                 } catch (e) {}
+
+                // Anti-drag & text selection protection (Nexcore style)
+                document.addEventListener('selectstart', function(e) {
+                  var t = e.target;
+                  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable || (t.closest && t.closest('.selectable, .allow-select')))) {
+                    return true;
+                  }
+                  e.preventDefault();
+                  return false;
+                });
+
+                document.addEventListener('dragstart', function(e) {
+                  var t = e.target;
+                  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) {
+                    return true;
+                  }
+                  e.preventDefault();
+                  return false;
+                });
               })();
             `,
           }}
         />
       </head>
-      <body className={`${fontSans.variable} ${fontSerif.variable} font-sans min-h-screen bg-white dark:bg-[#060608] text-[#1f2937] dark:text-[#e5e7eb] selection:bg-[#660000] selection:text-white antialiased relative transition-colors duration-200`}>
+      <body className={`${fontSans.variable} ${fontSerif.variable} font-sans min-h-screen bg-white dark:bg-[#060608] text-[#1f2937] dark:text-[#e5e7eb] antialiased relative transition-colors duration-200 select-none`}>
         {/* Geometric Grid Background Pattern */}
         <div className="bg-grid-pattern" />
 
