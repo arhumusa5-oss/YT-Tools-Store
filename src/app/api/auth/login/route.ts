@@ -10,7 +10,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'PIN / Password is required' }, { status: 400 });
     }
 
-    if (pin === settings.adminPin || pin === 'admin123') {
+    const validPin = settings.adminPin || '12388127';
+    if (pin === validPin) {
       return NextResponse.json({
         success: true,
         token: 'yt-admin-token-' + Buffer.from(Date.now().toString()).toString('base64'),

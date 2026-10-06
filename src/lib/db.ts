@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   announcementEnabled: true,
   whatsappNumber: '+92 3702260919',
   supportEmail: 'support@yttoolsstore.pk',
-  adminPin: 'admin123',
+  adminPin: '12388127',
   currencyRateUSDToPKR: 280,
   paymentAccounts: {
     easypaisa: {
@@ -103,6 +103,12 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         ...(bundledStoreData.settings || {}),
         ...(parsed.settings || {}),
       };
+
+      // Ensure admin PIN is updated to 12388127 if currently empty or old admin123
+      if (!mergedSettings.adminPin || mergedSettings.adminPin === 'admin123') {
+        mergedSettings.adminPin = '12388127';
+        needsAutoSeed = true;
+      }
 
       const finalData: DatabaseSchema = {
         products: cloudProducts,
@@ -436,6 +442,10 @@ export const db = {
         ...DEFAULT_SETTINGS,
         ...(bundledStoreData.settings || {}),
         ...(current.settings || {}),
+        adminPin:
+          current.settings?.adminPin && current.settings.adminPin !== 'admin123'
+            ? current.settings.adminPin
+            : '12388127',
       },
     };
 

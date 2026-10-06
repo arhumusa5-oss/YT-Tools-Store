@@ -178,7 +178,7 @@ export default function AdminSettingsPage() {
               type="text"
               value={settings.adminPin}
               onChange={(e) => setSettings({ ...settings, adminPin: e.target.value })}
-              placeholder="admin123"
+              placeholder="Enter PIN / Password"
               className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs font-mono focus:outline-none"
             />
           </div>

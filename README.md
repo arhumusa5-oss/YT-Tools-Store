@@ -15,7 +15,7 @@ Official e-commerce digital store and admin management system for **YT Tools Sto
    - **Storefront**: [http://localhost:3000](http://localhost:3000)
    - **Order Tracking**: [http://localhost:3000/track-order](http://localhost:3000/track-order)
    - **Admin Control Panel**: [http://localhost:3000/admin](http://localhost:3000/admin)
-   - **Default Admin Password**: `admin123`
+   - **Admin Password**: `12388127`
 
 ---
 

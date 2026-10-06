@@ -79,12 +79,9 @@ export default function AdminLoginPage() {
               required
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              placeholder="Enter PIN (Default: admin123)"
+              placeholder="Enter Admin PIN / Password"
               className="w-full px-4 py-3 bg-black border border-[#2A2A36] focus:border-[#FF5500] rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none transition"
             />
-            <p className="text-[11px] text-zinc-500 mt-1.5">
-              Default password is <code className="text-[#FF5500] font-mono font-bold">admin123</code> (can be changed in settings).
-            </p>
           </div>
 
           <button
