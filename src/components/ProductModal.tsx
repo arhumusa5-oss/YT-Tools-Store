@@ -226,10 +226,10 @@ export default function ProductModal() {
           </div>
 
           {/* Right Column: Details & Key Features */}
-          <div className="p-6 sm:p-7 bg-white dark:bg-[#0e0e16] flex flex-col justify-between">
+          <div className="p-6 sm:p-7 md:pt-[72px] bg-white dark:bg-[#0e0e16] flex flex-col justify-between">
             <div>
               {/* Category & Badge Row */}
-              <div className="flex items-center gap-2 mb-2 pr-28 sm:pr-36 flex-wrap">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#660000]/[0.08] dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 dark:border-[#660000]/40">
                   {product.category}
                 </span>
@@ -256,8 +256,8 @@ export default function ProductModal() {
                 </span>
               </div>
 
-              {/* Title - positioned lower with mt-3.5 sm:mt-4 to leave clean space under Copy Direct Link button */}
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0a0a0a] dark:text-white leading-snug tracking-tight mt-3.5 sm:mt-4 pr-4">
+              {/* Title */}
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0a0a0a] dark:text-white leading-snug tracking-tight mt-1.5">
                 {product.title}
               </h2>
 
