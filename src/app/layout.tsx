@@ -31,6 +31,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://yt-tools-store.vercel.app'),
   title: 'YT Tools Store | Premium Creator Tools & Subscriptions',
   description: 'Official digital products, YouTube tools, and subscriptions store with instant delivery and replacement warranty.',
   keywords: 'YouTube tools, Canva Pro, VidIQ Boost, ChatGPT Plus, CapCut Pro, YouTube Premium, ElevenLabs, Pakistan digital store',
@@ -41,6 +42,36 @@ export const metadata: Metadata = {
     ],
     shortcut: '/favicon.ico',
     apple: '/apple-icon.svg',
+  },
+  openGraph: {
+    title: 'YT Tools Store | Premium Creator Tools & Subscriptions',
+    description: 'Official digital products, YouTube tools, and subscriptions store with instant delivery and replacement warranty.',
+    url: 'https://yt-tools-store.vercel.app',
+    siteName: 'YT Tools Store',
+    images: [
+      {
+        url: '/og-banner.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'YT Tools Store - Premium Creator Tools & Subscriptions',
+        type: 'image/jpeg',
+      },
+      {
+        url: '/og-banner.png',
+        width: 1200,
+        height: 630,
+        alt: 'YT Tools Store - Premium Creator Tools & Subscriptions',
+        type: 'image/png',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'YT Tools Store | Premium Creator Tools & Subscriptions',
+    description: 'Official digital products, YouTube tools, and subscriptions store with instant delivery and replacement warranty.',
+    images: ['/og-banner.jpg'],
   },
 };
 
@@ -55,6 +86,21 @@ export default function RootLayout({
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-icon.svg" />
+        {/* Explicit Open Graph / WhatsApp link preview meta tags */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="YT Tools Store" />
+        <meta property="og:title" content="YT Tools Store | Premium Creator Tools & Subscriptions" />
+        <meta property="og:description" content="Official digital products, YouTube tools, and subscriptions store with instant delivery and replacement warranty." />
+        <meta property="og:image" content="https://yt-tools-store.vercel.app/og-banner.jpg" />
+        <meta property="og:image:secure_url" content="https://yt-tools-store.vercel.app/og-banner.jpg" />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content="https://yt-tools-store.vercel.app/" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="YT Tools Store | Premium Creator Tools & Subscriptions" />
+        <meta name="twitter:description" content="Official digital products, YouTube tools, and subscriptions store with instant delivery and replacement warranty." />
+        <meta name="twitter:image" content="https://yt-tools-store.vercel.app/og-banner.jpg" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
