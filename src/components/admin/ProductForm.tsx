@@ -43,6 +43,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
   );
 
   const [isSoldOut, setIsSoldOut] = useState(initialProduct?.isSoldOut || false);
+  const [allowQuantity, setAllowQuantity] = useState(initialProduct?.allowQuantity || false);
   const [badge, setBadge] = useState<Product['badge']>(initialProduct?.badge || '');
   const [buttonText, setButtonText] = useState(
     initialProduct?.buttonText || 'Order on WhatsApp'
@@ -187,6 +188,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         priceUSD: Number(priceUSD) || Number(pricePKR) / 280,
         originalPriceUSD: Number(originalPriceUSD) || (Number(pricePKR) / 280) * 1.5,
         isSoldOut,
+        allowQuantity,
         badge,
         buttonText: buttonText.trim() || 'Order on WhatsApp',
         deliveryType,
@@ -402,6 +404,29 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
               </span>
               <span className="text-[11px] text-zinc-400">
                 When checked, the product card will show &apos;Sold Out&apos; badge and ordering will be disabled.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        {/* Allow Quantity Selection Toggle */}
+        <div className="pt-2">
+          <label className="relative flex items-center gap-3 p-4 rounded-xl bg-black border border-[#222228] cursor-pointer hover:border-[#2E354D] transition">
+            <input
+              type="checkbox"
+              checked={allowQuantity}
+              onChange={(e) => setAllowQuantity(e.target.checked)}
+              className="w-5 h-5 rounded accent-[#FF5500]"
+            />
+            <div>
+              <span className="font-bold text-white text-xs block flex items-center gap-2">
+                <span>Enable Quantity Selection (+ / -)</span>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#FF5500]/20 text-[#FF5500] border border-[#FF5500]/30">
+                  Customer Feature
+                </span>
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Allow customers to select quantity (1x, 2x, 5x, 10x etc.) with dynamic live price on card/modal and in WhatsApp message. Perfect for Gmails, Mails, Proxies, Accounts.
               </span>
             </div>
           </label>

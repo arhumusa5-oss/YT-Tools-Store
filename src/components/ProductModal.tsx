@@ -18,6 +18,7 @@ export default function ProductModal() {
   const [isClosing, setIsClosing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     if (activeProductModal) {
@@ -25,6 +26,7 @@ export default function ProductModal() {
       setIsClosing(false);
       setActiveImageIndex(0);
       setCopiedLink(false);
+      setQuantity(1);
       document.body.style.overflow = 'hidden';
 
       // Synchronize URL with ?product=... parameter
@@ -101,13 +103,22 @@ export default function ProductModal() {
     setTimeout(() => setCopiedLink(false), 2200);
   };
 
+  const isService = (product.category || '').toLowerCase().includes('service');
+  const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
+
+  const totalPKR = product.pricePKR * (product.allowQuantity ? quantity : 1);
+  const totalUSD = product.priceUSD * (product.allowQuantity ? quantity : 1);
+  const totalOriginalPKR = product.originalPricePKR * (product.allowQuantity ? quantity : 1);
+  const totalOriginalUSD = product.originalPriceUSD * (product.allowQuantity ? quantity : 1);
+
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
+  const qtyPrefix = product.allowQuantity && quantity > 1 ? `${quantity}x ` : '';
   const whatsappMessage = encodeURIComponent(
-    `Assalam o Alaikum! I want to ${actionPhrase} "${product.title}" (${formatPrice(
-      product.pricePKR,
-      product.priceUSD
+    `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
+      totalPKR,
+      totalUSD
     )}) from YT Tools Store.`
   );
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
@@ -217,8 +228,8 @@ export default function ProductModal() {
           {/* Right Column: Details & Key Features */}
           <div className="p-6 sm:p-7 bg-white dark:bg-[#0e0e16] flex flex-col justify-between">
             <div>
-              {/* Category & Badge */}
-              <div className="flex items-center gap-2 mb-2">
+              {/* Category & Badge Row */}
+              <div className="flex items-center gap-2 mb-2 pr-28 sm:pr-36 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#660000]/[0.08] dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 dark:border-[#660000]/40">
                   {product.category}
                 </span>
@@ -239,10 +250,14 @@ export default function ProductModal() {
                     {product.badge}
                   </span>
                 )}
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                  {verifiedTagText}
+                </span>
               </div>
 
-              {/* Title */}
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0a0a0a] dark:text-white leading-snug tracking-tight">
+              {/* Title - positioned lower with mt-3.5 sm:mt-4 to leave clean space under Copy Direct Link button */}
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0a0a0a] dark:text-white leading-snug tracking-tight mt-3.5 sm:mt-4 pr-4">
                 {product.title}
               </h2>
 
@@ -258,13 +273,18 @@ export default function ProductModal() {
               )}
 
               {/* Price */}
-              <div className="mt-4 flex items-baseline gap-3">
+              <div className="mt-4 flex items-baseline gap-3 flex-wrap">
                 <span className="text-3xl font-black text-[#660000] dark:text-[#ff4d4d] tracking-tight">
-                  {formatPrice(product.pricePKR, product.priceUSD)}
+                  {formatPrice(totalPKR, totalUSD)}
                 </span>
-                {product.originalPricePKR > product.pricePKR && (
+                {totalOriginalPKR > totalPKR && (
                   <span className="text-sm text-[#9ca3af] dark:text-zinc-500 line-through font-normal">
-                    {formatPrice(product.originalPricePKR, product.originalPriceUSD)}
+                    {formatPrice(totalOriginalPKR, totalOriginalUSD)}
+                  </span>
+                )}
+                {product.allowQuantity && quantity > 1 && (
+                  <span className="text-xs text-[#6b7280] dark:text-zinc-400 font-medium">
+                    ({formatPrice(product.pricePKR, product.priceUSD)} each)
                   </span>
                 )}
               </div>
@@ -320,7 +340,43 @@ export default function ProductModal() {
             </div>
 
             {/* Modal Actions */}
-            <div className="mt-6 pt-4 border-t border-[#f0ebeb] dark:border-white/10 space-y-2.5">
+            <div className="mt-6 pt-4 border-t border-[#f0ebeb] dark:border-white/10 space-y-3">
+              {/* Quantity selector in modal if enabled by admin */}
+              {product.allowQuantity && !product.isSoldOut && (
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#f9f7f7] dark:bg-[#141420] border border-[#f0ebeb] dark:border-white/10">
+                  <div>
+                    <span className="text-xs font-bold text-[#0a0a0a] dark:text-white block">
+                      Select Quantity
+                    </span>
+                    <span className="text-[11px] text-[#6b7280] dark:text-zinc-400">
+                      Total: <strong className="text-[#660000] dark:text-[#ff4d4d]">{formatPrice(totalPKR, totalUSD)}</strong>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      disabled={quantity <= 1}
+                      className="w-8 h-8 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
+                      title="Decrease quantity"
+                    >
+                      –
+                    </button>
+                    <span className="w-8 text-center font-black text-sm text-[#0a0a0a] dark:text-white">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => q + 1)}
+                      className="w-8 h-8 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
+                      title="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {product.isSoldOut ? (
                 <div className="text-center py-3.5 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] text-[#6b7280] dark:text-zinc-400 font-bold text-xs uppercase tracking-wider border border-[#e8e1e1] dark:border-white/10">
                   This item is currently sold out. Please contact us on WhatsApp for restock updates.
@@ -333,7 +389,9 @@ export default function ProductModal() {
                   className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                 >
                   <WhatsAppIcon className="w-5 h-5 fill-current text-white" />
-                  <span>{buttonLabel}</span>
+                  <span>
+                    {buttonLabel} {product.allowQuantity && quantity > 1 ? `(${quantity} items)` : ''}
+                  </span>
                 </a>
               )}
             </div>

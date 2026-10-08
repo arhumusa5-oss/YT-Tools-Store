@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       priceUSD: Number(body.priceUSD) || (Number(body.pricePKR) / 280),
       originalPriceUSD: Number(body.originalPriceUSD) || (Number(body.priceUSD) * 1.5),
       isSoldOut: Boolean(body.isSoldOut),
+      allowQuantity: Boolean(body.allowQuantity),
       badge: body.badge || '',
       buttonText: body.buttonText?.trim() || 'Order on WhatsApp',
       deliveryType: body.deliveryType || 'Instant Access',

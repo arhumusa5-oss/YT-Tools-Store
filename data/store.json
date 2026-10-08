@@ -27,7 +27,8 @@
       "reviewsCount": 0,
       "id": "prod-1791286029591",
       "createdAt": "2026-10-06T11:27:09.591Z",
-      "updatedAt": "2026-10-06T11:30:02.328Z"
+      "updatedAt": "2026-10-06T11:30:02.328Z",
+      "allowQuantity": true
     },
     {
       "title": "Fresh Gmails",
@@ -54,7 +55,8 @@
       "reviewsCount": 0,
       "id": "prod-1791285941694",
       "createdAt": "2026-10-06T11:25:41.694Z",
-      "updatedAt": "2026-10-06T11:25:52.416Z"
+      "updatedAt": "2026-10-06T11:25:52.416Z",
+      "allowQuantity": true
     },
     {
       "title": "ISP Proxy",
@@ -81,7 +83,8 @@
       "reviewsCount": 0,
       "id": "prod-1791285838470",
       "createdAt": "2026-10-06T11:23:58.470Z",
-      "updatedAt": "2026-10-06T11:23:58.470Z"
+      "updatedAt": "2026-10-06T11:23:58.470Z",
+      "allowQuantity": true
     },
     {
       "title": "Non Drop Subscribers",
@@ -109,7 +112,8 @@
       "reviewsCount": 0,
       "id": "prod-1791285631516",
       "createdAt": "2026-10-06T11:20:31.516Z",
-      "updatedAt": "2026-10-06T11:20:31.516Z"
+      "updatedAt": "2026-10-06T11:20:31.516Z",
+      "allowQuantity": true
     },
     {
       "title": "Approval Adsense Service",
@@ -137,7 +141,8 @@
       "reviewsCount": 0,
       "id": "prod-1791284759050",
       "createdAt": "2026-10-06T11:05:59.050Z",
-      "updatedAt": "2026-10-06T11:30:15.279Z"
+      "updatedAt": "2026-10-06T11:30:15.279Z",
+      "allowQuantity": false
     },
     {
       "title": "YT Thumbnail Verification",
@@ -162,7 +167,8 @@
       "reviewsCount": 0,
       "id": "prod-1791284379966",
       "createdAt": "2026-10-06T10:59:39.966Z",
-      "updatedAt": "2026-10-06T11:03:32.013Z"
+      "updatedAt": "2026-10-06T11:03:32.013Z",
+      "allowQuantity": false
     },
     {
       "title": "Claude Ai Team Plan",
@@ -199,7 +205,8 @@
       "reviewsCount": 0,
       "id": "prod-1791284289875",
       "createdAt": "2026-10-06T10:58:09.875Z",
-      "updatedAt": "2026-10-06T10:58:09.875Z"
+      "updatedAt": "2026-10-06T10:58:09.875Z",
+      "allowQuantity": false
     },
     {
       "title": "Claude Ai Pro Plan",
@@ -234,7 +241,8 @@
       "reviewsCount": 0,
       "id": "prod-1791283860311",
       "createdAt": "2026-10-06T10:51:00.311Z",
-      "updatedAt": "2026-10-06T10:51:00.311Z"
+      "updatedAt": "2026-10-06T10:51:00.311Z",
+      "allowQuantity": false
     },
     {
       "title": "Heygen Creator Plan",
@@ -262,7 +270,8 @@
       "reviewsCount": 0,
       "id": "prod-1791283689473",
       "createdAt": "2026-10-06T10:48:09.473Z",
-      "updatedAt": "2026-10-06T10:48:09.473Z"
+      "updatedAt": "2026-10-06T10:48:09.473Z",
+      "allowQuantity": false
     },
     {
       "title": "Google Ai Pro",
@@ -290,7 +299,8 @@
       "reviewsCount": 0,
       "id": "prod-1791283550388",
       "createdAt": "2026-10-06T10:45:50.388Z",
-      "updatedAt": "2026-10-06T10:46:02.132Z"
+      "updatedAt": "2026-10-06T10:46:02.132Z",
+      "allowQuantity": false
     },
     {
       "title": "Muse Ai",
@@ -317,7 +327,8 @@
       "reviewsCount": 0,
       "id": "prod-1791283412899",
       "createdAt": "2026-10-06T10:43:32.899Z",
-      "updatedAt": "2026-10-06T10:43:32.899Z"
+      "updatedAt": "2026-10-06T10:43:32.899Z",
+      "allowQuantity": false
     },
     {
       "title": "Super Grok Subscription",
@@ -345,7 +356,8 @@
       "reviewsCount": 0,
       "id": "prod-1791283313365",
       "createdAt": "2026-10-06T10:41:53.365Z",
-      "updatedAt": "2026-10-06T10:41:53.365Z"
+      "updatedAt": "2026-10-06T10:41:53.365Z",
+      "allowQuantity": false
     },
     {
       "title": "AntiGravity Pro Plan",
@@ -373,7 +385,8 @@
       "reviewsCount": 0,
       "id": "prod-1791283149364",
       "createdAt": "2026-10-06T10:39:09.364Z",
-      "updatedAt": "2026-10-06T10:39:09.364Z"
+      "updatedAt": "2026-10-06T10:39:09.364Z",
+      "allowQuantity": false
     },
     {
       "title": "Netflix",
@@ -400,7 +413,8 @@
       "reviewsCount": 0,
       "id": "prod-1791282972553",
       "createdAt": "2026-10-06T10:36:12.553Z",
-      "updatedAt": "2026-10-06T10:36:40.933Z"
+      "updatedAt": "2026-10-06T10:36:40.933Z",
+      "allowQuantity": false
     },
     {
       "title": "Surfshark VPN",
@@ -428,7 +442,8 @@
       "reviewsCount": 0,
       "id": "prod-1791282826910",
       "createdAt": "2026-10-06T10:33:46.910Z",
-      "updatedAt": "2026-10-06T10:33:46.910Z"
+      "updatedAt": "2026-10-06T10:33:46.910Z",
+      "allowQuantity": false
     },
     {
       "title": "Chat GPT",
@@ -456,7 +471,8 @@
       "reviewsCount": 0,
       "id": "prod-1791282533801",
       "createdAt": "2026-10-06T10:28:53.801Z",
-      "updatedAt": "2026-10-06T10:29:45.053Z"
+      "updatedAt": "2026-10-06T10:29:45.053Z",
+      "allowQuantity": false
     },
     {
       "title": "Gemini Pro",
@@ -493,7 +509,8 @@
       "id": "prod-1790175712824",
       "createdAt": "2026-09-23T15:01:52.824Z",
       "updatedAt": "2026-10-06T10:54:55.906Z",
-      "buttonText": "Order on WhatsApp"
+      "buttonText": "Order on WhatsApp",
+      "allowQuantity": false
     },
     {
       "title": "Capcut",
@@ -521,7 +538,8 @@
       "id": "prod-1790168360430",
       "createdAt": "2026-09-23T12:59:20.430Z",
       "updatedAt": "2026-10-06T10:25:50.469Z",
-      "buttonText": "Order on WhatsApp"
+      "buttonText": "Order on WhatsApp",
+      "allowQuantity": false
     }
   ],
   "orders": [],

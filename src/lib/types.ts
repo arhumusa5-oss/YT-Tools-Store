@@ -11,6 +11,7 @@ export interface Product {
   priceUSD: number;
   originalPriceUSD: number;
   isSoldOut: boolean;
+  allowQuantity?: boolean;
   badge: 'HOT' | 'BEST SELLER' | 'SALE' | 'INSTANT' | 'TRENDING' | 'POPULAR' | '';
   buttonText?: string;
   deliveryType: string;

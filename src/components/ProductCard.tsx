@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { Check, Star, Eye } from 'lucide-react';
@@ -18,21 +18,33 @@ export default function ProductCard({ product }: ProductCardProps) {
     settings,
   } = useCart();
 
-  const currentPrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
-  const originalPrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
+  const [quantity, setQuantity] = useState(1);
+
+  const isService = (product.category || '').toLowerCase().includes('service');
+  const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
+
+  const currentSinglePrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
+  const originalSinglePrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
+
+  const currentPrice = currentSinglePrice * (product.allowQuantity ? quantity : 1);
+  const originalPrice = originalSinglePrice * (product.allowQuantity ? quantity : 1);
+  const totalPKR = product.pricePKR * (product.allowQuantity ? quantity : 1);
+  const totalUSD = product.priceUSD * (product.allowQuantity ? quantity : 1);
+
   const discountPercent =
-    originalPrice > currentPrice
-      ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+    originalSinglePrice > currentSinglePrice
+      ? Math.round(((originalSinglePrice - currentSinglePrice) / originalSinglePrice) * 100)
       : 0;
 
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
+  const qtyPrefix = product.allowQuantity && quantity > 1 ? `${quantity}x ` : '';
   const whatsappMessage = encodeURIComponent(
-    `Assalam o Alaikum! I want to ${actionPhrase} "${product.title}" (${formatPrice(
-      product.pricePKR,
-      product.priceUSD
+    `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
+      totalPKR,
+      totalUSD
     )}) from YT Tools Store.`
   );
   const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
@@ -170,7 +182,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           ) : (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              Verified Tool
+              {verifiedTagText}
             </span>
           )}
         </div>
@@ -178,7 +190,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Title */}
         <h3
           onClick={() => setActiveProductModal(product)}
-          className="text-base sm:text-lg font-black tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors cursor-pointer line-clamp-1 leading-snug"
+          className="text-base sm:text-lg font-black tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors cursor-pointer line-clamp-1 leading-snug mt-1.5"
         >
           {product.title}
         </h3>
@@ -206,21 +218,63 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Spacer */}
-        <div className="flex-1 min-h-4" />
+        <div className="flex-1 min-h-3" />
+
+        {/* Quantity Selector (if enabled by admin) */}
+        {product.allowQuantity && !product.isSoldOut && (
+          <div className="mt-3 mb-2 flex items-center justify-between px-3 py-2 rounded-2xl bg-[#f9f7f7] dark:bg-[#141420] border border-[#f0ebeb] dark:border-white/10">
+            <span className="text-[11px] font-bold text-[#6b7280] dark:text-zinc-400">
+              Quantity:
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuantity((q) => Math.max(1, q - 1));
+                }}
+                disabled={quantity <= 1}
+                className="w-7 h-7 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
+                title="Decrease quantity"
+              >
+                –
+              </button>
+              <span className="w-8 text-center font-black text-sm text-[#0a0a0a] dark:text-white">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuantity((q) => q + 1);
+                }}
+                className="w-7 h-7 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
+                title="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Price Section */}
-        <div className="pt-4 border-t border-[#f0ebeb] dark:border-white/10 flex items-end justify-between">
+        <div className="pt-3 border-t border-[#f0ebeb] dark:border-white/10 flex items-end justify-between">
           <div>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-2xl sm:text-3xl font-black text-[#660000] dark:text-[#ff4d4d] tracking-tight">
-                {formatPrice(product.pricePKR, product.priceUSD)}
+                {formatPrice(totalPKR, totalUSD)}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-xs font-bold text-[#9ca3af] dark:text-zinc-500 line-through">
-                  {formatPrice(product.originalPricePKR, product.originalPriceUSD)}
+                  {formatPrice(originalPrice, currency === 'USD' ? product.originalPriceUSD * (product.allowQuantity ? quantity : 1) : product.originalPricePKR * (product.allowQuantity ? quantity : 1))}
                 </span>
               )}
             </div>
+            {product.allowQuantity && quantity > 1 && (
+              <p className="text-[10px] text-[#6b7280] dark:text-zinc-400 font-medium">
+                ({formatPrice(product.pricePKR, product.priceUSD)} each)
+              </p>
+            )}
             <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
               <span>{product.deliveryType || 'Instant Delivery'}</span>
