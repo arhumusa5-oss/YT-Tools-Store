@@ -18,7 +18,7 @@ export default function ProductModal() {
   const [isClosing, setIsClosing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | string>(1);
 
   useEffect(() => {
     if (activeProductModal) {
@@ -106,15 +106,16 @@ export default function ProductModal() {
   const isService = (product.category || '').toLowerCase().includes('service');
   const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
 
-  const totalPKR = product.pricePKR * (product.allowQuantity ? quantity : 1);
-  const totalUSD = product.priceUSD * (product.allowQuantity ? quantity : 1);
-  const totalOriginalPKR = product.originalPricePKR * (product.allowQuantity ? quantity : 1);
-  const totalOriginalUSD = product.originalPriceUSD * (product.allowQuantity ? quantity : 1);
+  const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
+  const totalPKR = product.pricePKR * (product.allowQuantity ? currentQty : 1);
+  const totalUSD = product.priceUSD * (product.allowQuantity ? currentQty : 1);
+  const totalOriginalPKR = product.originalPricePKR * (product.allowQuantity ? currentQty : 1);
+  const totalOriginalUSD = product.originalPriceUSD * (product.allowQuantity ? currentQty : 1);
 
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
-  const qtyPrefix = product.allowQuantity && quantity > 1 ? `${quantity}x ` : '';
+  const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
   const whatsappMessage = encodeURIComponent(
     `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
       totalPKR,
@@ -282,7 +283,7 @@ export default function ProductModal() {
                     {formatPrice(totalOriginalPKR, totalOriginalUSD)}
                   </span>
                 )}
-                {product.allowQuantity && quantity > 1 && (
+                {product.allowQuantity && currentQty > 1 && (
                   <span className="text-xs text-[#6b7280] dark:text-zinc-400 font-medium">
                     ({formatPrice(product.pricePKR, product.priceUSD)} each)
                   </span>
@@ -355,19 +356,40 @@ export default function ProductModal() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      disabled={quantity <= 1}
+                      onClick={() => setQuantity(Math.max(1, currentQty - 1))}
+                      disabled={currentQty <= 1}
                       className="w-8 h-8 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
                       title="Decrease quantity"
                     >
                       –
                     </button>
-                    <span className="w-8 text-center font-black text-sm text-[#0a0a0a] dark:text-white">
-                      {quantity}
-                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="9999"
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setQuantity('');
+                        } else {
+                          const parsed = parseInt(val, 10);
+                          if (!isNaN(parsed)) {
+                            setQuantity(Math.min(9999, Math.max(1, parsed)));
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (!quantity || Number(quantity) < 1) {
+                          setQuantity(1);
+                        }
+                      }}
+                      className="w-12 h-8 text-center font-black text-sm text-[#0a0a0a] dark:text-white bg-white dark:bg-[#1a1a26] border border-[#e8e1e1] dark:border-white/10 rounded-xl focus:border-[#660000] dark:focus:border-[#ff4d4d] focus:outline-none transition-all shadow-inner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none select-text"
+                      aria-label="Quantity"
+                    />
                     <button
                       type="button"
-                      onClick={() => setQuantity((q) => q + 1)}
+                      onClick={() => setQuantity(Math.min(9999, currentQty + 1))}
                       className="w-8 h-8 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
                       title="Increase quantity"
                     >
@@ -390,7 +412,7 @@ export default function ProductModal() {
                 >
                   <WhatsAppIcon className="w-5 h-5 fill-current text-white" />
                   <span>
-                    {buttonLabel} {product.allowQuantity && quantity > 1 ? `(${quantity} items)` : ''}
+                    {buttonLabel} {product.allowQuantity && currentQty > 1 ? `(${currentQty} items)` : ''}
                   </span>
                 </a>
               )}

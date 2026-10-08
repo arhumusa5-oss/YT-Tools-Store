@@ -18,18 +18,20 @@ export default function ProductCard({ product }: ProductCardProps) {
     settings,
   } = useCart();
 
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | string>(1);
 
   const isService = (product.category || '').toLowerCase().includes('service');
   const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
 
+  const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
+
   const currentSinglePrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
   const originalSinglePrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
 
-  const currentPrice = currentSinglePrice * (product.allowQuantity ? quantity : 1);
-  const originalPrice = originalSinglePrice * (product.allowQuantity ? quantity : 1);
-  const totalPKR = product.pricePKR * (product.allowQuantity ? quantity : 1);
-  const totalUSD = product.priceUSD * (product.allowQuantity ? quantity : 1);
+  const currentPrice = currentSinglePrice * (product.allowQuantity ? currentQty : 1);
+  const originalPrice = originalSinglePrice * (product.allowQuantity ? currentQty : 1);
+  const totalPKR = product.pricePKR * (product.allowQuantity ? currentQty : 1);
+  const totalUSD = product.priceUSD * (product.allowQuantity ? currentQty : 1);
 
   const discountPercent =
     originalSinglePrice > currentSinglePrice
@@ -40,7 +42,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
-  const qtyPrefix = product.allowQuantity && quantity > 1 ? `${quantity}x ` : '';
+  const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
   const whatsappMessage = encodeURIComponent(
     `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
       totalPKR,
@@ -222,31 +224,56 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Quantity Selector (if enabled by admin) */}
         {product.allowQuantity && !product.isSoldOut && (
-          <div className="mt-3 mb-2 flex items-center justify-between px-3 py-2 rounded-2xl bg-[#f9f7f7] dark:bg-[#141420] border border-[#f0ebeb] dark:border-white/10">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="mt-3 mb-2 flex items-center justify-between px-3 py-2 rounded-2xl bg-[#f9f7f7] dark:bg-[#141420] border border-[#f0ebeb] dark:border-white/10"
+          >
             <span className="text-[11px] font-bold text-[#6b7280] dark:text-zinc-400">
               Quantity:
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setQuantity((q) => Math.max(1, q - 1));
+                  setQuantity(Math.max(1, currentQty - 1));
                 }}
-                disabled={quantity <= 1}
+                disabled={currentQty <= 1}
                 className="w-7 h-7 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
                 title="Decrease quantity"
               >
                 –
               </button>
-              <span className="w-8 text-center font-black text-sm text-[#0a0a0a] dark:text-white">
-                {quantity}
-              </span>
+              <input
+                type="number"
+                min="1"
+                max="9999"
+                value={quantity}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setQuantity('');
+                  } else {
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) {
+                      setQuantity(Math.min(9999, Math.max(1, parsed)));
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  if (!quantity || Number(quantity) < 1) {
+                    setQuantity(1);
+                  }
+                }}
+                className="w-12 h-7 text-center font-black text-xs text-[#0a0a0a] dark:text-white bg-white dark:bg-[#1a1a26] border border-[#e8e1e1] dark:border-white/10 rounded-xl focus:border-[#660000] dark:focus:border-[#ff4d4d] focus:outline-none transition-all shadow-inner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none select-text"
+                aria-label="Quantity"
+              />
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setQuantity((q) => q + 1);
+                  setQuantity(Math.min(9999, currentQty + 1));
                 }}
                 className="w-7 h-7 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
                 title="Increase quantity"
@@ -266,11 +293,11 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-xs font-bold text-[#9ca3af] dark:text-zinc-500 line-through">
-                  {formatPrice(originalPrice, currency === 'USD' ? product.originalPriceUSD * (product.allowQuantity ? quantity : 1) : product.originalPricePKR * (product.allowQuantity ? quantity : 1))}
+                  {formatPrice(originalPrice, currency === 'USD' ? product.originalPriceUSD * (product.allowQuantity ? currentQty : 1) : product.originalPricePKR * (product.allowQuantity ? currentQty : 1))}
                 </span>
               )}
             </div>
-            {product.allowQuantity && quantity > 1 && (
+            {product.allowQuantity && currentQty > 1 && (
               <p className="text-[10px] text-[#6b7280] dark:text-zinc-400 font-medium">
                 ({formatPrice(product.pricePKR, product.priceUSD)} each)
               </p>
