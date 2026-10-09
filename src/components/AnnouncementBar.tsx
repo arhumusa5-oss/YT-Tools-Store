@@ -19,7 +19,7 @@ export default function AnnouncementBar() {
         <span className="flex h-1.5 w-1.5 rounded-full bg-red-300 animate-ping hidden sm:inline-block" />
         <span className="font-semibold tracking-wide text-white">{settings.announcementText}</span>
         <a
-          href={`https://wa.me/${(settings.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20have%20an%20inquiry.`}
+          href={`https://wa.me/${(settings.whatsappNumber || '+92 3343345095').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20have%20an%20inquiry.`}
           target="_blank"
           rel="noopener noreferrer"
           className="ml-2 px-3 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold inline-flex items-center gap-1.5 border border-white/25 transition-all text-[11px] hover:scale-105 shadow-sm"

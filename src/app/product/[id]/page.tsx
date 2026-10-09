@@ -82,7 +82,7 @@ export default function ProductDetailPage() {
       product.priceUSD
     )}) from YT Tools Store.`
   );
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const targetWhatsApp = (settings?.whatsappNumber || '+92 3343345095').replace(/[^0-9]/g, '');
   const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
 
   return (

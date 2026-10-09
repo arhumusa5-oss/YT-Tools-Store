@@ -241,7 +241,7 @@ function TrackOrderContent() {
           {/* WhatsApp Support Action */}
           <div className="pt-2">
             <a
-              href={`https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(
+              href={`https://wa.me/${(settings?.whatsappNumber || '+92 3343345095').replace(
                 /[^0-9]/g,
                 ''
               )}?text=Assalam%20o%20Alaikum!%20I%20am%20inquiring%20about%20my%20order%20%23${order.id}`}

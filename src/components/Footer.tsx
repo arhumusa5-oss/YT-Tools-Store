@@ -8,7 +8,7 @@ import WhatsAppIcon from './WhatsAppIcon';
 
 export default function Footer() {
   const { settings } = useCart();
-  const whatsapp = settings?.whatsappNumber || '+92 3702260919';
+  const whatsapp = settings?.whatsappNumber || '+92 3343345095';
 
   return (
     <footer className="relative bg-[#fcfbfb] dark:bg-[#050508] border-t border-[#e8e1e1] dark:border-white/10 text-[#4b5563] dark:text-zinc-400 text-xs transition-colors duration-200 overflow-hidden">

@@ -29,7 +29,7 @@ export default function OrderSuccessModal() {
     `Please verify and send my digital tool activation.`
   );
 
-  const whatsappUrl = `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=${whatsappMessage}`;
+  const whatsappUrl = `https://wa.me/${(settings?.whatsappNumber || '+92 3343345095').replace(/[^0-9]/g, '')}?text=${whatsappMessage}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">

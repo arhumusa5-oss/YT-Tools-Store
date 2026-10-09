@@ -38,7 +38,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       ? Math.round(((originalSinglePrice - currentSinglePrice) / originalSinglePrice) * 100)
       : 0;
 
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const targetWhatsApp = (settings?.whatsappNumber || '+92 3343345095').replace(/[^0-9]/g, '');
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
