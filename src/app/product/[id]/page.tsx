@@ -10,7 +10,7 @@ import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import ProductModal from '@/components/ProductModal';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
-import { Check, Star, ShieldCheck, Clock, ArrowLeft, Mail } from 'lucide-react';
+import { Check, Star, Clock, ArrowLeft, Mail } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 
 export default function ProductDetailPage() {
@@ -133,16 +133,11 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <div className="mt-8 grid grid-cols-3 gap-3">
+            <div className="mt-8 grid grid-cols-2 gap-3">
               <div className="p-3.5 rounded-2xl bg-[#050507] border border-white/[0.06] text-center">
                 <Clock className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
                 <span className="text-xs font-bold text-white block">15-Min Delivery</span>
                 <span className="text-[10px] text-zinc-500">Fast & Verified</span>
-              </div>
-              <div className="p-3.5 rounded-2xl bg-[#050507] border border-white/[0.06] text-center">
-                <ShieldCheck className="w-5 h-5 text-[#FF5500] mx-auto mb-1" />
-                <span className="text-xs font-bold text-white block">100% Warranty</span>
-                <span className="text-[10px] text-zinc-500">Full Duration</span>
               </div>
               <div className="p-3.5 rounded-2xl bg-[#050507] border border-white/[0.06] text-center">
                 <Mail className="w-5 h-5 text-blue-400 mx-auto mb-1" />

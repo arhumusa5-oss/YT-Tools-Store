@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, Check, Star, ShieldCheck, Clock, Mail, Share2 } from 'lucide-react';
+import { X, Check, Star, Clock, Mail, Share2 } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 import { Product } from '@/lib/types';
 
@@ -214,10 +214,6 @@ export default function ProductModal() {
               <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
                 <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <span>Delivery: {product.deliveryType || 'Instant 15-30 Mins'}</span>
-              </div>
-              <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
-                <ShieldCheck className="w-4 h-4 text-[#660000] dark:text-[#ff4d4d] shrink-0" />
-                <span>100% Replacement Warranty & Support</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
                 <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />

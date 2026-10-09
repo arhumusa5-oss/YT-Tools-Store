@@ -92,7 +92,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         .filter((l) => l.length > 0);
       if (bullets.length > 0) return bullets.slice(0, 3);
     }
-    return ['100% Replacement Warranty', 'Instant Delivery'];
+    if (product.deliveryType?.trim()) {
+      return [product.deliveryType.trim()];
+    }
+    return ['Instant Access'];
   })();
 
   const getBadgeStyle = (badge: string) => {
