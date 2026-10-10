@@ -92,10 +92,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         .filter((l) => l.length > 0);
       if (bullets.length > 0) return bullets.slice(0, 3);
     }
-    if (product.deliveryType?.trim()) {
-      return [product.deliveryType.trim()];
+    if (!isService) {
+      return ['Instant Access'];
     }
-    return ['Instant Access'];
+    return [];
   })();
 
   const getBadgeStyle = (badge: string) => {
@@ -305,10 +305,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                 ({formatPrice(product.pricePKR, product.priceUSD)} each)
               </p>
             )}
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              <span>{product.deliveryType || 'Instant Delivery'}</span>
-            </div>
+            {!isService && (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                <span>Instant Access</span>
+              </div>
+            )}
           </div>
         </div>
 

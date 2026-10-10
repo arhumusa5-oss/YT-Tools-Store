@@ -211,10 +211,12 @@ export default function ProductModal() {
 
             {/* Quick Guarantees */}
             <div className="mt-6 pt-6 border-t border-[#f0ebeb] dark:border-white/10 space-y-2.5">
-              <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
-                <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                <span>Delivery: {product.deliveryType || 'Instant 15-30 Mins'}</span>
-              </div>
+              {!isService && (
+                <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
+                  <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Delivery: Instant Access</span>
+                </div>
+              )}
               <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
                 <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span>Private & Secure Delivery</span>

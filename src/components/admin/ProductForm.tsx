@@ -49,7 +49,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
     initialProduct?.buttonText || 'Order on WhatsApp'
   );
   const [deliveryType, setDeliveryType] = useState(
-    initialProduct?.deliveryType || 'Email Invitation'
+    initialProduct?.deliveryType || 'Instant Access'
   );
   const [deliveryNotes, setDeliveryNotes] = useState(
     initialProduct?.deliveryNotes ||

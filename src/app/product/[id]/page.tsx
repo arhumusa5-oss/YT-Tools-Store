@@ -73,6 +73,7 @@ export default function ProductDetailPage() {
     );
   }
 
+  const isService = (product.category || '').toLowerCase().includes('service');
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
@@ -133,16 +134,18 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <div className="mt-8 grid grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-2xl bg-[#050507] border border-white/[0.06] text-center">
-                <Clock className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                <span className="text-xs font-bold text-white block">15-Min Delivery</span>
-                <span className="text-[10px] text-zinc-500">Fast & Verified</span>
-              </div>
+            <div className={`mt-8 grid ${isService ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+              {!isService && (
+                <div className="p-3.5 rounded-2xl bg-[#050507] border border-white/[0.06] text-center">
+                  <Clock className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                  <span className="text-xs font-bold text-white block">Instant Access</span>
+                  <span className="text-[10px] text-zinc-500">Fast & Verified</span>
+                </div>
+              )}
               <div className="p-3.5 rounded-2xl bg-[#050507] border border-white/[0.06] text-center">
                 <Mail className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-                <span className="text-xs font-bold text-white block">Direct Invite</span>
-                <span className="text-[10px] text-zinc-500">Private Access</span>
+                <span className="text-xs font-bold text-white block">Private & Secure Delivery</span>
+                <span className="text-[10px] text-zinc-500">Direct Access</span>
               </div>
             </div>
           </div>
