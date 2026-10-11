@@ -176,27 +176,12 @@ export default function ProductModal() {
           <div className="p-6 sm:p-7 bg-[#fcfbfb] dark:bg-[#09090e] flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#f0ebeb] dark:border-white/10">
             <div>
               {/* Main Image */}
-              <div className="relative aspect-video sm:aspect-square w-full rounded-2xl overflow-hidden bg-[#f8f6f6] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 shadow-inner flex items-center justify-center p-3 sm:p-4 select-none">
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                  style={{
-                    transform: `scale(${(product.imageZoom ?? (product.imageFit === 'cover' ? 100 : 95)) / 100})`,
-                  }}
-                >
-                  <img
-                    src={product.images[activeImageIndex] || product.images[0]}
-                    alt={product.title}
-                    className={`max-w-full max-h-full ${
-                      product.imageFit === 'cover'
-                        ? 'w-full h-full object-cover'
-                        : 'w-full h-full object-contain'
-                    }`}
-                    style={{
-                      imageRendering: '-webkit-optimize-contrast',
-                      transform: 'translateZ(0)',
-                    }}
-                  />
-                </div>
+              <div className="relative aspect-video sm:aspect-square w-full rounded-2xl overflow-hidden bg-[#f4efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 shadow-inner">
+                <img
+                  src={product.images[activeImageIndex] || product.images[0]}
+                  alt={product.title}
+                  className="w-full h-full object-cover"
+                />
                 {product.isSoldOut && (
                   <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex items-center justify-center">
                     <span className="px-4 py-2 bg-red-600 text-white font-extrabold text-xs uppercase rounded-xl tracking-wider shadow-lg">
@@ -213,18 +198,11 @@ export default function ProductModal() {
                     <button
                       key={i}
                       onClick={() => setActiveImageIndex(i)}
-                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer flex items-center justify-center p-1.5 bg-[#f8f6f6] dark:bg-[#12121a] ${
-                        activeImageIndex === i
-                          ? 'border-[#660000] dark:border-[#ff4d4d] shadow-sm'
-                          : 'border-[#e8e1e1] dark:border-white/10 opacity-60 hover:opacity-100'
+                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
+                        activeImageIndex === i ? 'border-[#660000] dark:border-[#ff4d4d] shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <img
-                        src={img}
-                        alt="thumb"
-                        className="w-full h-full object-contain"
-                        style={{ imageRendering: '-webkit-optimize-contrast' }}
-                      />
+                      <img src={img} alt="thumb" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>

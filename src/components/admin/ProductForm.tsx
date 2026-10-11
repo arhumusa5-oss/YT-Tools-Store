@@ -12,9 +12,6 @@ import {
   Check,
   UploadCloud,
   Loader2,
-  ZoomIn,
-  ZoomOut,
-  Sliders,
 } from 'lucide-react';
 
 interface ProductFormProps {
@@ -63,12 +60,6 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
     initialProduct?.images || [
       'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80',
     ]
-  );
-  const [imageFit, setImageFit] = useState<'contain' | 'cover'>(
-    initialProduct?.imageFit || 'contain'
-  );
-  const [imageZoom, setImageZoom] = useState<number>(
-    initialProduct?.imageZoom ?? 95
   );
   const [newImageInput, setNewImageInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -203,8 +194,6 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         deliveryType,
         deliveryNotes,
         images: images.filter((img) => img.trim().length > 0),
-        imageFit,
-        imageZoom: Number(imageZoom) || 95,
       };
 
       const url = isEdit ? `/api/products/${initialProduct?.id}` : '/api/products';
@@ -686,14 +675,9 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
           {images.map((img, idx) => (
             <div
               key={idx}
-              className="relative aspect-video rounded-xl overflow-hidden bg-black border border-[#222228] group flex items-center justify-center p-1"
+              className="relative aspect-video rounded-xl overflow-hidden bg-black border border-[#222228] group"
             >
-              <img
-                src={img}
-                alt="Product preview"
-                className="w-full h-full object-contain"
-                style={{ imageRendering: '-webkit-optimize-contrast' }}
-              />
+              <img src={img} alt="Product preview" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => handleRemoveImage(idx)}
@@ -709,170 +693,6 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
               )}
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* Image Display & Zoom Adjustment Card */}
-      <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-[#FF5500]" />
-              <span>Image Display & Zoom Control (Anti-Crop Fix)</span>
-            </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Logo ya 1:1 square image ko cut hone se bachane ke liye Zoom Out karein aur Fit mode choose karein.
-            </p>
-          </div>
-          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 self-start sm:self-auto">
-            Mode: {imageFit === 'contain' ? 'Fit Entire Image' : 'Fill Box'} ({imageZoom}%)
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
-          {/* Left: Controls */}
-          <div className="space-y-4">
-            {/* Fit Mode Toggle */}
-            <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-2">
-                Image Fit Mode:
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setImageFit('contain')}
-                  className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 cursor-pointer ${
-                    imageFit === 'contain'
-                      ? 'bg-[#FF5500]/15 border-[#FF5500] text-white shadow-sm'
-                      : 'bg-black border-[#222228] text-zinc-400 hover:border-zinc-700 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold">Fit (Contain)</span>
-                    {imageFit === 'contain' && <Check className="w-3.5 h-3.5 text-[#FF5500]" />}
-                  </div>
-                  <span className="text-[10px] text-zinc-400 leading-tight">
-                    Recommended: 100% full logo visible, koi corner ya text cut nahi hoga.
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setImageFit('cover')}
-                  className={`p-3 rounded-xl border text-left transition flex flex-col gap-1 cursor-pointer ${
-                    imageFit === 'cover'
-                      ? 'bg-[#FF5500]/15 border-[#FF5500] text-white shadow-sm'
-                      : 'bg-black border-[#222228] text-zinc-400 hover:border-zinc-700 hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold">Fill Box (Cover)</span>
-                    {imageFit === 'cover' && <Check className="w-3.5 h-3.5 text-[#FF5500]" />}
-                  </div>
-                  <span className="text-[10px] text-zinc-400 leading-tight">
-                    Full bleed cover photo (edges cut ho sakti hain).
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            {/* Zoom Scale Slider */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <label className="font-semibold text-zinc-300 flex items-center gap-1.5">
-                  <span>Image Zoom Level (Scale):</span>
-                  <span className="text-[#FF5500] font-black">{imageZoom}%</span>
-                </label>
-                <span className="text-[11px] text-zinc-500 font-medium">
-                  {imageZoom < 100 ? 'Zoomed Out' : imageZoom === 100 ? 'Original (100%)' : 'Zoomed In'}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setImageZoom((prev) => Math.max(50, prev - 5))}
-                  className="p-1.5 rounded-lg bg-black border border-[#222228] hover:border-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
-                  title="Zoom Out"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-
-                <input
-                  type="range"
-                  min="50"
-                  max="120"
-                  step="5"
-                  value={imageZoom}
-                  onChange={(e) => setImageZoom(Number(e.target.value))}
-                  className="flex-1 accent-[#FF5500] cursor-pointer"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setImageZoom((prev) => Math.min(120, prev + 5))}
-                  className="p-1.5 rounded-lg bg-black border border-[#222228] hover:border-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
-                  title="Zoom In"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Quick Zoom Presets */}
-              <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                <span className="text-[10px] text-zinc-500">Quick Presets:</span>
-                {[75, 85, 95, 100, 110].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setImageZoom(preset)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
-                      imageZoom === preset
-                        ? 'bg-[#FF5500] text-white border-[#FF5500]'
-                        : 'bg-black text-zinc-400 border-[#222228] hover:text-white hover:border-zinc-700'
-                    }`}
-                  >
-                    {preset}% {preset === 85 ? '(Ideal for 1:1)' : preset === 95 ? '(Default)' : ''}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Live Interactive Card Mockup Preview */}
-          <div className="p-4 rounded-xl bg-black border border-[#222228] flex flex-col items-center justify-center">
-            <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider mb-2">
-              Live Card Thumbnail Preview
-            </span>
-            <div className="relative w-56 h-40 rounded-xl overflow-hidden bg-[#f8f6f6] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 flex items-center justify-center shadow-inner">
-              {images[0] ? (
-                <div
-                  className="w-full h-full flex items-center justify-center transition-all duration-200"
-                  style={{ transform: `scale(${imageZoom / 100})` }}
-                >
-                  <img
-                    src={images[0]}
-                    alt="Preview"
-                    className={`max-w-full max-h-full ${
-                      imageFit === 'cover' ? 'w-full h-full object-cover' : 'w-full h-full object-contain p-2.5'
-                    }`}
-                    style={{
-                      imageRendering: '-webkit-optimize-contrast',
-                      transform: 'translateZ(0)',
-                    }}
-                  />
-                </div>
-              ) : (
-                <span className="text-xs text-zinc-500">No image selected</span>
-              )}
-              {imageFit === 'cover' && (
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-              )}
-            </div>
-            <span className="text-[10px] text-zinc-500 mt-2 text-center">
-              Aapka logo store cards per aesa dikhega. Slider se zoom out karein agar corners cut ho rahe hon.
-            </span>
-          </div>
         </div>
       </div>
 

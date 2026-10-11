@@ -155,36 +155,20 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Image Thumbnail */}
       <div
         onClick={() => setActiveProductModal(product)}
-        className="relative w-full h-52 bg-[#f8f6f6] dark:bg-[#12121a] overflow-hidden cursor-pointer flex items-center justify-center p-3 select-none"
+        className="relative w-full h-52 bg-[#f4efef] dark:bg-[#161622] overflow-hidden cursor-pointer"
       >
-        <div
-          className="w-full h-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
-          style={{
-            transform: `scale(${(product.imageZoom ?? (product.imageFit === 'cover' ? 100 : 95)) / 100})`,
-          }}
-        >
-          <img
-            src={
-              product.images[0] ||
-              'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'
-            }
-            alt={product.title}
-            className={`max-w-full max-h-full ${
-              product.imageFit === 'cover'
-                ? 'w-full h-full object-cover'
-                : 'w-full h-full object-contain'
-            } ${product.isSoldOut ? 'grayscale opacity-60' : ''}`}
-            style={{
-              imageRendering: '-webkit-optimize-contrast',
-              transform: 'translateZ(0)',
-              backfaceVisibility: 'hidden',
-            }}
-            loading="lazy"
-          />
-        </div>
-        {product.imageFit === 'cover' && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 dark:from-black/60 via-transparent to-transparent opacity-60 pointer-events-none" />
-        )}
+        <img
+          src={
+            product.images[0] ||
+            'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'
+          }
+          alt={product.title}
+          className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+            product.isSoldOut ? 'grayscale opacity-60' : ''
+          }`}
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 dark:from-black/60 via-transparent to-transparent opacity-60" />
       </div>
 
       {/* Card Content */}

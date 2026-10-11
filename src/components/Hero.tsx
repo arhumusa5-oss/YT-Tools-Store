@@ -331,8 +331,7 @@ export default function Hero({
                             'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'
                           }
                           alt={product.title}
-                          className="w-10 h-10 rounded-xl object-contain p-1 border border-[#e8e1e1] dark:border-white/10 bg-white dark:bg-[#161620] shrink-0"
-                          style={{ imageRendering: '-webkit-optimize-contrast' }}
+                          className="w-10 h-10 rounded-xl object-cover border border-[#e8e1e1] dark:border-white/10 bg-white dark:bg-[#161620] shrink-0"
                         />
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
