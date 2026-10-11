@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="sharkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D1B2"/>
+      <stop offset="100%" stop-color="#009688"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0A2540"/>
+  <g transform="translate(140, 110)" fill="none" stroke="url(#sharkGrad)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M116 30 C180 50 200 130 140 180 C80 230 40 200 40 250 C40 280 80 290 120 280"/>
+    <path d="M90 100 C150 110 180 150 150 190" stroke="#FFFFFF" stroke-width="22"/>
+  </g>
+</svg>

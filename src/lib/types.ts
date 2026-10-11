@@ -19,6 +19,8 @@ export interface Product {
   images: string[];
   rating: number;
   reviewsCount: number;
+  imageFit?: 'contain' | 'cover';
+  imageZoom?: number;
   createdAt: string;
   updatedAt: string;
 }

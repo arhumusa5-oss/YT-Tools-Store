@@ -103,12 +103,27 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-[#0A0A0D] border border-white/[0.08] rounded-3xl p-6 sm:p-10 shadow-2xl shadow-black transition-colors duration-150">
           {/* Images */}
           <div>
-            <div className="relative aspect-video sm:aspect-square w-full rounded-2xl overflow-hidden bg-black border border-white/[0.08]">
-              <img
-                src={product.images[activeImageIndex] || product.images[0]}
-                alt={product.title}
-                className="w-full h-full object-cover"
-              />
+            <div className="relative aspect-video sm:aspect-square w-full rounded-2xl overflow-hidden bg-black border border-white/[0.08] flex items-center justify-center p-3 sm:p-4 select-none">
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{
+                  transform: `scale(${(product.imageZoom ?? (product.imageFit === 'cover' ? 100 : 95)) / 100})`,
+                }}
+              >
+                <img
+                  src={product.images[activeImageIndex] || product.images[0]}
+                  alt={product.title}
+                  className={`max-w-full max-h-full ${
+                    product.imageFit === 'cover'
+                      ? 'w-full h-full object-cover'
+                      : 'w-full h-full object-contain'
+                  }`}
+                  style={{
+                    imageRendering: '-webkit-optimize-contrast',
+                    transform: 'translateZ(0)',
+                  }}
+                />
+              </div>
               {product.isSoldOut && (
                 <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
                   <span className="px-5 py-2.5 bg-red-600 text-white font-black text-sm uppercase rounded-xl tracking-wider shadow-lg">
@@ -124,11 +139,16 @@ export default function ProductDetailPage() {
                   <button
                     key={i}
                     onClick={() => setActiveImageIndex(i)}
-                    className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
-                      activeImageIndex === i ? 'border-[#FF5500] shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
+                    className={`relative w-20 h-20 rounded-xl overflow-hidden border-2 transition cursor-pointer flex items-center justify-center p-1.5 bg-[#0A0A0D] ${
+                      activeImageIndex === i ? 'border-[#FF5500] shadow-sm' : 'border-white/[0.08] opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="thumb" className="w-full h-full object-cover" />
+                    <img
+                      src={img}
+                      alt="thumb"
+                      className="w-full h-full object-contain"
+                      style={{ imageRendering: '-webkit-optimize-contrast' }}
+                    />
                   </button>
                 ))}
               </div>

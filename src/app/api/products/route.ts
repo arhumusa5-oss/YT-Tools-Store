@@ -60,6 +60,8 @@ export async function POST(request: Request) {
       images: Array.isArray(body.images) && body.images.length > 0 ? body.images : ['https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'],
       rating: Number(body.rating) || 0,
       reviewsCount: Number(body.reviewsCount) || 0,
+      imageFit: body.imageFit === 'cover' ? 'cover' : 'contain',
+      imageZoom: typeof body.imageZoom === 'number' ? body.imageZoom : 95,
     });
 
     return NextResponse.json({ success: true, product: newProduct });

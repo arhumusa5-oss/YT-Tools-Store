@@ -28,7 +28,9 @@
       "id": "prod-1791286029591",
       "createdAt": "2026-10-06T11:27:09.591Z",
       "updatedAt": "2026-10-06T11:30:02.328Z",
-      "allowQuantity": true
+      "allowQuantity": true,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Fresh Gmails",
@@ -56,7 +58,9 @@
       "id": "prod-1791285941694",
       "createdAt": "2026-10-06T11:25:41.694Z",
       "updatedAt": "2026-10-06T11:25:52.416Z",
-      "allowQuantity": true
+      "allowQuantity": true,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "ISP Proxy",
@@ -84,7 +88,9 @@
       "id": "prod-1791285838470",
       "createdAt": "2026-10-06T11:23:58.470Z",
       "updatedAt": "2026-10-06T11:23:58.470Z",
-      "allowQuantity": true
+      "allowQuantity": true,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Non Drop Subscribers",
@@ -113,7 +119,9 @@
       "id": "prod-1791285631516",
       "createdAt": "2026-10-06T11:20:31.516Z",
       "updatedAt": "2026-10-06T11:20:31.516Z",
-      "allowQuantity": true
+      "allowQuantity": true,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Approval Adsense Service",
@@ -142,7 +150,9 @@
       "id": "prod-1791284759050",
       "createdAt": "2026-10-06T11:05:59.050Z",
       "updatedAt": "2026-10-06T11:30:15.279Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "YT Thumbnail Verification",
@@ -168,7 +178,9 @@
       "id": "prod-1791284379966",
       "createdAt": "2026-10-06T10:59:39.966Z",
       "updatedAt": "2026-10-06T11:03:32.013Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Claude Ai Team Plan",
@@ -199,14 +211,16 @@
       "deliveryType": "Email Invitation",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp or Email.",
       "images": [
-        "https://media.licdn.com/dms/image/v2/D4E0BAQFko-zWIZk_pw/company-logo_200_200/B4EZhiRWKvHgAI-/0/1753995371543/claude_logo?e=2147483647&v=beta&t=CVNmFKyWig0Uo78oAr3II6KVLu_o0aXPtnt4S6XgOr8"
+        "/uploads/claude_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791284289875",
       "createdAt": "2026-10-06T10:58:09.875Z",
       "updatedAt": "2026-10-06T10:58:09.875Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Claude Ai Pro Plan",
@@ -235,14 +249,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp or Email.",
       "images": [
-        "https://media.licdn.com/dms/image/v2/D4E0BAQFko-zWIZk_pw/company-logo_200_200/B4EZhiRWKvHgAI-/0/1753995371543/claude_logo?e=2147483647&v=beta&t=CVNmFKyWig0Uo78oAr3II6KVLu_o0aXPtnt4S6XgOr8"
+        "/uploads/claude_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791283860311",
       "createdAt": "2026-10-06T10:51:00.311Z",
       "updatedAt": "2026-10-06T10:51:00.311Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Heygen Creator Plan",
@@ -264,14 +280,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmn1RGGJKyFJpLhe91-4lqU3-uLCkVnIdMrCOP1qVdyIYrVBTj_1SMElo&s=10"
+        "/uploads/heygen_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791283689473",
       "createdAt": "2026-10-06T10:48:09.473Z",
       "updatedAt": "2026-10-06T10:48:09.473Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Google Ai Pro",
@@ -293,14 +311,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS13VkzW34AsBvZEjA7G-SAFHXXWv3autO4yw2HtIGrRp_puNG8D-6flJvv&s=10"
+        "/uploads/google_ai_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791283550388",
       "createdAt": "2026-10-06T10:45:50.388Z",
       "updatedAt": "2026-10-06T10:46:02.132Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Muse Ai",
@@ -321,14 +341,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_NQ77BIRN2Pc-ehVy7_ToW8H41DM-7__21mAVIFCAIfta2u-31tmJFV-q&s=10"
+        "/uploads/muse_ai_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791283412899",
       "createdAt": "2026-10-06T10:43:32.899Z",
       "updatedAt": "2026-10-06T10:43:32.899Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Super Grok Subscription",
@@ -350,14 +372,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp or Email.",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTioxgG0nLlpiztd5MfQkfNOoTXZsQwDpcDlK2fh2R9SUbLTPj2UnU3kVs&s=10"
+        "/uploads/grok_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791283313365",
       "createdAt": "2026-10-06T10:41:53.365Z",
       "updatedAt": "2026-10-06T10:41:53.365Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "AntiGravity Pro Plan",
@@ -386,7 +410,9 @@
       "id": "prod-1791283149364",
       "createdAt": "2026-10-06T10:39:09.364Z",
       "updatedAt": "2026-10-06T10:39:09.364Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Netflix",
@@ -407,14 +433,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQA2kFX5inUbovlkW0bn2x7_WOhbRg5bM_YMxNUgYopZc7CACZv6n9i6eA&s=10"
+        "/uploads/netflix_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791282972553",
       "createdAt": "2026-10-06T10:36:12.553Z",
       "updatedAt": "2026-10-06T10:36:40.933Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Surfshark VPN",
@@ -436,14 +464,16 @@
       "deliveryType": "Instant Access",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRFHEl7kFBt_0rvWI3IWk1nM3oiYV1LLvUdIEmfyOkwJQ&s"
+        "/uploads/surfshark_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791282826910",
       "createdAt": "2026-10-06T10:33:46.910Z",
       "updatedAt": "2026-10-06T10:33:46.910Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Chat GPT",
@@ -465,14 +495,16 @@
       "deliveryType": "Email Invitation",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "images": [
-        "https://images.g2crowd.com/uploads/product/image/e369fa2434bfed6434dea757dc661c25/chatgpt.jpg"
+        "/uploads/chatgpt_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
       "id": "prod-1791282533801",
       "createdAt": "2026-10-06T10:28:53.801Z",
       "updatedAt": "2026-10-06T10:29:45.053Z",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Gemini Pro",
@@ -502,7 +534,7 @@
       "deliveryType": "Official Voucher Activation",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp or Email.",
       "images": [
-        "https://www.gstatic.com/lamda/images/gemini_aurora_thumbnail_4g_e74822ff0ca4259beb718.png"
+        "/uploads/gemini_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
@@ -510,7 +542,9 @@
       "createdAt": "2026-09-23T15:01:52.824Z",
       "updatedAt": "2026-10-06T10:54:55.906Z",
       "buttonText": "Order on WhatsApp",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     },
     {
       "title": "Capcut",
@@ -531,7 +565,7 @@
       "deliveryType": "",
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "images": [
-        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwqyJe8cXE-btMxT-WsTMJQOcoV0C88_7iv7rbZok-Pw&s"
+        "/uploads/capcut_logo.svg"
       ],
       "rating": 0,
       "reviewsCount": 0,
@@ -539,7 +573,9 @@
       "createdAt": "2026-09-23T12:59:20.430Z",
       "updatedAt": "2026-10-06T10:25:50.469Z",
       "buttonText": "Order on WhatsApp",
-      "allowQuantity": false
+      "allowQuantity": false,
+      "imageFit": "contain",
+      "imageZoom": 95
     }
   ],
   "orders": [],
