@@ -12,7 +12,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   tagline: 'Digital Tools, Subscriptions & Creator Assets',
   announcementText: '⚡ Welcome to YT Tools Store - Contact us on WhatsApp for orders & inquiries.',
   announcementEnabled: true,
-  whatsappNumber: '+92 3343345095',
+  whatsappNumber: '+92 3702260919',
   supportEmail: 'support@yttoolsstore.pk',
   adminPin: '12388127',
   currencyRateUSDToPKR: 280,
@@ -110,9 +110,9 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         needsAutoSeed = true;
       }
 
-      // Ensure WhatsApp number is updated to +92 3343345095 if empty or old
-      if (!mergedSettings.whatsappNumber || mergedSettings.whatsappNumber.includes('3702260919') || mergedSettings.whatsappNumber.includes('370 226')) {
-        mergedSettings.whatsappNumber = '+92 3343345095';
+      // Ensure WhatsApp number is updated to +92 3702260919 if empty or old
+      if (!mergedSettings.whatsappNumber || mergedSettings.whatsappNumber.includes('3343345095') || mergedSettings.whatsappNumber.includes('334 334')) {
+        mergedSettings.whatsappNumber = '+92 3702260919';
         needsAutoSeed = true;
       }
 
