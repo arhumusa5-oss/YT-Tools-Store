@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { Play, ShieldCheck } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
-export default function Footer() {
+function Footer() {
   const { settings } = useCart();
   const whatsapp = settings?.whatsappNumber || '+92 3702260919';
 
@@ -102,3 +102,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+export default React.memo(Footer);

@@ -28,7 +28,7 @@ const POPUP_MESSAGES = [
   },
 ];
 
-export default function FloatingWhatsApp() {
+function FloatingWhatsApp() {
   const { settings } = useCart();
   const phone = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   const url = `https://wa.me/${phone}?text=Assalam%20o%20Alaikum!%20I%20am%20visiting%20YT%20Tools%20Store%20and%20need%20assistance.`;
@@ -117,3 +117,5 @@ export default function FloatingWhatsApp() {
     </aside>
   );
 }
+
+export default React.memo(FloatingWhatsApp);

@@ -10,7 +10,7 @@ interface NavbarProps {
   onSearchClick?: () => void;
 }
 
-export default function Navbar({ onSearchClick }: NavbarProps) {
+function Navbar({ onSearchClick }: NavbarProps) {
   const { settings, theme, toggleTheme } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -157,3 +157,5 @@ export default function Navbar({ onSearchClick }: NavbarProps) {
     </header>
   );
 }
+
+export default React.memo(Navbar);

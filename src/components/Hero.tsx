@@ -25,7 +25,7 @@ interface HeroProps {
   onExploreClick: () => void;
 }
 
-export default function Hero({
+function Hero({
   products = [],
   searchQuery,
   setSearchQuery,
@@ -456,3 +456,5 @@ export default function Hero({
     </section>
   );
 }
+
+export default React.memo(Hero);

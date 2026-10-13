@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { Check, Star, Eye } from 'lucide-react';
@@ -10,7 +10,7 @@ interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+function ProductCard({ product }: ProductCardProps) {
   const {
     currency,
     formatPrice,
@@ -33,25 +33,32 @@ export default function ProductCard({ product }: ProductCardProps) {
   const totalPKR = product.pricePKR * (product.allowQuantity ? currentQty : 1);
   const totalUSD = product.priceUSD * (product.allowQuantity ? currentQty : 1);
 
-  const discountPercent =
-    originalSinglePrice > currentSinglePrice
+  const discountPercent = useMemo(() => {
+    return originalSinglePrice > currentSinglePrice
       ? Math.round(((originalSinglePrice - currentSinglePrice) / originalSinglePrice) * 100)
       : 0;
+  }, [originalSinglePrice, currentSinglePrice]);
 
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const targetWhatsApp = useMemo(() => {
+    return (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  }, [settings?.whatsappNumber]);
+
   const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
   const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
-  const whatsappMessage = encodeURIComponent(
-    `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
-      totalPKR,
-      totalUSD
-    )}) from YT Tools Store.`
-  );
-  const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
 
-  const displayDescription = (() => {
+  const whatsappUrl = useMemo(() => {
+    const whatsappMessage = encodeURIComponent(
+      `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
+        totalPKR,
+        totalUSD
+      )}) from YT Tools Store.`
+    );
+    return `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
+  }, [actionPhrase, qtyPrefix, product.title, formatPrice, totalPKR, totalUSD, targetWhatsApp]);
+
+  const displayDescription = useMemo(() => {
     if (product.shortDescription?.trim()) {
       return product.shortDescription.trim();
     }
@@ -71,9 +78,9 @@ export default function ProductCard({ product }: ProductCardProps) {
       return product.fullDescription.split('\n')[0].replace(/^[-*•✓]\s*/, '').trim();
     }
     return '100% genuine verified tool with instant access and replacement warranty.';
-  })();
+  }, [product.shortDescription, product.fullDescription]);
 
-  const displayFeatures = (() => {
+  const displayFeatures = useMemo(() => {
     if (product.keyFeatures && product.keyFeatures.length > 0) {
       return product.keyFeatures.slice(0, 3);
     }
@@ -96,7 +103,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       return ['Instant Access'];
     }
     return [];
-  })();
+  }, [product.keyFeatures, product.fullDescription, isService]);
 
   const getBadgeStyle = (badge: string) => {
     const b = badge.toUpperCase();
@@ -116,7 +123,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="group relative flex flex-col rounded-3xl bg-white dark:bg-[#0e0e16] hover:bg-[#faf8f8] dark:hover:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#990000] transition-all duration-300 overflow-hidden shadow-[0_8px_30px_-6px_rgba(0,0,0,0.05),0_2px_8px_-2px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_-8px_rgba(0,0,0,0.7)] hover:-translate-y-1.5 hover:shadow-[0_16px_36px_-8px_rgba(102,0,0,0.15)] dark:hover:shadow-[0_16px_36px_-8px_rgba(102,0,0,0.4)]">
+    <div
+      style={{ transform: 'translateZ(0)' }}
+      className="group relative flex flex-col rounded-3xl bg-white dark:bg-[#0e0e16] hover:bg-[#faf8f8] dark:hover:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#990000] transition-transform duration-200 ease-out transition-shadow duration-200 transition-colors duration-150 will-change-transform overflow-hidden shadow-[0_8px_30px_-6px_rgba(0,0,0,0.05),0_2px_8px_-2px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_-8px_rgba(0,0,0,0.7)] hover:-translate-y-1 hover:shadow-[0_16px_36px_-8px_rgba(102,0,0,0.15)] dark:hover:shadow-[0_16px_36px_-8px_rgba(102,0,0,0.4)]"
+    >
       {/* Top Badges */}
       <div className="absolute top-3.5 left-3.5 right-3.5 z-10 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -163,12 +173,13 @@ export default function ProductCard({ product }: ProductCardProps) {
             'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'
           }
           alt={product.title}
-          className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+          decoding="async"
+          className={`w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform group-hover:scale-105 ${
             product.isSoldOut ? 'grayscale opacity-60' : ''
           }`}
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 dark:from-black/60 via-transparent to-transparent opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 dark:from-black/60 via-transparent to-transparent opacity-60 pointer-events-none" />
       </div>
 
       {/* Card Content */}
@@ -349,3 +360,5 @@ export default function ProductCard({ product }: ProductCardProps) {
     </div>
   );
 }
+
+export default React.memo(ProductCard);

@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { X } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
-export default function AnnouncementBar() {
+function AnnouncementBar() {
   const { settings } = useCart();
   const [closed, setClosed] = useState(false);
 
@@ -29,6 +29,7 @@ export default function AnnouncementBar() {
         </a>
       </div>
       <button
+        type="button"
         onClick={() => setClosed(true)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-1 rounded-full hover:bg-white/15 transition cursor-pointer"
         aria-label="Close Announcement"
@@ -38,3 +39,5 @@ export default function AnnouncementBar() {
     </div>
   );
 }
+
+export default React.memo(AnnouncementBar);

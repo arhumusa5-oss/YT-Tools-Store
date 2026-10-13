@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Review } from '@/lib/types';
 import { Star, CheckCircle2, MessageSquareQuote } from 'lucide-react';
 
-export default function ReviewsSection() {
+function ReviewsSection() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,3 +102,5 @@ export default function ReviewsSection() {
     </section>
   );
 }
+
+export default React.memo(ReviewsSection);

@@ -33,17 +33,15 @@ export default function CustomCursor() {
         ring.style.opacity = '1';
       }
 
-      dot.style.left = `${mouseX}px`;
-      dot.style.top = `${mouseY}px`;
+      dot.style.transform = `translate3d(${mouseX - 4}px, ${mouseY - 4}px, 0)`;
     };
 
     const render = () => {
       // Smooth interpolation for outer trailing ring
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
+      ringX += (mouseX - ringX) * 0.22;
+      ringY += (mouseY - ringY) * 0.22;
 
-      ring.style.left = `${ringX}px`;
-      ring.style.top = `${ringY}px`;
+      ring.style.transform = `translate3d(${ringX - 18}px, ${ringY - 18}px, 0)`;
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -51,12 +49,9 @@ export default function CustomCursor() {
     const onMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
-      const isInteractive =
-        target.closest('a') ||
-        target.closest('button') ||
-        target.closest('[role="button"]') ||
-        target.closest('.cursor-pointer') ||
-        target.classList.contains('cursor-pointer');
+      const isInteractive = Boolean(
+        target.closest?.('a, button, [role="button"], .cursor-pointer, input, textarea')
+      );
 
       if (isInteractive) {
         document.body.classList.add('cursor-hover');

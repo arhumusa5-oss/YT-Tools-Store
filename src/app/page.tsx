@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
@@ -85,10 +85,9 @@ export default function HomePage() {
 
   const [isSearching, setIsSearching] = useState(false);
 
-  // Smooth luxurious cubic-bezier scrolling with searching state feedback
-  const handleSearchSubmit = () => {
+  // Native high-performance smooth scroll
+  const handleSearchSubmit = useCallback(() => {
     setIsSearching(true);
-
     setTimeout(() => {
       if (productsSectionRef.current) {
         const yOffset = -85;
@@ -96,73 +95,60 @@ export default function HomePage() {
           0,
           productsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
         );
-        const startY = window.pageYOffset;
-        const distance = targetY - startY;
-        const duration = 750;
-        let startTime: number | null = null;
-
-        function animationStep(currentTime: number) {
-          if (!startTime) startTime = currentTime;
-          const timeElapsed = currentTime - startTime;
-          const progress = Math.min(timeElapsed / duration, 1);
-
-          const ease =
-            progress < 0.5
-              ? 4 * progress * progress * progress
-              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-
-          window.scrollTo(0, startY + distance * ease);
-
-          if (progress < 1) {
-            window.requestAnimationFrame(animationStep);
-          } else {
-            setIsSearching(false);
-          }
-        }
-
-        window.requestAnimationFrame(animationStep);
-      } else {
-        setIsSearching(false);
+        window.scrollTo({ top: targetY, behavior: 'smooth' });
       }
-    }, 280);
-  };
+      setIsSearching(false);
+    }, 120);
+  }, []);
 
-  // Reset to page 1 whenever user switches category or types in search
+  // Single-pass Category switch (Zero double-renders)
+  const handleCategoryChange = useCallback((cat: string) => {
+    setActiveCategory(cat);
+    setCurrentPage(1);
+  }, []);
+
+  // Reset to page 1 whenever user searches
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeCategory, searchQuery]);
+  }, [searchQuery]);
 
-  // Filter products by category (Tools vs Services) and search
-  const filteredProducts = products.filter((prod) => {
-    const isService = prod.category?.toLowerCase() === 'services';
-    const matchesCategory =
-      activeCategory === 'Services' ? isService : !isService;
-
+  // Memoized Filter and Sort (Zero lag on category tab switch)
+  const sortedProducts = useMemo(() => {
+    const isServicesCategory = activeCategory === 'Services';
     const q = searchQuery.toLowerCase().trim();
-    const titleWords = prod.title.toLowerCase().split(/[\s\-_/]+/);
-    const matchesSearch =
-      !q ||
-      (q.length < 3
-        ? prod.title.toLowerCase().startsWith(q) || titleWords.some((w) => w.startsWith(q))
-        : prod.title.toLowerCase().includes(q) ||
-          prod.shortDescription?.toLowerCase().includes(q) ||
-          prod.category?.toLowerCase().includes(q) ||
-          (prod.keyFeatures && prod.keyFeatures.some((f) => f.toLowerCase().includes(q))));
+    const qWords = q ? q.split(/[\s\-_/]+/) : [];
 
-    return matchesCategory && matchesSearch;
-  });
+    const filtered = products.filter((prod) => {
+      const isService = (prod.category || '').toLowerCase() === 'services';
+      const matchesCategory = isServicesCategory ? isService : !isService;
+      if (!matchesCategory) return false;
 
-  // Sort alphabetically (Abc wise: A to Z)
-  const sortedProducts = [...filteredProducts].sort((a, b) =>
-    (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
-  );
+      if (!q) return true;
+
+      const titleLower = (prod.title || '').toLowerCase();
+      if (q.length < 3) {
+        return titleLower.startsWith(q) || qWords.some((w) => titleLower.includes(w));
+      }
+      return (
+        titleLower.includes(q) ||
+        prod.shortDescription?.toLowerCase().includes(q) ||
+        (prod.keyFeatures && prod.keyFeatures.some((f) => f.toLowerCase().includes(q)))
+      );
+    });
+
+    return filtered.sort((a, b) =>
+      (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
+    );
+  }, [products, activeCategory, searchQuery]);
 
   // Pagination (8 items per page)
-  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedProducts = sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    return sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedProducts, startIndex]);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
     if (productsSectionRef.current) {
@@ -173,23 +159,26 @@ export default function HomePage() {
       );
       window.scrollTo({ top: targetY, behavior: 'smooth' });
     }
-  };
+  }, [totalPages]);
 
-  const handleSelectSuggestion = (product: Product) => {
+  const handleSelectSuggestion = useCallback((product: Product) => {
     setSearchQuery(product.title);
-    if (product.category?.toLowerCase() === 'services') {
+    if ((product.category || '').toLowerCase() === 'services') {
       setActiveCategory('Services');
     } else {
       setActiveCategory('Tools');
     }
+    setCurrentPage(1);
     // Directly open the smooth details modal popup for the selected product
     setActiveProductModal(product);
-  };
+  }, [setActiveProductModal]);
 
-  const whatsappInquiryUrl = `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(
-    /[^0-9]/g,
-    ''
-  )}?text=Assalam%20o%20Alaikum!%20I%20am%20looking%20for%20a%20digital%20tool%20on%20YT%20Tools%20Store.`;
+  const whatsappInquiryUrl = useMemo(() => {
+    return `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(
+      /[^0-9]/g,
+      ''
+    )}?text=Assalam%20o%20Alaikum!%20I%20am%20looking%20for%20a%20digital%20tool%20on%20YT%20Tools%20Store.`;
+  }, [settings?.whatsappNumber]);
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#1f2937] transition-colors duration-150 relative z-10">
@@ -235,7 +224,7 @@ export default function HomePage() {
             {/* Category Filter Pills (Tools vs Services) */}
             <CategoryFilter
               activeCategory={activeCategory}
-              setActiveCategory={setActiveCategory}
+              setActiveCategory={handleCategoryChange}
             />
           </div>
 
@@ -254,13 +243,14 @@ export default function HomePage() {
                     {' '}matching <span className="font-extrabold text-[#660000] dark:text-[#ff4d4d]">&ldquo;{searchQuery}&rdquo;</span>
                   </>
                 )}
-                <span className="text-[#6b7280] dark:text-zinc-400 ml-2 font-normal">({filteredProducts.length} items found)</span>
+                <span className="text-[#6b7280] dark:text-zinc-400 ml-2 font-normal">({sortedProducts.length} items found)</span>
               </span>
 
               <button
+                type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  setActiveCategory('Tools');
+                  handleCategoryChange('Tools');
                 }}
                 className="text-[#660000] dark:text-[#ff4d4d] hover:text-[#4d0000] dark:hover:text-[#ff8080] font-bold text-xs hover:underline transition cursor-pointer"
               >
@@ -308,7 +298,7 @@ export default function HomePage() {
                 </button>
               </div>
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : sortedProducts.length === 0 ? (
             /* Empty Filter / Search State */
             <div className="py-16 text-center rounded-3xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 shadow-sm">
               <PackageX className="w-12 h-12 text-[#9ca3af] dark:text-zinc-500 mx-auto mb-3" />
@@ -319,9 +309,10 @@ export default function HomePage() {
                 Try searching for a different keyword or reset filters.
               </p>
               <button
+                type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  setActiveCategory('Tools');
+                  handleCategoryChange('Tools');
                 }}
                 className="mt-4 px-5 py-2.5 rounded-full bg-[#660000] hover:bg-[#4d0000] text-white text-xs font-bold transition shadow-md cursor-pointer"
               >
