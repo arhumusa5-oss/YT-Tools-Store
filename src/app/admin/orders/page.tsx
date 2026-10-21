@@ -46,6 +46,7 @@ export default function AdminOrdersPage() {
   const [invoiceCustomerEmail, setInvoiceCustomerEmail] = useState('');
   const [invoiceOrderId, setInvoiceOrderId] = useState('');
   const [invoiceNotes, setInvoiceNotes] = useState('');
+  const [invoiceStatus, setInvoiceStatus] = useState<'pending' | 'completed'>('pending');
   const [invoiceItems, setInvoiceItems] = useState<
     Array<{
       productId: string;
@@ -118,6 +119,7 @@ export default function AdminOrdersPage() {
     setInvoiceCustomerWhatsApp('');
     setInvoiceCustomerEmail('');
     setInvoiceNotes('');
+    setInvoiceStatus('pending');
     fetchProductsAndSettings();
 
     // Default with first available product or empty
@@ -221,6 +223,7 @@ export default function AdminOrdersPage() {
           items: invoiceItems,
           totalPKR: invoiceTotalPKR,
           note: invoiceNotes.trim(),
+          status: invoiceStatus,
         }),
       });
 
@@ -910,6 +913,30 @@ export default function AdminOrdersPage() {
                     onChange={(e) => setInvoiceNotes(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#660000]"
                   />
+                </div>
+
+                {/* Order Status After Payment */}
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Order Status After Payment <span className="text-emerald-400 font-bold">*</span>
+                  </label>
+                  <select
+                    value={invoiceStatus}
+                    onChange={(e) => setInvoiceStatus(e.target.value as 'pending' | 'completed')}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#660000] cursor-pointer font-medium"
+                  >
+                    <option value="pending">
+                      Pending Verification (Customer sees: &quot;Please wait, your order has been placed&quot; &amp; tracking)
+                    </option>
+                    <option value="completed">
+                      Completed / Fast Track (Customer sees: &quot;Thank You For Choosing Our Store&quot; &amp; Return to Store)
+                    </option>
+                  </select>
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    {invoiceStatus === 'completed'
+                      ? '✓ When the customer submits payment, they will directly see: "Thank You For Choosing Our Store" and a "Return to Store" button.'
+                      : '✓ When the customer submits payment, they see standard order verification message and live tracking.'}
+                  </p>
                 </div>
 
                 {/* Submit button */}

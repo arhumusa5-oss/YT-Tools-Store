@@ -584,7 +584,7 @@ export default function CheckoutModal() {
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#660000] dark:text-[#ff6b6b] block">
                     Total Amount Due
                   </span>
-                  <span className="text-xs text-[#4b5563] dark:text-zinc-400">
+                  <span className="text-xs text-[#111827] dark:text-zinc-200 font-bold">
                     {totalCount} {totalCount === 1 ? 'item' : 'items'} in order
                   </span>
                 </div>
@@ -603,7 +603,7 @@ export default function CheckoutModal() {
                     <span>Your Delivery Information</span>
                   </h4>
                   {user && (
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Auto-filled from account
                     </span>
@@ -612,8 +612,8 @@ export default function CheckoutModal() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                      Full Name <span className="text-red-500">*</span>
+                    <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
+                      Full Name <span className="text-red-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -621,13 +621,13 @@ export default function CheckoutModal() {
                       placeholder="e.g. Ali Khan"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                      WhatsApp Number <span className="text-red-500">* (For Delivery)</span>
+                    <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
+                      WhatsApp Number <span className="text-red-700 font-bold">* (For Delivery)</span>
                     </label>
                     <input
                       type="tel"
@@ -639,60 +639,46 @@ export default function CheckoutModal() {
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border ${
                         phoneError
                           ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
-                          : 'border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d]'
-                      } text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors`}
+                          : 'border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d]'
+                      } text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium`}
                     />
                     {phoneError ? (
-                      <p className="mt-1 text-[11px] font-bold text-red-500 flex items-center gap-1 animate-in fade-in duration-150">
+                      <p className="mt-1 text-[11px] font-bold text-red-600 flex items-center gap-1 animate-in fade-in duration-150">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                         <span>{phoneError}</span>
                       </p>
                     ) : (
-                      <p className="mt-1 text-[10px] text-[#9ca3af]">
+                      <p className="mt-1 text-[11px] text-[#374151] dark:text-zinc-300 font-semibold">
                         All countries allowed (digits 0-9 &amp; + only)
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                      Email Address <span className="text-red-500">* (For Invite / Activation)</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="e.g. yourname@gmail.com"
-                      value={customerEmail}
-                      onChange={(e) => handleEmailChange(e.target.value)}
-                      onBlur={handleEmailBlur}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border ${
-                        emailError
-                          ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
-                          : 'border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d]'
-                      } text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors`}
-                    />
-                    {emailError && (
-                      <p className="mt-1 text-[11px] font-bold text-red-500 flex items-center gap-1 animate-in fade-in duration-150">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <span>{emailError}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                      Channel Link / Notes <span className="text-[#9ca3af]">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. YouTube channel link or note"
-                      value={channelOrDeliveryNote}
-                      onChange={(e) => setChannelOrDeliveryNote(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
-                    />
-                  </div>
+                {/* Email Address (Full Width - Channel link removed as requested) */}
+                <div>
+                  <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
+                    Email Address <span className="text-red-700 font-bold">* (For Invite / Activation)</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. yourname@gmail.com"
+                    value={customerEmail}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border ${
+                      emailError
+                        ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                        : 'border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d]'
+                    } text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium`}
+                  />
+                  {emailError && (
+                    <p className="mt-1 text-[11px] font-bold text-red-600 flex items-center gap-1 animate-in fade-in duration-150">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{emailError}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -705,7 +691,7 @@ export default function CheckoutModal() {
                     </span>
                     <span>Select Payment Method</span>
                   </h4>
-                  <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">
+                  <span className="text-[11px] text-[#111827] dark:text-zinc-300 font-bold">
                     {availablePaymentMethods.length} {availablePaymentMethods.length === 1 ? 'method' : 'methods'} available
                   </span>
                 </div>
@@ -722,32 +708,32 @@ export default function CheckoutModal() {
                         onClick={() => setPaymentMethod(m.id)}
                         className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                           isSelected
-                            ? `${m.activeBg} ${m.activeBorder} text-[#0a0a0a] dark:text-white shadow-sm`
-                            : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
+                            ? `${m.activeBg} ${m.activeBorder} text-[#0a0a0a] dark:text-white shadow-sm ring-1 ring-[#660000]/20`
+                            : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#d1c7c7] dark:border-white/10 text-[#1f2937] hover:text-[#0a0a0a] dark:hover:text-white'
                         }`}
                       >
                         <Icon className={`w-4 h-4 mb-2 ${m.color}`} />
-                        <span className="text-xs font-bold block">{m.name}</span>
-                        <span className="text-[10px] text-[#9ca3af]">{m.sub}</span>
+                        <span className="text-xs font-extrabold block text-[#0a0a0a] dark:text-white">{m.name}</span>
+                        <span className="text-[10px] text-[#374151] dark:text-zinc-300 font-semibold">{m.sub}</span>
                       </button>
                     );
                   })}
                 </div>
 
                 {/* Details Box for Selected Method */}
-                <div className="p-4 rounded-xl bg-[#faf8f8] dark:bg-[#14141c] border border-[#e8e1e1] dark:border-white/10 space-y-2.5">
+                <div className="p-4 rounded-xl bg-[#faf8f8] dark:bg-[#14141c] border border-[#d1c7c7] dark:border-white/10 space-y-2.5">
                   {paymentMethod === 'easypaisa' && (
                     <div className="space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account Title:</span>
-                        <span className="font-extrabold text-[#0a0a0a] dark:text-white">
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account Title:</span>
+                        <span className="font-extrabold text-black dark:text-white">
                           {paymentAccounts?.easypaisa?.title || 'YT Tools Store'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">EasyPaisa Number:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">EasyPaisa Number:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                          <span className="font-mono font-black text-emerald-700 dark:text-emerald-400 text-sm">
                             {paymentAccounts?.easypaisa?.number || '0300 0000000'}
                           </span>
                           <button
@@ -760,7 +746,7 @@ export default function CheckoutModal() {
                           </button>
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#6b7280] dark:text-zinc-400 pt-1.5 border-t border-[#e8e1e1] dark:border-white/10">
+                      <p className="text-xs text-[#1f2937] dark:text-zinc-300 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
                         {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and enter Transaction ID (TID) below.'}
                       </p>
                     </div>
@@ -769,15 +755,15 @@ export default function CheckoutModal() {
                   {paymentMethod === 'jazzcash' && (
                     <div className="space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account Title:</span>
-                        <span className="font-extrabold text-[#0a0a0a] dark:text-white">
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account Title:</span>
+                        <span className="font-extrabold text-black dark:text-white">
                           {paymentAccounts?.jazzcash?.title || 'YT Tools Store'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">JazzCash Number:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">JazzCash Number:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-red-500 text-sm">
+                          <span className="font-mono font-black text-red-600 dark:text-red-400 text-sm">
                             {paymentAccounts?.jazzcash?.number || '0300 0000000'}
                           </span>
                           <button
@@ -790,7 +776,7 @@ export default function CheckoutModal() {
                           </button>
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#6b7280] dark:text-zinc-400 pt-1.5 border-t border-[#e8e1e1] dark:border-white/10">
+                      <p className="text-xs text-[#1f2937] dark:text-zinc-300 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
                         {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and enter Transaction ID.'}
                       </p>
                     </div>
@@ -799,22 +785,22 @@ export default function CheckoutModal() {
                   {paymentMethod === 'bank' && (
                     <div className="space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Bank Name:</span>
-                        <span className="font-extrabold text-[#0a0a0a] dark:text-white">
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Bank Name:</span>
+                        <span className="font-extrabold text-black dark:text-white">
                           {paymentAccounts?.bank?.bankName || 'Meezan Bank'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account Title:</span>
-                        <span className="font-extrabold text-[#0a0a0a] dark:text-white">
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account Title:</span>
+                        <span className="font-extrabold text-black dark:text-white">
                           {paymentAccounts?.bank?.accountTitle || 'YT Tools Store'}
                         </span>
                       </div>
                       {(paymentAccounts?.bank?.accountNumber || paymentAccounts?.bank?.iban) && (
                         <div className="flex items-center justify-between">
-                          <span className="text-[#6b7280] dark:text-zinc-400">Account / IBAN:</span>
+                          <span className="text-[#111827] dark:text-zinc-300 font-bold">Account / IBAN:</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-[#0a0a0a] dark:text-white font-bold">
+                            <span className="font-mono text-xs text-black dark:text-white font-extrabold">
                               {paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber}
                             </span>
                             <button
@@ -829,9 +815,9 @@ export default function CheckoutModal() {
                       )}
                       {paymentAccounts?.bank?.raastId && (
                         <div className="flex items-center justify-between">
-                          <span className="text-[#6b7280] dark:text-zinc-400">Raast ID:</span>
+                          <span className="text-[#111827] dark:text-zinc-300 font-bold">Raast ID:</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-blue-500">
+                            <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
                               {paymentAccounts.bank.raastId}
                             </span>
                             <button
@@ -851,9 +837,9 @@ export default function CheckoutModal() {
                     <div className="space-y-2 text-xs">
                       {paymentAccounts?.binance?.payId && (
                         <div className="flex items-center justify-between">
-                          <span className="text-[#6b7280] dark:text-zinc-400">Binance Pay ID:</span>
+                          <span className="text-[#111827] dark:text-zinc-300 font-bold">Binance Pay ID:</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-amber-500 font-bold">
+                            <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
                               {paymentAccounts.binance.payId}
                             </span>
                             <button
@@ -868,9 +854,9 @@ export default function CheckoutModal() {
                       )}
                       {paymentAccounts?.binance?.usdtTrc20 && (
                         <div className="flex items-center justify-between">
-                          <span className="text-[#6b7280] dark:text-zinc-400">USDT (TRC20):</span>
+                          <span className="text-[#111827] dark:text-zinc-300 font-bold">USDT (TRC20):</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] text-[#0a0a0a] dark:text-white truncate max-w-[170px]">
+                            <span className="font-mono text-[11px] text-black dark:text-white font-bold truncate max-w-[170px]">
                               {paymentAccounts.binance.usdtTrc20}
                             </span>
                             <button
@@ -894,13 +880,13 @@ export default function CheckoutModal() {
                   <span className="w-5 h-5 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black">
                     3
                   </span>
-                  <span>Payment Verification (TID & Screenshot Required)</span>
+                  <span>Payment Verification (TID &amp; Screenshot Required)</span>
                 </h4>
 
                 {/* Mandatory TID Input */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                    Transaction ID (TID) / Sender Info <span className="text-red-500 font-bold">* (Required)</span>
+                  <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
+                    Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
                   </label>
                   <input
                     type="text"
@@ -908,22 +894,22 @@ export default function CheckoutModal() {
                     placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: +92 300 1234567"
                     value={transactionId}
                     onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium"
                   />
                 </div>
 
                 {/* Mandatory Receipt Screenshot Upload */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400">
-                      Payment Screenshot / Receipt <span className="text-red-500 font-bold">* (Required)</span>
+                    <label className="text-[11px] font-bold text-[#111827] dark:text-zinc-200">
+                      Payment Screenshot / Receipt <span className="text-red-700 font-bold">* (Required)</span>
                     </label>
                     {paymentProofUrl ? (
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> Attached
+                      <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Attached
                       </span>
                     ) : (
-                      <span className="text-[10px] text-red-500 font-bold">
+                      <span className="text-[11px] text-red-700 font-bold">
                         Screenshot Required
                       </span>
                     )}
@@ -954,7 +940,7 @@ export default function CheckoutModal() {
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             Screenshot Uploaded Successfully
                           </span>
-                          <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 block mt-0.5">
+                          <span className="text-[11px] text-[#1f2937] dark:text-zinc-300 font-medium block mt-0.5">
                             Proof image attached to your order
                           </span>
                         </div>
@@ -963,7 +949,7 @@ export default function CheckoutModal() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#1a1a26] hover:bg-[#f0fdf4] text-xs font-bold text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 transition cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#1a1a26] hover:bg-[#f0fdf4] text-xs font-bold text-[#111827] dark:text-zinc-200 border border-[#d1c7c7] dark:border-white/10 transition cursor-pointer"
                       >
                         Change
                       </button>
@@ -974,7 +960,7 @@ export default function CheckoutModal() {
                       type="button"
                       disabled={uploadingReceipt}
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-[#660000]/40 dark:border-[#ff4d4d]/40 hover:border-[#660000] dark:hover:border-[#ff4d4d] bg-[#660000]/[0.02] dark:bg-[#14141e] hover:bg-[#660000]/[0.05] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 group"
+                      className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-[#660000]/50 dark:border-[#ff4d4d]/50 hover:border-[#660000] dark:hover:border-[#ff4d4d] bg-[#660000]/[0.03] dark:bg-[#14141e] hover:bg-[#660000]/[0.06] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 group"
                     >
                       {uploadingReceipt ? (
                         <>
@@ -986,10 +972,10 @@ export default function CheckoutModal() {
                           <div className="w-9 h-9 rounded-full bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] flex items-center justify-center group-hover:scale-105 transition-transform">
                             <Upload className="w-4 h-4" />
                           </div>
-                          <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">
+                          <span className="text-xs font-bold text-[#111827] dark:text-white">
                             Upload Payment Screenshot (Required)
                           </span>
-                          <span className="text-[10px] text-red-500 font-semibold">
+                          <span className="text-[11px] text-red-700 font-bold">
                             ⚠️ Please upload payment screenshot to confirm order
                           </span>
                         </>
@@ -998,7 +984,7 @@ export default function CheckoutModal() {
                   )}
 
                   {uploadError && (
-                    <p className="mt-1 text-[11px] text-red-500 font-medium">
+                    <p className="mt-1 text-[11px] text-red-600 font-bold">
                       {uploadError}
                     </p>
                   )}
@@ -1015,16 +1001,16 @@ export default function CheckoutModal() {
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Confirming & Placing Order...</span>
+                      <span>Confirming &amp; Placing Order...</span>
                     </>
                   ) : (
                     <>
                       <Zap className="w-4 h-4 fill-current text-amber-300" />
-                      <span>Confirm & Place Order</span>
+                      <span>Confirm &amp; Place Order</span>
                     </>
                   )}
                 </button>
-                <p className="text-[11px] text-center text-[#6b7280] dark:text-zinc-400 mt-2.5">
+                <p className="text-[11px] text-center text-[#111827] dark:text-zinc-300 font-semibold mt-2.5">
                   🔒 Your Order ID &amp; Confirmation Ticket will appear immediately upon confirmation.
                 </p>
               </div>

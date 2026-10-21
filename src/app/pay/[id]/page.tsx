@@ -234,6 +234,7 @@ export default function DirectPaymentInvoicePage() {
           transactionId: transactionId.trim(),
           paymentProofUrl: paymentProofUrl.trim(),
           paymentStatus: 'paid',
+          status: order.status === 'completed' ? 'completed' : 'pending',
         }),
       });
 
@@ -286,71 +287,106 @@ export default function DirectPaymentInvoicePage() {
           </div>
         ) : isAlreadyPaid ? (
           /* Already Paid Receipt Card */
-          <div className="bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-3xl p-6 sm:p-9 shadow-2xl text-center space-y-5 animate-in fade-in">
+          <div className="bg-white dark:bg-[#0c0c12] border border-[#d1c7c7] dark:border-white/10 rounded-3xl p-6 sm:p-9 shadow-2xl text-center space-y-5 animate-in fade-in">
             <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto shadow-md">
               <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
             </div>
-            <div>
-              <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
-                Payment Verified &amp; Received
-              </span>
-              <h1 className="text-2xl font-black text-[#0a0a0a] dark:text-white mt-2">
-                Payment Completed!
-              </h1>
-              <p className="text-xs text-[#6b7280] dark:text-zinc-400 mt-1">
-                Your payment for Order <strong className="font-mono text-[#660000] dark:text-[#ff6b6b]">{order.id}</strong> has been logged. Our team is activating your tool access.
-              </p>
-            </div>
 
-            <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 text-left text-xs space-y-2">
+            {order.status === 'completed' ? (
+              /* Completed Order View */
+              <div>
+                <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                  Payment Verified &amp; Completed
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#0a0a0a] dark:text-white mt-2">
+                  Thank You For Choosing Our Store
+                </h1>
+                <p className="text-xs sm:text-sm text-[#111827] dark:text-zinc-200 mt-1.5 max-w-md mx-auto font-medium">
+                  Your payment has been received successfully. We appreciate your business and trust in our digital tools!
+                </p>
+              </div>
+            ) : (
+              /* Pending Order View */
+              <div>
+                <span className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-wider border border-amber-500/30">
+                  Payment Submitted • Awaiting Verification
+                </span>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#0a0a0a] dark:text-white mt-2">
+                  Payment Submitted Successfully!
+                </h1>
+                <p className="text-xs sm:text-sm text-[#111827] dark:text-zinc-200 mt-1.5 max-w-md mx-auto font-medium">
+                  Please wait, your order has been placed and is currently being verified. Our team will contact you via WhatsApp / Email shortly.
+                </p>
+              </div>
+            )}
+
+            <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 text-left text-xs space-y-2">
               <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-zinc-400">Customer:</span>
-                <span className="font-bold text-[#0a0a0a] dark:text-white">{order.customerName}</span>
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Order ID:</span>
+                <span className="font-mono font-black text-[#660000] dark:text-[#ff6b6b] text-sm">{order.id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-zinc-400">Payment Method:</span>
-                <span className="font-extrabold uppercase text-[#0a0a0a] dark:text-white">{order.paymentMethod}</span>
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Customer:</span>
+                <span className="font-bold text-black dark:text-white">{order.customerName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6b7280] dark:text-zinc-400">Transaction ID (TID):</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{order.transactionId}</span>
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Payment Method:</span>
+                <span className="font-extrabold uppercase text-black dark:text-white">{order.paymentMethod}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Transaction ID (TID):</span>
+                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{order.transactionId}</span>
               </div>
               {order.paymentProofUrl && (
-                <div className="flex justify-between pt-1 border-t border-[#f0ebeb] dark:border-white/10">
-                  <span className="text-[#6b7280] dark:text-zinc-400">Receipt Screenshot:</span>
+                <div className="flex justify-between pt-1 border-t border-[#d1c7c7] dark:border-white/10">
+                  <span className="text-[#111827] dark:text-zinc-300 font-bold">Receipt Screenshot:</span>
                   <a
                     href={order.paymentProofUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                    className="inline-flex items-center gap-1 font-bold text-blue-700 dark:text-blue-400 hover:underline text-[11px]"
                   >
                     <span>View Screenshot</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               )}
-              <div className="flex justify-between pt-2 border-t border-[#f0ebeb] dark:border-white/10">
-                <span className="font-bold text-[#0a0a0a] dark:text-white">Amount Paid:</span>
+              <div className="flex justify-between pt-2 border-t border-[#d1c7c7] dark:border-white/10">
+                <span className="font-bold text-[#111827] dark:text-zinc-200">Amount Paid:</span>
                 <span className="font-black text-[#660000] dark:text-[#ff6b6b] text-base">
                   {formatPrice(order.totalPKR, order.totalUSD)}
                 </span>
               </div>
             </div>
 
-            <div className="pt-2 flex flex-col sm:flex-row gap-2">
-              <Link
-                href={`/track-order?id=${encodeURIComponent(order.id)}`}
-                className="flex-1 py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#660000]/25 transition active:scale-95"
-              >
-                <span>Track Live Order Status →</span>
-              </Link>
-              <Link
-                href="/"
-                className="py-3.5 px-6 rounded-full bg-[#faf8f8] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-xs font-bold text-[#0a0a0a] dark:text-white border border-[#e8e1e1] dark:border-white/10 transition"
-              >
-                Back to Store
-              </Link>
-            </div>
+            {order.status === 'completed' ? (
+              /* Completed: Clean Return to Store CTA */
+              <div className="pt-2">
+                <Link
+                  href="/"
+                  className="w-full py-4 px-6 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-[#660000]/25 transition active:scale-95 cursor-pointer"
+                >
+                  <Store className="w-4 h-4" />
+                  <span>Return to Store</span>
+                </Link>
+              </div>
+            ) : (
+              /* Pending: Track Live Order Status & Return to Store */
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                <Link
+                  href={`/track-order?id=${encodeURIComponent(order.id)}`}
+                  className="flex-1 py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#660000]/25 transition active:scale-95"
+                >
+                  <span>Track Live Order Status →</span>
+                </Link>
+                <Link
+                  href="/"
+                  className="py-3.5 px-6 rounded-full bg-[#faf8f8] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-xs font-bold text-[#0a0a0a] dark:text-white border border-[#d1c7c7] dark:border-white/10 transition"
+                >
+                  Return to Store
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           /* Unpaid Invoice Payment Form */
@@ -364,15 +400,15 @@ export default function DirectPaymentInvoicePage() {
               <h1 className="text-2xl font-black text-[#0a0a0a] dark:text-white tracking-tight">
                 Complete Your Payment
               </h1>
-              <p className="text-xs text-[#6b7280] dark:text-zinc-400 mt-1">
+              <p className="text-xs text-[#111827] dark:text-zinc-300 mt-1 font-medium">
                 Order <strong className="font-mono text-[#660000] dark:text-[#ff6b6b]">{order.id}</strong> issued for{' '}
                 <strong className="text-[#0a0a0a] dark:text-white">{order.customerName}</strong>
               </p>
             </div>
 
             {/* Itemized Order Breakdown */}
-            <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 space-y-3">
-              <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 uppercase font-black tracking-wider block">
+            <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 space-y-3">
+              <span className="text-[10px] text-[#111827] dark:text-zinc-300 uppercase font-black tracking-wider block">
                 Products &amp; Pricing Breakdown
               </span>
               <div className="space-y-2">
@@ -381,7 +417,7 @@ export default function DirectPaymentInvoicePage() {
                     <div className="flex items-center gap-2">
                       <Package className="w-3.5 h-3.5 text-[#660000] dark:text-[#ff6b6b] shrink-0" />
                       <span className="font-bold text-[#0a0a0a] dark:text-white">
-                        {item.title} <span className="text-[#6b7280] dark:text-zinc-400 font-normal">x{item.quantity}</span>
+                        {item.title} <span className="text-[#374151] dark:text-zinc-300 font-bold">x{item.quantity}</span>
                       </span>
                     </div>
                     <span className="font-bold text-[#0a0a0a] dark:text-white">
@@ -391,7 +427,7 @@ export default function DirectPaymentInvoicePage() {
                 ))}
               </div>
 
-              <div className="pt-3 border-t border-[#f0ebeb] dark:border-white/10 flex items-center justify-between">
+              <div className="pt-3 border-t border-[#d1c7c7] dark:border-white/10 flex items-center justify-between">
                 <span className="text-xs font-black uppercase text-[#0a0a0a] dark:text-white">Total Amount Due:</span>
                 <span className="text-xl font-black text-[#660000] dark:text-[#ff6b6b]">
                   {formatPrice(order.totalPKR, order.totalUSD)}
@@ -423,32 +459,32 @@ export default function DirectPaymentInvoicePage() {
                         onClick={() => setPaymentMethod(m.id)}
                         className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                           isSelected
-                            ? `${m.activeBg} ${m.activeBorder} text-[#0a0a0a] dark:text-white shadow-sm`
-                            : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
+                            ? `${m.activeBg} ${m.activeBorder} text-[#0a0a0a] dark:text-white shadow-sm ring-1 ring-current`
+                            : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#d1c7c7] dark:border-white/10 text-[#111827] hover:text-[#0a0a0a] dark:text-zinc-200 dark:hover:text-white'
                         }`}
                       >
                         <Icon className={`w-4 h-4 mb-2 ${m.color}`} />
-                        <span className="text-xs font-bold block">{m.name}</span>
-                        <span className="text-[10px] text-[#9ca3af]">{m.sub}</span>
+                        <span className="text-xs font-black block">{m.name}</span>
+                        <span className="text-[10px] text-[#374151] dark:text-zinc-400 font-semibold">{m.sub}</span>
                       </button>
                     );
                   })}
                 </div>
 
                 {/* Account Details Box */}
-                <div className="p-4 rounded-xl bg-[#faf8f8] dark:bg-[#14141c] border border-[#e8e1e1] dark:border-white/10 space-y-2 text-xs">
+                <div className="p-4 rounded-xl bg-[#faf8f8] dark:bg-[#14141c] border border-[#d1c7c7] dark:border-white/10 space-y-2 text-xs">
                   {paymentMethod === 'easypaisa' && (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account Title:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account Title:</span>
                         <span className="font-extrabold text-[#0a0a0a] dark:text-white">
                           {paymentAccounts?.easypaisa?.title || 'YT Tools Store'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">EasyPaisa Number:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">EasyPaisa Number:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                          <span className="font-mono font-black text-emerald-700 dark:text-emerald-400 text-sm">
                             {paymentAccounts?.easypaisa?.number || '0300 0000000'}
                           </span>
                           <button
@@ -456,11 +492,11 @@ export default function DirectPaymentInvoicePage() {
                             onClick={() => copyToClipboard(paymentAccounts?.easypaisa?.number || '', 'ep')}
                             className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] transition cursor-pointer"
                           >
-                            {copiedField === 'ep' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedField === 'ep' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-[#111827] dark:text-zinc-200" />}
                           </button>
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#6b7280] dark:text-zinc-400 pt-1.5 border-t border-[#e8e1e1] dark:border-white/10">
+                      <p className="text-[11px] text-[#1f2937] dark:text-zinc-200 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
                         {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and enter Transaction ID (TID) below.'}
                       </p>
                     </>
@@ -469,15 +505,15 @@ export default function DirectPaymentInvoicePage() {
                   {paymentMethod === 'jazzcash' && (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account Title:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account Title:</span>
                         <span className="font-extrabold text-[#0a0a0a] dark:text-white">
                           {paymentAccounts?.jazzcash?.title || 'YT Tools Store'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">JazzCash Number:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">JazzCash Number:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-red-500 text-sm">
+                          <span className="font-mono font-black text-red-600 dark:text-red-400 text-sm">
                             {paymentAccounts?.jazzcash?.number || '0300 0000000'}
                           </span>
                           <button
@@ -485,11 +521,11 @@ export default function DirectPaymentInvoicePage() {
                             onClick={() => copyToClipboard(paymentAccounts?.jazzcash?.number || '', 'jc')}
                             className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] transition cursor-pointer"
                           >
-                            {copiedField === 'jc' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedField === 'jc' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-[#111827] dark:text-zinc-200" />}
                           </button>
                         </div>
                       </div>
-                      <p className="text-[11px] text-[#6b7280] dark:text-zinc-400 pt-1.5 border-t border-[#e8e1e1] dark:border-white/10">
+                      <p className="text-[11px] text-[#1f2937] dark:text-zinc-200 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
                         {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and enter Transaction ID.'}
                       </p>
                     </>
@@ -498,21 +534,21 @@ export default function DirectPaymentInvoicePage() {
                   {paymentMethod === 'bank' && (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Bank Name:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Bank Name:</span>
                         <span className="font-extrabold text-[#0a0a0a] dark:text-white">
                           {paymentAccounts?.bank?.bankName || 'Meezan Bank'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account Title:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account Title:</span>
                         <span className="font-extrabold text-[#0a0a0a] dark:text-white">
                           {paymentAccounts?.bank?.accountTitle || 'YT Tools Store'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Account / IBAN:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Account / IBAN:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[#0a0a0a] dark:text-white">
+                          <span className="font-mono font-black text-[#0a0a0a] dark:text-white">
                             {paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber}
                           </span>
                           <button
@@ -520,7 +556,7 @@ export default function DirectPaymentInvoicePage() {
                             onClick={() => copyToClipboard(paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber || '', 'iban')}
                             className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] transition cursor-pointer"
                           >
-                            {copiedField === 'iban' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedField === 'iban' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-[#111827] dark:text-zinc-200" />}
                           </button>
                         </div>
                       </div>
@@ -530,9 +566,9 @@ export default function DirectPaymentInvoicePage() {
                   {paymentMethod === 'binance' && (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Binance Pay ID:</span>
+                        <span className="text-[#111827] dark:text-zinc-300 font-bold">Binance Pay ID:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-amber-500 font-bold">
+                          <span className="font-mono text-amber-600 dark:text-amber-400 font-black text-sm">
                             {paymentAccounts?.binance?.payId}
                           </span>
                           <button
@@ -540,7 +576,7 @@ export default function DirectPaymentInvoicePage() {
                             onClick={() => copyToClipboard(paymentAccounts?.binance?.payId || '', 'payid')}
                             className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] transition cursor-pointer"
                           >
-                            {copiedField === 'payid' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedField === 'payid' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-[#111827] dark:text-zinc-200" />}
                           </button>
                         </div>
                       </div>
@@ -552,7 +588,7 @@ export default function DirectPaymentInvoicePage() {
               {/* Step 2: Transaction ID Input */}
               <div>
                 <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
-                  Step 2: Transaction ID (TID) <span className="text-red-500">* (Required)</span>
+                  Step 2: Transaction ID (TID) <span className="text-red-600 dark:text-red-400">* (Required)</span>
                 </label>
                 <input
                   type="text"
@@ -560,14 +596,14 @@ export default function DirectPaymentInvoicePage() {
                   placeholder="e.g. TID: 01928374652 or Sender Mobile Number"
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs text-[#0a0a0a] dark:text-white placeholder-[#9ca3af] focus:outline-none transition"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs font-medium text-[#0a0a0a] dark:text-white placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition"
                 />
               </div>
 
               {/* Step 3: Receipt Screenshot Upload */}
               <div>
                 <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
-                  Step 3: Payment Screenshot / Proof <span className="text-red-500">* (Required)</span>
+                  Step 3: Payment Screenshot / Proof <span className="text-red-600 dark:text-red-400">* (Required)</span>
                 </label>
 
                 <input
@@ -593,7 +629,7 @@ export default function DirectPaymentInvoicePage() {
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           Screenshot Attached Successfully
                         </span>
-                        <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">
+                        <span className="text-[10px] text-[#111827] dark:text-zinc-300 font-semibold">
                           Proof linked to Order #{order.id}
                         </span>
                       </div>
@@ -601,7 +637,7 @@ export default function DirectPaymentInvoicePage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#1a1a26] text-xs font-bold text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 transition cursor-pointer"
+                      className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#1a1a26] text-xs font-bold text-[#1f2937] dark:text-zinc-200 border border-[#d1c7c7] dark:border-white/10 transition cursor-pointer"
                     >
                       Change
                     </button>
@@ -626,7 +662,7 @@ export default function DirectPaymentInvoicePage() {
                         <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">
                           Click to Upload Payment Screenshot
                         </span>
-                        <span className="text-[10px] text-red-500 font-semibold">
+                        <span className="text-[10px] text-red-600 dark:text-red-400 font-bold">
                           ⚠️ Screenshot upload is mandatory before submitting
                         </span>
                       </>
@@ -635,7 +671,7 @@ export default function DirectPaymentInvoicePage() {
                 )}
 
                 {uploadError && (
-                  <p className="mt-1 text-[11px] text-red-500 font-medium">
+                  <p className="mt-1 text-[11px] text-red-600 dark:text-red-400 font-semibold">
                     {uploadError}
                   </p>
                 )}
@@ -660,8 +696,8 @@ export default function DirectPaymentInvoicePage() {
                     </>
                   )}
                 </button>
-                <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-[#9ca3af]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-[#111827] dark:text-zinc-300 font-semibold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Secure SSL transaction with 100% genuine replacement warranty</span>
                 </div>
               </div>

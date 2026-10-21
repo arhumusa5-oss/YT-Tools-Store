@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
       totalUSD,
       note,
       orderId,
+      status,
     } = body;
 
     if (!customerName || !customerWhatsApp || !items || items.length === 0) {
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: 'easypaisa',
       transactionId: '',
       paymentProofUrl: '',
-      status: 'pending',
+      status: status === 'completed' ? 'completed' : 'pending',
       isDirectInvoice: true,
       paymentStatus: 'unpaid',
       adminNotes: note ? `Invoice Note: ${note}` : undefined,

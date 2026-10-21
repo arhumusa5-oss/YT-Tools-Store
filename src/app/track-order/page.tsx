@@ -158,7 +158,7 @@ function TrackOrderContent() {
         <h1 className="text-2xl sm:text-3xl font-black text-[#0a0a0a] dark:text-white tracking-tight">
           Track Your Order Status
         </h1>
-        <p className="mt-2 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-400 max-w-md mx-auto">
+        <p className="mt-2 text-xs sm:text-sm text-[#111827] dark:text-zinc-200 max-w-md mx-auto font-medium">
           Enter your Order ID (e.g. #2505) or WhatsApp number to check real-time activation progress and dispatch notes.
         </p>
       </div>
@@ -167,14 +167,14 @@ function TrackOrderContent() {
       <div className="relative mb-8 z-10">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#9ca3af] absolute left-4 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#4b5563] dark:text-zinc-400 absolute left-4 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Enter Order ID (e.g. #2505) or WhatsApp..."
-              className="w-full pl-11 pr-4 py-3.5 bg-[#ffffff] dark:bg-[#12121a] border-2 border-[#e5e0e0] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] rounded-2xl text-[#0a0a0a] dark:text-white text-sm placeholder-[#9ca3af] focus:outline-none transition shadow-sm font-medium"
+              className="w-full pl-11 pr-4 py-3.5 bg-[#ffffff] dark:bg-[#12121a] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] rounded-2xl text-[#0a0a0a] dark:text-white text-sm placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition shadow-sm font-semibold"
             />
           </div>
           <button
@@ -208,13 +208,13 @@ function TrackOrderContent() {
           {/* Top Row: Reference & Status */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#f0ebeb] dark:border-white/10">
             <div>
-              <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 uppercase font-black tracking-wider block">
+              <span className="text-[10px] text-[#111827] dark:text-zinc-300 uppercase font-black tracking-wider block">
                 OFFICIAL ORDER REFERENCE
               </span>
               <span className="text-2xl font-mono font-black text-[#0a0a0a] dark:text-white tracking-wider">
                 {order.id}
               </span>
-              <p className="text-xs text-[#6b7280] dark:text-zinc-400 mt-0.5">
+              <p className="text-xs text-[#1f2937] dark:text-zinc-300 mt-0.5 font-semibold">
                 Placed on {new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
                 {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
@@ -240,7 +240,7 @@ function TrackOrderContent() {
                   <Check className="w-4 h-4 stroke-[3]" />
                 </div>
                 <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Order Received</span>
-                <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">Details logged</span>
+                <span className="text-[10px] text-[#374151] dark:text-zinc-300 font-semibold">Details logged</span>
               </div>
 
               {/* Step 2: Running / Processing */}
@@ -249,17 +249,17 @@ function TrackOrderContent() {
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition ${
                     order.status === 'processing' || order.status === 'completed'
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                      : 'bg-[#f4efef] dark:bg-[#1a1a26] text-[#9ca3af] border border-[#e8e1e1] dark:border-white/10'
+                      : 'bg-[#f4efef] dark:bg-[#1a1a26] text-[#6b7280] border border-[#e8e1e1] dark:border-white/10'
                   }`}
                 >
                   {order.status === 'processing' || order.status === 'completed' ? (
                     <Check className="w-4 h-4 stroke-[3]" />
                   ) : (
-                    <Clock className="w-4 h-4 text-[#9ca3af]" />
+                    <Clock className="w-4 h-4 text-[#6b7280]" />
                   )}
                 </div>
                 <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Running / In Progress</span>
-                <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">Verifying TID &amp; Setup</span>
+                <span className="text-[10px] text-[#374151] dark:text-zinc-300 font-semibold">Verifying TID &amp; Setup</span>
               </div>
 
               {/* Step 3: Delivered */}
@@ -268,22 +268,22 @@ function TrackOrderContent() {
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition ${
                     order.status === 'completed'
                       ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
-                      : 'bg-[#f4efef] dark:bg-[#1a1a26] text-[#9ca3af] border border-[#e8e1e1] dark:border-white/10'
+                      : 'bg-[#f4efef] dark:bg-[#1a1a26] text-[#6b7280] border border-[#e8e1e1] dark:border-white/10'
                   }`}
                 >
                   {order.status === 'completed' ? (
                     <Check className="w-4 h-4 stroke-[3]" />
                   ) : (
-                    <Zap className="w-4 h-4 text-[#9ca3af]" />
+                    <Zap className="w-4 h-4 text-[#6b7280]" />
                   )}
                 </div>
                 <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Delivered</span>
-                <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">Tool Access Active</span>
+                <span className="text-[10px] text-[#374151] dark:text-zinc-300 font-semibold">Tool Access Active</span>
               </div>
             </div>
 
             {/* Status Description Box */}
-            <div className="mt-4 p-3.5 rounded-2xl bg-[#f5efef] dark:bg-[#181822] border border-[#e8e1e1] dark:border-white/10 text-center text-xs font-medium text-[#1f2937] dark:text-zinc-200">
+            <div className="mt-4 p-3.5 rounded-2xl bg-[#f5efef] dark:bg-[#181822] border border-[#e8e1e1] dark:border-white/10 text-center text-xs font-bold text-[#111827] dark:text-zinc-100">
               {getStatusBadge(order.status).desc}
             </div>
           </div>
@@ -298,7 +298,7 @@ function TrackOrderContent() {
                 <h4 className="text-xs sm:text-sm font-bold text-[#0a0a0a] dark:text-white">
                   Email Status Notifications
                 </h4>
-                <p className="text-[11px] text-[#6b7280] dark:text-zinc-400 mt-0.5">
+                <p className="text-[11px] text-[#1f2937] dark:text-zinc-300 font-medium mt-0.5">
                   Get instant email alerts when our team changes your order status (Processing, Delivered, or Notes).
                 </p>
               </div>
@@ -306,13 +306,13 @@ function TrackOrderContent() {
 
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <div className="relative flex-1">
-                <Mail className="w-3.5 h-3.5 text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail className="w-3.5 h-3.5 text-[#4b5563] dark:text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="Enter your email for notifications..."
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#ffffff] dark:bg-[#0c0c10] border-2 border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs text-[#0a0a0a] dark:text-white placeholder-[#9ca3af] focus:outline-none font-medium"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#ffffff] dark:bg-[#0c0c10] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs text-[#0a0a0a] dark:text-white placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none font-semibold"
                 />
               </div>
               <button
