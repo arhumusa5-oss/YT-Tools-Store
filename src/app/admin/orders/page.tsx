@@ -63,9 +63,9 @@ export default function AdminOrdersPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [invoiceError, setInvoiceError] = useState('');
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await fetch('/api/orders');
       const data = await res.json();
       if (data.success) {
@@ -79,7 +79,7 @@ export default function AdminOrdersPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -107,6 +107,21 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     fetchOrders();
     fetchProductsAndSettings();
+
+    // Auto-refresh orders every 12 seconds in the background so payment proof & TIDs appear live
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 12000);
+
+    const onFocus = () => {
+      fetchOrders(true);
+    };
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   const openCreateModal = () => {
@@ -368,7 +383,8 @@ export default function AdminOrdersPage() {
           </button>
 
           <button
-            onClick={fetchOrders}
+            type="button"
+            onClick={() => fetchOrders()}
             className="px-3.5 py-2.5 rounded-xl bg-[#161926] hover:bg-[#202538] text-zinc-300 hover:text-white border border-[#2B3147] text-xs font-semibold transition cursor-pointer"
           >
             Refresh
