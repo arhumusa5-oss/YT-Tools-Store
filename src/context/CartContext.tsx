@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, OrderItem, Order, StoreSettings } from '@/lib/types';
+import { useAuth } from './AuthContext';
 
 export interface CartNotification {
   id: string;
@@ -44,7 +45,9 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [cart, setCart] = useState<OrderItem[]>([]);
+  const [initialCartLoaded, setInitialCartLoaded] = useState(false);
   const [currency, setCurrency] = useState<'PKR' | 'USD'>('PKR');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartNotification, setCartNotification] = useState<CartNotification | null>(null);
@@ -56,7 +59,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
-  // Load cart, currency, and theme from localStorage
+  // Load initial cart, currency, and theme from localStorage
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem('yt_cart');
@@ -79,6 +82,62 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     fetchSettings();
   }, []);
 
+  // Bi-directional Server Cart Sync: Sync cart with user's Gmail account across all devices
+  useEffect(() => {
+    let active = true;
+
+    async function syncUserCartFromServer() {
+      if (!user?.email) {
+        setInitialCartLoaded(true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/user/cart?email=${encodeURIComponent(user.email)}`);
+        const data = await res.json();
+        if (active && data.success && Array.isArray(data.cart)) {
+          if (data.cart.length > 0) {
+            setCart((localCart) => {
+              // Merge any existing local items with server items
+              const merged = [...data.cart];
+              for (const item of localCart) {
+                const idx = merged.findIndex((m) => m.productId === item.productId);
+                if (idx !== -1) {
+                  merged[idx].quantity = Math.max(merged[idx].quantity, item.quantity);
+                } else {
+                  merged.push(item);
+                }
+              }
+              return merged;
+            });
+          } else {
+            // If user's account had 0 items on server but current local has items, sync them to server!
+            setCart((currentLocalCart) => {
+              if (currentLocalCart.length > 0) {
+                fetch('/api/user/cart', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: user.email, cart: currentLocalCart }),
+                }).catch(() => {});
+              }
+              return currentLocalCart;
+            });
+          }
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (active) setInitialCartLoaded(true);
+      }
+    }
+
+    syncUserCartFromServer();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.email]);
+
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
@@ -94,14 +153,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Save cart
+  // Save cart to localStorage AND sync to database when cart updates
   useEffect(() => {
     try {
       localStorage.setItem('yt_cart', JSON.stringify(cart));
+      // If user is signed in, sync cart to their Gmail account on the server
+      if (user?.email && initialCartLoaded) {
+        fetch('/api/user/cart', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, cart }),
+        }).catch(() => {});
+      }
     } catch {
       // ignore
     }
-  }, [cart]);
+  }, [cart, user?.email, initialCartLoaded]);
 
   // Save currency
   const handleSetCurrency = (c: 'PKR' | 'USD') => {

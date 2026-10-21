@@ -90,7 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = () => {
     setUser(null);
-    localStorage.removeItem('yt_user_session');
+    try {
+      localStorage.removeItem('yt_user_session');
+      localStorage.removeItem('yt_cart');
+    } catch {
+      // ignore
+    }
+    window.location.reload();
   };
 
   return (

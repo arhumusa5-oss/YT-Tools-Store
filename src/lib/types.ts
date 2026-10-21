@@ -118,6 +118,7 @@ export interface User {
   email: string;
   whatsappNumber: string;
   passwordHash: string;
+  cart?: OrderItem[];
   resetToken?: string;
   resetTokenExpiry?: number;
   createdAt: string;
@@ -129,5 +130,6 @@ export interface UserSession {
   name: string;
   email: string;
   whatsappNumber: string;
+  cart?: OrderItem[];
   token?: string;
 }

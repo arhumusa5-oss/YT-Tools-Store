@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { validateEmail, validateWhatsAppNumber } from '@/lib/validation';
 import { X, Mail, Lock, User as UserIcon, Phone, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function AuthModal() {
@@ -72,9 +73,24 @@ export default function AuthModal() {
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    // Strict Email Validation
+    const emailCheck = validateEmail(email);
+    if (!emailCheck.valid) {
+      setErrorMsg(emailCheck.error || 'Please enter a valid email address.');
+      return;
+    }
+
+    // Strict Mobile Number Validation (Maths only)
+    const phoneCheck = validateWhatsAppNumber(whatsappNumber);
+    if (!phoneCheck.valid) {
+      setErrorMsg(phoneCheck.error || 'Please enter a valid mobile number.');
+      return;
+    }
+
     setLoading(true);
 
-    const res = await signUp(name, whatsappNumber, email, password);
+    const res = await signUp(name, phoneCheck.cleanPhone || whatsappNumber, email, password);
     setLoading(false);
 
     if (!res.success) {
@@ -290,12 +306,19 @@ export default function AuthModal() {
                     <input
                       type="tel"
                       required
-                      placeholder="e.g. 0300 1234567"
+                      placeholder="e.g. 03001234567"
                       value={whatsappNumber}
-                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      onChange={(e) => {
+                        // Allow maths digits (0-9) and leading + only
+                        const val = e.target.value.replace(/[^0-9+]/g, '');
+                        setWhatsappNumber(val);
+                      }}
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#660000] dark:focus:border-[#ff4d4d] transition select-text font-mono"
                     />
                   </div>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Numbers only (e.g. 03001234567)
+                  </p>
                 </div>
 
                 <div>
@@ -307,12 +330,15 @@ export default function AuthModal() {
                     <input
                       type="email"
                       required
-                      placeholder="you@example.com"
+                      placeholder="you@gmail.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#660000] dark:focus:border-[#ff4d4d] transition select-text"
                     />
                   </div>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Valid email address (e.g. name@gmail.com)
+                  </p>
                 </div>
 
                 <div>

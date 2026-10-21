@@ -21,5 +21,6 @@ export function sanitizeUser(user: User): UserSession {
     name: user.name,
     email: user.email,
     whatsappNumber: user.whatsappNumber,
+    cart: user.cart || [],
   };
 }
