@@ -156,7 +156,9 @@ export default function RootLayout({
 
         <AuthProvider>
           <CartProvider>
-            {children}
+            <div className="relative z-10 flex flex-col min-h-screen">
+              {children}
+            </div>
             <CartDrawer />
             <CartToast />
             <AuthModal />

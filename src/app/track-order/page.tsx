@@ -161,7 +161,7 @@ function TrackOrderContent() {
       </div>
 
       {/* Search Input Box (Solid Opaque Surface) */}
-      <div className="relative mb-8">
+      <div className="relative mb-8 z-10">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-[#9ca3af] absolute left-4 top-1/2 -translate-y-1/2" />
@@ -200,7 +200,7 @@ function TrackOrderContent() {
 
       {/* Order Status Card (Solid Pure Opaque Surface - No Transparency) */}
       {order && (
-        <div className="bg-[#ffffff] dark:bg-[#0e0e14] border-2 border-[#e5e0e0] dark:border-white/15 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in transition-colors">
+        <div className="bg-[#ffffff] dark:bg-[#0e0e14] border-2 border-[#e5e0e0] dark:border-white/15 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in transition-colors relative z-10">
           
           {/* Top Row: Reference & Status */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#f0ebeb] dark:border-white/10">
@@ -371,7 +371,7 @@ function TrackOrderContent() {
 
 export default function TrackOrderPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#fcfbfb] dark:bg-[#060608] text-[#0a0a0a] dark:text-white transition-colors relative z-10">
+    <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
       <Navbar />
       <div className="flex-1">
         <Suspense fallback={<div className="text-center py-20 text-xs text-[#6b7280]">Loading order tracker...</div>}>
@@ -379,7 +379,6 @@ export default function TrackOrderPage() {
         </Suspense>
       </div>
       <Footer />
-      <OrderSuccessModal />
       <FloatingWhatsApp />
     </main>
   );
