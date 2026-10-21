@@ -553,6 +553,7 @@
     "supportEmail": "support@yttoolsstore.pk",
     "adminPin": "12388127",
     "currencyRateUSDToPKR": 280,
+    "nextOrderNumber": 2504,
     "paymentAccounts": {
       "easypaisa": {
         "title": "Your Account Title",

@@ -3,6 +3,7 @@ import { db } from './db';
 
 export interface EmailNotificationPayload {
   type: 'order' | 'add_to_cart';
+  orderId?: string;
   items: Array<{
     title: string;
     quantity: number;
@@ -14,6 +15,9 @@ export interface EmailNotificationPayload {
   customerName?: string;
   customerWhatsApp?: string;
   customerEmail?: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paymentProofUrl?: string;
   isRegisteredUser?: boolean;
   notes?: string;
 }
@@ -65,8 +69,9 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
     }
 
     const isOrder = payload.type === 'order';
+    const orderTag = payload.orderId ? ` [${payload.orderId}]` : '';
     const subject = isOrder
-      ? `🚨 [New Order Initiated] Rs ${(payload.totalPKR || 0).toLocaleString()} - YT Tools Store`
+      ? `🚨 [New Order${orderTag}] Rs ${(payload.totalPKR || 0).toLocaleString()} - YT Tools Store`
       : `🛒 [Add to Cart Alert] ${payload.items[0]?.title || 'Tool'} - YT Tools Store`;
 
     const nowFormatted = new Date().toLocaleString('en-US', {
@@ -102,7 +107,7 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
             YT Tools Store
           </h1>
           <p style="color: #ffcccc; margin: 6px 0 0; font-size: 13px; font-weight: 500;">
-            ${isOrder ? '🚨 Instant Order Notification' : '🛒 Customer Cart Activity Alert'}
+            ${isOrder ? `🚨 Instant Order Notification ${orderTag}` : '🛒 Customer Cart Activity Alert'}
           </p>
         </div>
 
@@ -112,7 +117,7 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
             <p style="margin: 0; font-size: 14px; font-weight: 700; color: ${isOrder ? '#15803d' : '#1f2937'};">
               ${
                 isOrder
-                  ? 'A customer has initiated checkout on WhatsApp!'
+                  ? `Order Confirmed${orderTag ? ` (${orderTag.trim()})` : ''} - Action Required!`
                   : 'A customer added an item to their cart!'
               }
             </p>
@@ -130,7 +135,7 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
             <p style="margin: 0; font-size: 13px; font-weight: 700; color: ${
               payload.isRegisteredUser ? '#1e40af' : '#4b5563'
             };">
-              👤 ${payload.isRegisteredUser ? 'Registered Customer Profile' : 'Guest Visitor (Not Signed In)'}
+              👤 ${payload.isRegisteredUser ? 'Registered Customer Profile' : 'Customer Delivery Details'}
             </p>
             ${
               payload.customerName
@@ -148,6 +153,34 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
                 : ''
             }
           </div>
+
+          ${
+            payload.paymentMethod || payload.transactionId
+              ? `
+          <!-- Payment Verification Details -->
+          <div style="margin-bottom: 20px; padding: 14px 18px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;">
+            <p style="margin: 0; font-size: 13px; font-weight: 700; color: #b45309;">
+              💳 Payment Verification
+            </p>
+            ${
+              payload.paymentMethod
+                ? `<p style="margin: 6px 0 0; font-size: 13px; color: #111;"><strong>Method:</strong> <span style="text-transform: uppercase; font-weight: bold;">${payload.paymentMethod}</span></p>`
+                : ''
+            }
+            ${
+              payload.transactionId
+                ? `<p style="margin: 4px 0 0; font-size: 13px; color: #111;"><strong>Transaction ID (TID):</strong> <span style="font-family: monospace; font-weight: bold; color: #047857;">${payload.transactionId}</span></p>`
+                : ''
+            }
+            ${
+              payload.paymentProofUrl
+                ? `<p style="margin: 6px 0 0; font-size: 13px; color: #111;"><strong>Receipt Screenshot:</strong> <a href="${payload.paymentProofUrl}" style="color: #2563eb; font-weight: bold;" target="_blank">View Receipt Image</a></p>`
+                : ''
+            }
+          </div>
+          `
+              : ''
+          }
 
           <!-- Items Table -->
           <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px;">

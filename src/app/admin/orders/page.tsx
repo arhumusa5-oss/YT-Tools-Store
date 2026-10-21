@@ -15,6 +15,9 @@ import {
   Mail,
   Save,
   Filter,
+  X,
+  Maximize2,
+  Image as ImageIcon,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 
@@ -25,6 +28,7 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [adminNotesMap, setAdminNotesMap] = useState<Record<string, string>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     try {
@@ -53,7 +57,7 @@ export default function AdminOrdersPage() {
   const handleStatusChange = async (id: string, newStatus: Order['status']) => {
     setUpdatingId(id);
     try {
-      const res = await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/orders/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -79,7 +83,7 @@ export default function AdminOrdersPage() {
     setUpdatingId(id);
     try {
       const order = orders.find((o) => o.id === id);
-      const res = await fetch(`/api/orders/${id}`, {
+      const res = await fetch(`/api/orders/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -295,16 +299,45 @@ export default function AdminOrdersPage() {
                       </span>
                     </div>
                     {order.paymentProofUrl && (
-                      <div className="pt-1">
-                        <a
-                          href={order.paymentProofUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] text-blue-400 hover:underline inline-flex items-center gap-1"
-                        >
-                          <span>View Proof Screenshot</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+                      <div className="pt-2 border-t border-[#1C1C22] space-y-1.5">
+                        <span className="text-[10px] text-zinc-500 font-bold block uppercase">
+                          Payment Screenshot / Receipt:
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage(order.paymentProofUrl || null)}
+                            className="relative w-16 h-12 rounded-lg overflow-hidden border border-[#2B3147] group bg-zinc-900 cursor-pointer shrink-0"
+                            title="Click to view full image"
+                          >
+                            <img
+                              src={order.paymentProofUrl}
+                              alt="Receipt"
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-200"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <Maximize2 className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          </button>
+                          <div className="text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage(order.paymentProofUrl || null)}
+                              className="text-blue-400 hover:text-blue-300 font-bold block text-left cursor-pointer"
+                            >
+                              Zoom Screenshot
+                            </button>
+                            <a
+                              href={order.paymentProofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] text-zinc-500 hover:text-zinc-300 inline-flex items-center gap-1"
+                            >
+                              <span>Open in new tab</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -342,7 +375,7 @@ export default function AdminOrdersPage() {
                   />
                   <button
                     onClick={() => handleSaveNotes(order.id)}
-                    className="px-3.5 py-2 rounded-xl bg-[#141418] hover:bg-[#1E1E26] text-zinc-200 text-xs font-bold border border-[#2B3147] flex items-center gap-1.5 transition shrink-0"
+                    className="px-3.5 py-2 rounded-xl bg-[#141418] hover:bg-[#1E1E26] text-zinc-200 text-xs font-bold border border-[#2B3147] flex items-center gap-1.5 transition shrink-0 cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>Save Note</span>
@@ -351,6 +384,46 @@ export default function AdminOrdersPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Lightbox Modal for Receipt Screenshot */}
+      {previewImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative max-w-4xl max-h-[90vh] bg-[#0c0c12] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-3 border-b border-zinc-800 flex items-center justify-between bg-black">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-emerald-400" />
+                <span>Payment Receipt Screenshot</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-auto flex items-center justify-center bg-[#07070a]">
+              <img
+                src={previewImage}
+                alt="Full Payment Screenshot"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg"
+              />
+            </div>
+            <div className="p-3 border-t border-zinc-800 flex items-center justify-between bg-black text-xs text-zinc-400">
+              <span>Click outside or press X to close</span>
+              <a
+                href={previewImage}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline inline-flex items-center gap-1 font-bold"
+              >
+                <span>Download / View Original</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
         </div>
       )}
     </div>

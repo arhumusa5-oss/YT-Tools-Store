@@ -184,7 +184,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs font-semibold text-zinc-300 mb-1">
               Official WhatsApp Number
@@ -193,7 +193,7 @@ export default function AdminSettingsPage() {
               type="text"
               value={settings.whatsappNumber}
               onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
-              placeholder="e.g. +92 334 3345095"
+              placeholder="e.g. +92 3702260919"
               className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
             />
           </div>
@@ -222,6 +222,22 @@ export default function AdminSettingsPage() {
               placeholder="Enter PIN / Password"
               className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs font-mono focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Next Order ID Counter (#)
+            </label>
+            <input
+              type="number"
+              value={settings.nextOrderNumber || 2504}
+              onChange={(e) => setSettings({ ...settings, nextOrderNumber: parseInt(e.target.value, 10) || 2504 })}
+              placeholder="2504"
+              className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs font-mono focus:outline-none"
+            />
+            <span className="text-[10px] text-zinc-500 mt-0.5 block">
+              Sequential (e.g. 2504 = #2504)
+            </span>
           </div>
         </div>
       </div>

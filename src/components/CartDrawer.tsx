@@ -18,6 +18,7 @@ export default function CartDrawer() {
     cartTotalPKR,
     cartTotalUSD,
     formatPrice,
+    openCheckoutWithItems,
     settings,
   } = useCart();
   const { user } = useAuth();
@@ -263,7 +264,20 @@ export default function CartDrawer() {
                 <span>Instant delivery directly via WhatsApp after payment confirmation.</span>
               </div>
 
-              {/* Checkout on WhatsApp Button */}
+              {/* Primary: Proceed to Checkout Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCartOpen(false);
+                  openCheckoutWithItems(cart);
+                }}
+                className="w-full py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#520000] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-[#660000]/25 transition-all hover:shadow-[#660000]/35 active:scale-95 cursor-pointer tracking-tight"
+              >
+                <span>Proceed to Checkout</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              {/* Direct WhatsApp Order Option */}
               <a
                 href={whatsappCheckoutUrl}
                 target="_blank"
@@ -293,17 +307,17 @@ export default function CartDrawer() {
                     // ignore
                   }
                 }}
-                className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/35 active:scale-95 cursor-pointer tracking-tight"
+                className="w-full py-2.5 px-3 rounded-full bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
               >
-                <WhatsAppIcon className="w-5 h-5 fill-current text-white shrink-0" />
-                <span>Checkout on WhatsApp</span>
+                <WhatsAppIcon className="w-4 h-4 fill-current text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Or Order Directly on WhatsApp</span>
               </a>
 
               {/* Continue Shopping button */}
               <button
                 type="button"
                 onClick={() => setIsCartOpen(false)}
-                className="w-full py-2.5 text-center text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#660000] dark:hover:text-white transition-colors cursor-pointer"
+                className="w-full py-2 text-center text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#660000] dark:hover:text-white transition-colors cursor-pointer"
               >
                 Continue Browsing Catalog →
               </button>

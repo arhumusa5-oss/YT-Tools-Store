@@ -70,6 +70,7 @@ export interface StoreSettings {
   supportEmail: string;
   adminPin: string;
   currencyRateUSDToPKR: number;
+  nextOrderNumber?: number;
   paymentAccounts: {
     easypaisa: {
       title: string;

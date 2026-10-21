@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { sendEmailNotification } from '@/lib/emailService';
 
 export async function GET() {
   try {
@@ -36,6 +37,31 @@ export async function POST(request: Request) {
       status: 'pending',
       adminNotes: body.adminNotes || '',
     });
+
+    // Send instant email notification to store owner in background
+    try {
+      sendEmailNotification({
+        type: 'order',
+        orderId: newOrder.id,
+        items: newOrder.items.map((i) => ({
+          title: i.title,
+          quantity: i.quantity,
+          pricePKR: i.pricePKR,
+          priceUSD: i.priceUSD,
+          image: i.image,
+        })),
+        totalPKR: newOrder.totalPKR,
+        customerName: newOrder.customerName,
+        customerWhatsApp: newOrder.customerWhatsApp,
+        customerEmail: newOrder.customerEmail,
+        paymentMethod: newOrder.paymentMethod,
+        transactionId: newOrder.transactionId,
+        paymentProofUrl: newOrder.paymentProofUrl,
+        notes: newOrder.channelOrDeliveryNote,
+      }).catch((err) => console.error('Order email error:', err));
+    } catch {
+      // ignore
+    }
 
     return NextResponse.json({ success: true, order: newOrder });
   } catch (error) {

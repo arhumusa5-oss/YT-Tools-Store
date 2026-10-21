@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   supportEmail: 'support@yttoolsstore.pk',
   adminPin: '12388127',
   currencyRateUSDToPKR: 280,
+  nextOrderNumber: 2504,
   paymentAccounts: {
     easypaisa: {
       title: 'Your Account Title',
@@ -334,13 +335,23 @@ export const db = {
 
   async getOrderById(id: string): Promise<Order | undefined> {
     const data = await getData();
-    return data.orders.find((o) => o.id === id || o.customerWhatsApp === id);
+    const cleanId = id.replace(/^#/, '').toLowerCase();
+    return data.orders.find((o) => {
+      const oClean = o.id.replace(/^#/, '').toLowerCase();
+      return o.id === id || oClean === cleanId || o.customerWhatsApp === id;
+    });
   },
 
   async createOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order> {
     const data = await getData();
-    const randomSuffix = Math.floor(10000 + Math.random() * 90000);
-    const id = `YT-${randomSuffix}`;
+    
+    // Sequential order number (e.g. starting at 2504 -> #2504, #2505...)
+    const currentNum = typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
+      ? data.settings.nextOrderNumber
+      : 2504;
+    const id = `#${currentNum}`;
+    data.settings.nextOrderNumber = currentNum + 1;
+
     const newOrder: Order = {
       ...orderData,
       id,
@@ -357,7 +368,10 @@ export const db = {
     adminNotes?: string
   ): Promise<Order | null> {
     const data = await getData();
-    const index = data.orders.findIndex((o) => o.id === id);
+    const cleanId = id.replace(/^#/, '').toLowerCase();
+    const index = data.orders.findIndex(
+      (o) => o.id === id || o.id.replace(/^#/, '').toLowerCase() === cleanId
+    );
     if (index === -1) return null;
 
     data.orders[index].status = status;
