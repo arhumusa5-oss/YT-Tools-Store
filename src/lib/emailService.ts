@@ -457,3 +457,135 @@ export async function sendPasswordResetEmail(recipientEmail: string, resetUrl: s
     return { success: false, error: String(err) };
   }
 }
+
+export async function sendCustomerOrderStatusNotification(
+  order: {
+    id: string;
+    customerName: string;
+    customerEmail: string;
+    status: string;
+    totalPKR: number;
+    totalUSD?: number;
+    items?: Array<{ title: string; quantity: number }>;
+    adminNotes?: string;
+  },
+  previousStatus?: string
+) {
+  try {
+    if (!order.customerEmail || !order.customerEmail.includes('@')) {
+      return { success: false, message: 'No valid customer email address.' };
+    }
+
+    const settings = await db.getSettings();
+    const alertConfig = settings.emailAlerts;
+    const resendKey = alertConfig?.resendApiKey?.trim() || process.env.RESEND_API_KEY || '';
+    const gmailUser = alertConfig?.gmailUser?.trim() || process.env.SMTP_USER || '';
+    const gmailPass = alertConfig?.gmailAppPassword?.trim() || process.env.SMTP_PASSWORD || '';
+
+    const statusBadge =
+      order.status === 'completed'
+        ? { label: 'Completed & Delivered ✅', color: '#10b981', bg: '#ecfdf5' }
+        : order.status === 'processing'
+        ? { label: 'In Progress / Processing ⚡', color: '#2563eb', bg: '#eff6ff' }
+        : order.status === 'cancelled'
+        ? { label: 'Cancelled ❌', color: '#ef4444', bg: '#fef2f2' }
+        : { label: 'Order Received & Pending ⏳', color: '#d97706', bg: '#fffbeb' };
+
+    const subject = `Order #${order.id} Status Update: ${statusBadge.label} - YT Tools Store`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yt-tools-store.vercel.app';
+    const trackingUrl = `${appUrl}/track-order?id=${encodeURIComponent(order.id)}`;
+
+    const itemsHtml = (order.items || [])
+      .map((i) => `<li style="margin-bottom: 4px;"><strong>${i.title}</strong> (Quantity: ${i.quantity})</li>`)
+      .join('');
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; background: #ffffff; color: #111827;">
+        <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #660000;">
+          <h1 style="color: #660000; margin: 0; font-size: 24px; font-weight: 900;">YT TOOLS STORE</h1>
+          <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">Official Order Status Notification</p>
+        </div>
+
+        <div style="padding: 24px 0;">
+          <p style="font-size: 15px; margin: 0 0 16px 0;">Dear <strong>${order.customerName || 'Valued Customer'}</strong>,</p>
+          <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 20px 0;">
+            The status of your order <strong>#${order.id}</strong> has been updated by our team.
+          </p>
+
+          <div style="text-align: center; margin: 24px 0; padding: 18px; border-radius: 12px; background: ${statusBadge.bg}; border: 1px solid ${statusBadge.color}40;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: bold; color: ${statusBadge.color}; display: block; margin-bottom: 4px;">Current Order Status</span>
+            <span style="font-size: 20px; font-weight: 900; color: ${statusBadge.color};">${statusBadge.label}</span>
+          </div>
+
+          ${
+            order.adminNotes
+              ? `
+              <div style="background: #f9fafb; border-left: 4px solid #660000; padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+                <strong style="font-size: 12px; color: #660000; text-transform: uppercase; display: block; margin-bottom: 4px;">Store Team Dispatch Note:</strong>
+                <p style="margin: 0; font-size: 13px; color: #1f2937; line-height: 1.5; white-space: pre-wrap;">${order.adminNotes}</p>
+              </div>
+            `
+              : ''
+          }
+
+          <div style="background: #faf8f8; border: 1px solid #e8e1e1; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+            <strong style="font-size: 13px; color: #111827; display: block; margin-bottom: 8px;">Order Details:</strong>
+            <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 13px; color: #4b5563;">
+              ${itemsHtml || `<li>Order #${order.id}</li>`}
+            </ul>
+            <div style="font-size: 14px; font-weight: bold; color: #660000; padding-top: 8px; border-top: 1px solid #e8e1e1;">
+              Total: Rs ${(order.totalPKR || 0).toLocaleString()}
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: 28px 0 10px 0;">
+            <a href="${trackingUrl}" style="background: #660000; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 30px; font-weight: bold; font-size: 14px; display: inline-block;">
+              Track Live Order Online →
+            </a>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #f3f4f6; padding-top: 16px; text-align: center; font-size: 11px; color: #9ca3af;">
+          <p style="margin: 0 0 6px 0;">Thank you for shopping with YT Tools Store.</p>
+          <p style="margin: 0;">Need instant support? Reply to this email or chat with us on WhatsApp.</p>
+        </div>
+      </div>
+    `;
+
+    if (resendKey) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'YT Tools Store <onboarding@resend.dev>',
+          to: order.customerEmail,
+          subject,
+          html,
+        }),
+      });
+      if (res.ok) return { success: true, provider: 'resend' };
+    }
+
+    if (gmailUser && gmailPass) {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: gmailUser, pass: gmailPass },
+      });
+      await transporter.sendMail({
+        from: `"YT Tools Store" <${gmailUser}>`,
+        to: order.customerEmail,
+        subject,
+        html,
+      });
+      return { success: true, provider: 'gmail_smtp' };
+    }
+
+    return { success: false, message: 'Email credentials not configured.' };
+  } catch (err: unknown) {
+    console.error('Customer status notification error:', err);
+    return { success: false, error: String(err) };
+  }
+}

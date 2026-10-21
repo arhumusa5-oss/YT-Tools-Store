@@ -346,15 +346,35 @@ export const db = {
     });
   },
 
-  async createOrder(orderData: Omit<Order, 'id' | 'createdAt'>): Promise<Order> {
+  async getNextOrderId(): Promise<string> {
+    const data = await getData();
+    const currentNum =
+      typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
+        ? data.settings.nextOrderNumber
+        : 2504;
+    return `#${currentNum}`;
+  },
+
+  async createOrder(orderData: Omit<Order, 'id' | 'createdAt'> & { id?: string }): Promise<Order> {
     const data = await getData();
     
-    // Sequential order number (e.g. starting at 2504 -> #2504, #2505...)
-    const currentNum = typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
-      ? data.settings.nextOrderNumber
-      : 2504;
-    const id = `#${currentNum}`;
-    data.settings.nextOrderNumber = currentNum + 1;
+    let id = orderData.id;
+    if (!id) {
+      // Sequential order number (e.g. starting at 2504 -> #2504, #2505...)
+      const currentNum = typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
+        ? data.settings.nextOrderNumber
+        : 2504;
+      id = `#${currentNum}`;
+      data.settings.nextOrderNumber = currentNum + 1;
+    } else {
+      const numMatch = id.match(/\d+/);
+      if (numMatch) {
+        const num = parseInt(numMatch[0], 10);
+        if (num >= (data.settings.nextOrderNumber || 2504)) {
+          data.settings.nextOrderNumber = num + 1;
+        }
+      }
+    }
 
     const newOrder: Order = {
       ...orderData,
@@ -382,6 +402,22 @@ export const db = {
     if (adminNotes !== undefined) {
       data.orders[index].adminNotes = adminNotes;
     }
+    await saveData(data);
+    return data.orders[index];
+  },
+
+  async updateOrder(id: string, updates: Partial<Order>): Promise<Order | null> {
+    const data = await getData();
+    const cleanId = id.replace(/^#/, '').toLowerCase();
+    const index = data.orders.findIndex(
+      (o) => o.id === id || o.id.replace(/^#/, '').toLowerCase() === cleanId
+    );
+    if (index === -1) return null;
+
+    data.orders[index] = {
+      ...data.orders[index],
+      ...updates,
+    };
     await saveData(data);
     return data.orders[index];
   },

@@ -47,6 +47,8 @@ export interface Order {
   paymentProofUrl?: string;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   adminNotes?: string;
+  isDirectInvoice?: boolean;
+  paymentStatus?: 'unpaid' | 'paid';
   createdAt: string;
 }
 
@@ -59,6 +61,7 @@ export interface Review {
   isVerifiedPurchase: boolean;
   date: string;
   createdAt: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface StoreSettings {

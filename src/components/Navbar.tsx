@@ -73,7 +73,21 @@ function Navbar({ onSearchClick }: NavbarProps) {
             href="/#products"
             className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
           >
-            Tools & Subscriptions
+            Tools &amp; Subscriptions
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
+          </Link>
+          <Link
+            href="/track-order"
+            className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
+          >
+            Track Order
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
+          </Link>
+          <Link
+            href="/#reviews"
+            className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
+          >
+            Reviews
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
           </Link>
         </nav>
@@ -122,6 +136,23 @@ function Navbar({ onSearchClick }: NavbarProps) {
                     <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold truncate mt-0.5 font-mono">
                       WhatsApp: {user.whatsappNumber}
                     </p>
+                  </div>
+
+                  <div className="py-1 border-b border-[#f0ebeb] dark:border-white/10 mb-1 space-y-1">
+                    <Link
+                      href="/track-order"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="block px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#1f2937] dark:text-zinc-200 hover:bg-[#faf8f8] dark:hover:bg-[#161622] transition"
+                    >
+                      Track My Orders
+                    </Link>
+                    <Link
+                      href="/checkout"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="block px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#1f2937] dark:text-zinc-200 hover:bg-[#faf8f8] dark:hover:bg-[#161622] transition"
+                    >
+                      Express Checkout
+                    </Link>
                   </div>
 
                   <button
@@ -232,7 +263,23 @@ function Navbar({ onSearchClick }: NavbarProps) {
             onClick={() => setMobileMenuOpen(false)}
             className="block text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5"
           >
-            Tools & Subscriptions
+            Tools &amp; Subscriptions
+          </Link>
+
+          <Link
+            href="/track-order"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5"
+          >
+            Track Order
+          </Link>
+
+          <Link
+            href="/#reviews"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5"
+          >
+            Customer Reviews
           </Link>
 
           <div className="flex items-center justify-between pt-2 border-t border-[#f0ebeb] dark:border-white/10">

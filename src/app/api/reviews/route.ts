@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const reviews = await db.getReviews();
+    const { searchParams } = new URL(req.url);
+    const showAll = searchParams.get('all') === 'true';
+
+    const allReviews = await db.getReviews();
+
+    // If public request, only return approved (or legacy reviews without status)
+    const reviews = showAll
+      ? allReviews
+      : allReviews.filter((r) => r.status === 'approved' || !r.status);
+
     return NextResponse.json({ success: true, reviews });
   } catch (err) {
     return NextResponse.json(
@@ -16,7 +25,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customerName, productTitle, rating, comment, isVerifiedPurchase, date } = body;
+    const { customerName, productTitle, rating, comment, isVerifiedPurchase, date, status } = body;
 
     if (!customerName || !comment) {
       return NextResponse.json(
@@ -25,12 +34,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Default status: 'pending' if submitted by user, or 'approved' if explicitly specified by admin
+    const finalStatus = status || 'pending';
+
     const newReview = await db.createReview({
       customerName: customerName.trim(),
       productTitle: (productTitle || 'General Store Review').trim(),
       rating: Number(rating) || 5,
       comment: comment.trim(),
       isVerifiedPurchase: isVerifiedPurchase !== undefined ? Boolean(isVerifiedPurchase) : true,
+      status: finalStatus,
       date: date?.trim() || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     });
 
