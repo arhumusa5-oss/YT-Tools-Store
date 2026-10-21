@@ -345,39 +345,9 @@ export default function CheckoutModal() {
         throw new Error(data.error || 'Failed to place order.');
       }
 
-      // Generate full WhatsApp message with ALL details including image, TID, order ID, items
-      const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
-      const itemsListText = checkoutItems
-        .map((i) => `📦 *Tool:* ${i.title}\n   *Quantity:* ${i.quantity}\n   *Price:* Rs ${(i.pricePKR * i.quantity).toLocaleString()}`)
-        .join('\n\n');
-
-      const waMsg = encodeURIComponent(
-        `*⚡ NEW ORDER PLACED ON YT TOOLS STORE*\n\n` +
-        `🆔 *Order ID:* ${data.order.id}\n` +
-        `👤 *Customer Name:* ${data.order.customerName}\n` +
-        `📱 *WhatsApp:* ${data.order.customerWhatsApp}\n` +
-        (data.order.customerEmail ? `✉️ *Email:* ${data.order.customerEmail}\n` : '') +
-        `\n*🛍️ ORDERED PRODUCTS:*\n${itemsListText}\n\n` +
-        `💰 *Grand Total:* Rs ${data.order.totalPKR.toLocaleString()}\n` +
-        `💳 *Payment Method:* ${data.order.paymentMethod.toUpperCase()}\n` +
-        `🔢 *Transaction ID (TID):* ${data.order.transactionId}\n` +
-        (data.order.paymentProofUrl ? `🧾 *Payment Receipt Screenshot:*\n${data.order.paymentProofUrl}\n` : '') +
-        (data.order.channelOrDeliveryNote ? `📝 *Notes:* ${data.order.channelOrDeliveryNote}\n` : '') +
-        `\nAssalam o Alaikum! Please verify my payment screenshot & TID and activate my digital tools. Thank you!`
-      );
-
-      const redirectUrl = `https://wa.me/${targetWhatsApp}?text=${waMsg}`;
-
-      // Auto redirect to WhatsApp
-      try {
-        window.open(redirectUrl, '_blank');
-      } catch {
-        // Handled in OrderSuccessModal
-      }
-
       clearCart();
       setIsCheckoutOpen(false);
-      setOrderSuccess({ ...data.order, autoWhatsAppUrl: redirectUrl });
+      setOrderSuccess(data.order);
     } catch (err) {
       setErrorMsg((err as Error).message || 'Something went wrong. Please try again.');
     } finally {
@@ -963,7 +933,7 @@ export default function CheckoutModal() {
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Placing Order & Redirecting to WhatsApp...</span>
+                      <span>Confirming & Placing Order...</span>
                     </>
                   ) : (
                     <>
@@ -973,7 +943,7 @@ export default function CheckoutModal() {
                   )}
                 </button>
                 <p className="text-[11px] text-center text-[#6b7280] dark:text-zinc-400 mt-2.5">
-                  🔒 Order place hotay hi aap automatically WhatsApp par redirect ho jayenge.
+                  🔒 Order confirm hote hi aapko samne Order ID & Confirmation Ticket mil jayegi.
                 </p>
               </div>
             </form>

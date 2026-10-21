@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
 import {
   ShoppingCart,
@@ -11,70 +11,14 @@ import {
   ShieldCheck,
   ExternalLink,
   Package,
+  Store,
 } from 'lucide-react';
-import WhatsAppIcon from './WhatsAppIcon';
 
 export default function OrderSuccessModal() {
-  const { orderSuccess, setOrderSuccess, formatPrice, settings } = useCart();
+  const { orderSuccess, setOrderSuccess, formatPrice } = useCart();
   const [copied, setCopied] = useState(false);
-  const [redirectCountdown, setRedirectCountdown] = useState(2);
 
   const order = orderSuccess;
-
-  // Build rich WhatsApp message containing:
-  // Order ID, Customer Name, WhatsApp, Email, Product Name(s), Quantity, Total, Payment Method, TID, and Image Link!
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
-
-  const itemsListText = (order?.items || [])
-    .map(
-      (item) =>
-        `📦 *Tool:* ${item.title}\n   *Quantity:* ${item.quantity}\n   *Price:* ${formatPrice(
-          item.pricePKR * item.quantity,
-          item.priceUSD * item.quantity
-        )}`
-    )
-    .join('\n\n');
-
-  const fullWhatsAppMessage = encodeURIComponent(
-    `*⚡ NEW ORDER CONFIRMATION - YT TOOLS STORE*\n\n` +
-    `🆔 *Order ID:* ${order?.id || ''}\n` +
-    `👤 *Customer Name:* ${order?.customerName || ''}\n` +
-    `📱 *WhatsApp:* ${order?.customerWhatsApp || ''}\n` +
-    (order?.customerEmail ? `✉️ *Email:* ${order?.customerEmail}\n` : '') +
-    `\n*🛍️ ORDERED PRODUCTS:*\n${itemsListText}\n\n` +
-    `💰 *Grand Total:* ${formatPrice(order?.totalPKR || 0, order?.totalUSD || 0)}\n` +
-    `💳 *Payment Method:* ${(order?.paymentMethod || '').toUpperCase()}\n` +
-    `🔢 *Transaction ID (TID):* ${order?.transactionId || ''}\n` +
-    (order?.paymentProofUrl ? `🧾 *Payment Screenshot Proof:*\n${order.paymentProofUrl}\n` : '') +
-    (order?.channelOrDeliveryNote ? `📝 *Notes:* ${order.channelOrDeliveryNote}\n` : '') +
-    `\nAssalam o Alaikum! Please verify my payment screenshot & TID and activate my order. Thank you!`
-  );
-
-  const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${fullWhatsAppMessage}`;
-
-  // Auto-Redirect to WhatsApp on mount
-  useEffect(() => {
-    if (!order) return;
-
-    // Immediately trigger window.open
-    const popup = window.open(whatsappUrl, '_blank');
-
-    // Countdown timer for fallback auto-redirect if popup was blocked
-    const interval = setInterval(() => {
-      setRedirectCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-            window.location.href = whatsappUrl;
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [order, whatsappUrl]);
 
   if (!order) return null;
 
@@ -140,21 +84,6 @@ export default function OrderSuccessModal() {
           </strong>
         </p>
 
-        {/* Auto-Redirecting Banner */}
-        <div className="mt-3.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-left">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-            <span>
-              {redirectCountdown > 0
-                ? `Redirecting to WhatsApp in ${redirectCountdown}s...`
-                : 'Redirecting to WhatsApp now...'}
-            </span>
-          </div>
-          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-            Auto-Connecting ⚡
-          </span>
-        </div>
-
         {/* ================= REDESIGNED DIGITAL RECEIPT CARD ================= */}
         <div className="mt-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 overflow-hidden text-left shadow-sm">
           {/* Order ID Reference Row */}
@@ -195,6 +124,18 @@ export default function OrderSuccessModal() {
             </div>
 
             <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
+              <span>Contact / WhatsApp:</span>
+              <span className="font-bold text-[#0a0a0a] dark:text-white font-mono">{order.customerWhatsApp}</span>
+            </div>
+
+            {order.customerEmail && (
+              <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
+                <span>Email Address:</span>
+                <span className="font-semibold text-[#0a0a0a] dark:text-white truncate max-w-[200px]">{order.customerEmail}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
               <span>Payment Method:</span>
               <span className="font-extrabold uppercase text-[#0a0a0a] dark:text-white">{order.paymentMethod}</span>
             </div>
@@ -233,22 +174,13 @@ export default function OrderSuccessModal() {
 
         {/* Primary Action Button */}
         <div className="mt-5 space-y-2">
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
-          >
-            <WhatsAppIcon className="w-5 h-5 fill-current text-white shrink-0" />
-            <span>Send Details on WhatsApp (Instant Activation)</span>
-          </a>
-
           <button
             type="button"
             onClick={() => setOrderSuccess(null)}
-            className="w-full py-2 text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#0a0a0a] dark:hover:text-white transition-colors cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-black text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-[#660000]/25 transition-all active:scale-95 cursor-pointer tracking-tight"
           >
-            Close & Return to Store →
+            <Store className="w-4 h-4" />
+            <span>Close & Return to Store</span>
           </button>
         </div>
 
