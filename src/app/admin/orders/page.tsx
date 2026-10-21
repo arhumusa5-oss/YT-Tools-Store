@@ -25,8 +25,10 @@ import {
   Loader2,
   Receipt,
   Trash2,
+  Layers,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
+import BundleLinkModal from '@/components/admin/BundleLinkModal';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -37,6 +39,7 @@ export default function AdminOrdersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [adminNotesMap, setAdminNotesMap] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [bundleModalOpen, setBundleModalOpen] = useState(false);
 
   // Direct Invoice / Payment Link Generator State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -374,6 +377,16 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setBundleModalOpen(true)}
+            className="px-3.5 py-2.5 rounded-xl bg-[#1C1C26] hover:bg-[#252535] text-amber-400 hover:text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+            title="Create multi-product showcase bundle link"
+          >
+            <Layers className="w-4 h-4" />
+            <span>Create Bundle Link</span>
+          </button>
+
           <button
             onClick={openCreateModal}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-[#660000]/30 transition active:scale-95 cursor-pointer"
@@ -1020,6 +1033,12 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      <BundleLinkModal
+        isOpen={bundleModalOpen}
+        onClose={() => setBundleModalOpen(false)}
+        products={products}
+      />
     </div>
   );
 }

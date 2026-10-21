@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Product } from '@/lib/types';
+import BundleLinkModal from '@/components/admin/BundleLinkModal';
 import {
   PlusCircle,
   Search,
@@ -13,6 +14,7 @@ import {
   ExternalLink,
   Package,
   RefreshCw,
+  Layers,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
@@ -22,6 +24,7 @@ export default function AdminProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [bundleModalOpen, setBundleModalOpen] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -137,6 +140,16 @@ export default function AdminProductsPage() {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setBundleModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#1C1C22] hover:bg-[#25252D] text-amber-400 hover:text-amber-300 text-xs font-bold border border-amber-500/30 transition cursor-pointer"
+            title="Create a single shareable link for multiple products"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Create Bundle Link</span>
+          </button>
+
           <button
             type="button"
             onClick={handleSyncFromSeed}
@@ -338,6 +351,12 @@ export default function AdminProductsPage() {
           </div>
         )}
       </div>
+
+      <BundleLinkModal
+        isOpen={bundleModalOpen}
+        onClose={() => setBundleModalOpen(false)}
+        products={products}
+      />
     </div>
   );
 }
