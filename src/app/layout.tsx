@@ -7,6 +7,8 @@ import CustomCursor from '@/components/CustomCursor';
 import CartDrawer from '@/components/CartDrawer';
 import CartToast from '@/components/CartToast';
 import AuthModal from '@/components/AuthModal';
+import CheckoutModal from '@/components/CheckoutModal';
+import OrderSuccessModal from '@/components/OrderSuccessModal';
 
 const fontSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -158,6 +160,8 @@ export default function RootLayout({
             <CartDrawer />
             <CartToast />
             <AuthModal />
+            <CheckoutModal />
+            <OrderSuccessModal />
           </CartProvider>
         </AuthProvider>
       </body>

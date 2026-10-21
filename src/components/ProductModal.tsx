@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { X, Check, Star, Clock, Mail, Share2, ShoppingCart } from 'lucide-react';
+import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 import { Product } from '@/lib/types';
 
@@ -14,6 +14,7 @@ export default function ProductModal() {
     formatPrice,
     settings,
     addToCart,
+    openCheckoutWithProduct,
   } = useCart();
   const { user } = useAuth();
 
@@ -421,44 +422,19 @@ export default function ProductModal() {
                     </span>
                   </button>
 
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
                     onClick={() => {
-                      try {
-                        fetch('/api/notify', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            type: 'order',
-                            items: [
-                              {
-                                title: product.title,
-                                quantity: currentQty,
-                                pricePKR: product.pricePKR,
-                                priceUSD: product.priceUSD,
-                                image: product.images[0] || '',
-                              },
-                            ],
-                            totalPKR,
-                            customerName: user?.name,
-                            customerWhatsApp: user?.whatsappNumber,
-                            customerEmail: user?.email,
-                            isRegisteredUser: Boolean(user),
-                          }),
-                        }).catch(() => {});
-                      } catch {
-                        // ignore
-                      }
+                      openCheckoutWithProduct(product, currentQty);
+                      handleClose();
                     }}
-                    className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                    className="flex-1 py-3.5 px-4 rounded-full bg-gradient-to-r from-[#660000] via-[#7a0000] to-[#8b0000] hover:opacity-95 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#660000]/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                   >
-                    <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
+                    <Zap className="w-4 h-4 fill-current text-amber-300 shrink-0" />
                     <span>
-                      {buttonLabel} {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
+                      Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
                     </span>
-                  </a>
+                  </button>
                 </div>
               )}
             </div>

@@ -7,7 +7,6 @@ import Hero from '@/components/Hero';
 import CategoryFilter from '@/components/CategoryFilter';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
-import OrderSuccessModal from '@/components/OrderSuccessModal';
 import ReviewsSection from '@/components/ReviewsSection';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import Footer from '@/components/Footer';
@@ -397,7 +396,6 @@ export default function HomePage() {
 
       {/* Interactive Modals */}
       <ProductModal />
-      <OrderSuccessModal />
       <FloatingWhatsApp />
     </main>
   );

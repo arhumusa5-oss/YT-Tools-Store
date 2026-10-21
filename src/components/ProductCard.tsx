@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { Check, Star, Eye, ShoppingCart } from 'lucide-react';
+import { Check, Star, Eye, ShoppingCart, Zap } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 interface ProductCardProps {
@@ -18,6 +18,7 @@ function ProductCard({ product }: ProductCardProps) {
     setActiveProductModal,
     settings,
     addToCart,
+    openCheckoutWithProduct,
   } = useCart();
   const { user } = useAuth();
 
@@ -382,43 +383,16 @@ function ProductCard({ product }: ProductCardProps) {
                 </button>
               </div>
 
-              {/* Direct Order on WhatsApp */}
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  try {
-                    fetch('/api/notify', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        type: 'order',
-                        items: [
-                          {
-                            title: product.title,
-                            quantity: currentQty,
-                            pricePKR: product.pricePKR,
-                            priceUSD: product.priceUSD,
-                            image: product.images[0] || '',
-                          },
-                        ],
-                        totalPKR,
-                        customerName: user?.name,
-                        customerWhatsApp: user?.whatsappNumber,
-                        customerEmail: user?.email,
-                        isRegisteredUser: Boolean(user),
-                      }),
-                    }).catch(() => {});
-                  } catch {
-                    // ignore
-                  }
-                }}
-                className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+              {/* Primary: Proceed to Checkout Button */}
+              <button
+                type="button"
+                onClick={() => openCheckoutWithProduct(product, currentQty)}
+                className="w-full py-2.5 px-3 rounded-full bg-gradient-to-r from-[#660000] via-[#7a0000] to-[#8b0000] hover:opacity-95 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#660000]/25 transition-all active:scale-95 cursor-pointer"
+                title="Proceed to Checkout"
               >
-                <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-white shrink-0" />
-                <span>{buttonLabel}</span>
-              </a>
+                <Zap className="w-3.5 h-3.5 fill-current text-amber-300 shrink-0" />
+                <span>Proceed to Checkout</span>
+              </button>
             </>
           )}
         </div>

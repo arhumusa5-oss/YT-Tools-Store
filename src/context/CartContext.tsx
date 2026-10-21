@@ -30,7 +30,7 @@ interface CartContextType {
   setIsCheckoutOpen: (open: boolean) => void;
   checkoutItems: OrderItem[];
   openCheckoutWithItems: (items: OrderItem[]) => void;
-  openCheckoutWithProduct: (product: Product) => void;
+  openCheckoutWithProduct: (product: Product, quantity?: number) => void;
   activeProductModal: Product | null;
   setActiveProductModal: (product: Product | null) => void;
   orderSuccess: Order | null;
@@ -283,14 +283,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsCheckoutOpen(true);
   };
 
-  const openCheckoutWithProduct = (product: Product) => {
+  const openCheckoutWithProduct = (product: Product, quantity = 1) => {
     if (product.isSoldOut) return;
+    const finalQty = typeof quantity === 'number' && quantity > 0 ? quantity : 1;
     const item: OrderItem = {
       productId: product.id,
       title: product.title,
       pricePKR: product.pricePKR,
       priceUSD: product.priceUSD,
-      quantity: 1,
+      quantity: finalQty,
       image: product.images[0] || '',
     };
     setCheckoutItems([item]);
