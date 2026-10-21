@@ -58,31 +58,62 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Failed to update order' }, { status: 500 });
     }
 
-    // If status changed and customer email is available, trigger background email notification
-    if (status && status !== existingOrder.status && (updated.customerEmail || customerEmail)) {
+    // If customer subscribed their email via order tracker, send an INSTANT confirmation email
+    const isSubscriptionRequest =
+      body.isSubscriptionRequest === true ||
+      (customerEmail !== undefined && status === undefined && !transactionId);
+
+    const isStatusChanged = status !== undefined && status !== existingOrder.status;
+    const isNotesChanged =
+      adminNotes !== undefined &&
+      adminNotes.trim() !== '' &&
+      adminNotes.trim() !== (existingOrder.adminNotes || '').trim();
+
+    if (isSubscriptionRequest && (updated.customerEmail || customerEmail)) {
       try {
-        sendCustomerOrderStatusNotification(
+        await sendCustomerOrderStatusNotification(
           {
             id: updated.id,
             customerName: updated.customerName,
-            customerEmail: updated.customerEmail || customerEmail,
+            customerEmail: (updated.customerEmail || customerEmail).trim(),
             status: updated.status,
             totalPKR: updated.totalPKR,
             totalUSD: updated.totalUSD,
             items: updated.items,
             adminNotes: updated.adminNotes,
           },
-          existingOrder.status
-        ).catch(() => {});
-      } catch {
-        // ignore background mail errors
+          existingOrder.status,
+          true
+        );
+      } catch (err) {
+        console.error('[EmailAlert] Subscription confirmation email error:', err);
+      }
+    } else if ((isStatusChanged || isNotesChanged) && (updated.customerEmail || customerEmail)) {
+      // If status or dispatch notes changed by admin, send real-time update notification
+      try {
+        await sendCustomerOrderStatusNotification(
+          {
+            id: updated.id,
+            customerName: updated.customerName,
+            customerEmail: (updated.customerEmail || customerEmail).trim(),
+            status: updated.status,
+            totalPKR: updated.totalPKR,
+            totalUSD: updated.totalUSD,
+            items: updated.items,
+            adminNotes: updated.adminNotes,
+          },
+          existingOrder.status,
+          false
+        );
+      } catch (err) {
+        console.error('[EmailAlert] Status change notification error:', err);
       }
     }
 
     // If payment was just submitted via direct link, notify store admin
     if (transactionId && paymentProofUrl && (!existingOrder.transactionId || existingOrder.paymentStatus === 'unpaid')) {
       try {
-        sendEmailNotification({
+        await sendEmailNotification({
           type: 'order',
           orderId: updated.id,
           items: updated.items,
@@ -94,7 +125,7 @@ export async function PUT(
           transactionId: updated.transactionId,
           paymentProofUrl: updated.paymentProofUrl,
           notes: updated.channelOrDeliveryNote,
-        }).catch(() => {});
+        });
       } catch {
         // ignore
       }

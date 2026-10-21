@@ -114,11 +114,11 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         needsAutoSeed = true;
       }
 
-      const mergedSettings = {
+      const mergedSettings: StoreSettings = {
         ...DEFAULT_SETTINGS,
         ...(bundledStoreData.settings || {}),
         ...(parsed.settings || {}),
-      };
+      } as StoreSettings;
 
       // Ensure admin PIN is updated to 12388127 if currently empty or old admin123
       if (!mergedSettings.adminPin || mergedSettings.adminPin === 'admin123') {

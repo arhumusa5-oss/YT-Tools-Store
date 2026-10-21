@@ -108,7 +108,7 @@ export interface StoreSettings {
     recipientEmail?: string;
     notifyOnOrder?: boolean;
     notifyOnAddToCart?: boolean;
-    service?: 'gmail' | 'resend';
+    service?: 'gmail' | 'resend' | string;
     gmailUser?: string;
     gmailAppPassword?: string;
     resendApiKey?: string;

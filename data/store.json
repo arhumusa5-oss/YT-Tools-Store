@@ -542,8 +542,34 @@
       "allowQuantity": false
     }
   ],
-  "orders": [],
+  "orders": [
+    {
+      "customerName": "Arhum Saleem",
+      "customerEmail": "arhumusa5@gmail.com",
+      "customerWhatsApp": "03343345095",
+      "channelOrDeliveryNote": "",
+      "items": [
+        {
+          "title": "Capcut Pro 1 Year",
+          "quantity": 1,
+          "pricePKR": 800,
+          "priceUSD": 2.85
+        }
+      ],
+      "totalPKR": 800,
+      "totalUSD": 2.85,
+      "currency": "PKR",
+      "paymentMethod": "easypaisa",
+      "transactionId": "TEST123456",
+      "paymentProofUrl": "",
+      "status": "pending",
+      "adminNotes": "",
+      "id": "#2504",
+      "createdAt": "2026-10-21T14:29:00.744Z"
+    }
+  ],
   "reviews": [],
+  "users": [],
   "settings": {
     "storeName": "YT Tools Store",
     "tagline": "Digital Tools, Subscriptions & Creator Assets",
@@ -553,7 +579,7 @@
     "supportEmail": "support@yttoolsstore.pk",
     "adminPin": "12388127",
     "currencyRateUSDToPKR": 280,
-    "nextOrderNumber": 2504,
+    "nextOrderNumber": 2505,
     "paymentAccounts": {
       "easypaisa": {
         "enabled": true,
@@ -580,7 +606,15 @@
         "payId": "",
         "usdtTrc20": ""
       }
+    },
+    "emailAlerts": {
+      "enabled": true,
+      "service": "gmail",
+      "gmailUser": "arhumffarmy@gmail.com",
+      "gmailAppPassword": "rtfd obmo rnce ugwn",
+      "recipientEmail": "arhumffarmy@gmail.com",
+      "notifyOnOrder": true,
+      "notifyOnAddToCart": true
     }
-  },
-  "users": []
+  }
 }

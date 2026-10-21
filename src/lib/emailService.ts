@@ -469,7 +469,8 @@ export async function sendCustomerOrderStatusNotification(
     items?: Array<{ title: string; quantity: number }>;
     adminNotes?: string;
   },
-  previousStatus?: string
+  previousStatus?: string,
+  isSubscriptionConfirmation?: boolean
 ) {
   try {
     if (!order.customerEmail || !order.customerEmail.includes('@')) {
@@ -491,25 +492,37 @@ export async function sendCustomerOrderStatusNotification(
         ? { label: 'Cancelled ❌', color: '#ef4444', bg: '#fef2f2' }
         : { label: 'Order Received & Pending ⏳', color: '#d97706', bg: '#fffbeb' };
 
-    const subject = `Order #${order.id} Status Update: ${statusBadge.label} - YT Tools Store`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://yt-tools-store.vercel.app';
+    const subject = isSubscriptionConfirmation
+      ? `🔔 Order #${order.id} Tracking Alerts Active - YT Tools Store`
+      : `⚡ Order #${order.id} Status Update: ${statusBadge.label} - YT Tools Store`;
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL.replace(/\/$/, '')}` : '') ||
+      'https://yt-tools-store.vercel.app';
     const trackingUrl = `${appUrl}/track-order?id=${encodeURIComponent(order.id)}`;
 
     const itemsHtml = (order.items || [])
       .map((i) => `<li style="margin-bottom: 4px;"><strong>${i.title}</strong> (Quantity: ${i.quantity})</li>`)
       .join('');
 
+    const introText = isSubscriptionConfirmation
+      ? `Your email <strong>${order.customerEmail}</strong> has been successfully linked to <strong>Order #${order.id}</strong>. You will automatically receive real-time email alerts whenever your order status changes or when your digital access credentials are ready.`
+      : `The status of your order <strong>#${order.id}</strong> has been updated by our team.`;
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; background: #ffffff; color: #111827;">
         <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #660000;">
-          <h1 style="color: #660000; margin: 0; font-size: 24px; font-weight: 900;">YT TOOLS STORE</h1>
-          <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">Official Order Status Notification</p>
+          <h1 style="color: #660000; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;">YT TOOLS STORE</h1>
+          <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0;">
+            ${isSubscriptionConfirmation ? 'Order Tracking Subscription Confirmed' : 'Official Order Status Notification'}
+          </p>
         </div>
 
         <div style="padding: 24px 0;">
           <p style="font-size: 15px; margin: 0 0 16px 0;">Dear <strong>${order.customerName || 'Valued Customer'}</strong>,</p>
           <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 20px 0;">
-            The status of your order <strong>#${order.id}</strong> has been updated by our team.
+            ${introText}
           </p>
 
           <div style="text-align: center; margin: 24px 0; padding: 18px; border-radius: 12px; background: ${statusBadge.bg}; border: 1px solid ${statusBadge.color}40;">
@@ -574,13 +587,14 @@ export async function sendCustomerOrderStatusNotification(
         service: 'gmail',
         auth: { user: gmailUser, pass: gmailPass },
       });
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from: `"YT Tools Store" <${gmailUser}>`,
         to: order.customerEmail,
         subject,
         html,
       });
-      return { success: true, provider: 'gmail_smtp' };
+      console.log(`[EmailAlert] Customer order status email sent to ${order.customerEmail} (messageId: ${info.messageId})`);
+      return { success: true, provider: 'gmail_smtp', messageId: info.messageId };
     }
 
     return { success: false, message: 'Email credentials not configured.' };

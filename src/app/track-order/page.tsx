@@ -88,12 +88,15 @@ function TrackOrderContent() {
       const res = await fetch(`/api/orders/${encodeURIComponent(order.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerEmail: emailInput.trim() }),
+        body: JSON.stringify({
+          customerEmail: emailInput.trim(),
+          isSubscriptionRequest: true,
+        }),
       });
       const data = await res.json();
       if (data.success && data.order) {
         setOrder(data.order);
-        setEmailSuccessMsg('✓ Email saved! You will receive automatic email notifications whenever your order status changes.');
+        setEmailSuccessMsg('✓ Email saved! A live status confirmation email has been sent to your inbox.');
       } else {
         setEmailErrorMsg('Failed to update email address. Please try again.');
       }
