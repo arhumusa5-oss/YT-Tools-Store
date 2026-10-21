@@ -137,7 +137,7 @@ export default function ProductModal() {
           handleClose();
         }
       }}
-      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-md overflow-y-auto cursor-pointer ${
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/40 backdrop-blur-sm dark:bg-black/60 overflow-y-auto cursor-pointer ${
         isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in'
       }`}
     >

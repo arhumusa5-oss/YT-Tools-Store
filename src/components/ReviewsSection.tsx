@@ -279,7 +279,12 @@ export default function ReviewsSection() {
 
         {/* ================= USER REVIEW SUBMISSION MODAL ================= */}
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+          <div
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setModalOpen(false);
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm dark:bg-black/60 overflow-y-auto animate-in fade-in duration-200"
+          >
             <div className="relative w-full max-w-md bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center justify-between pb-3 border-b border-[#f0ebeb] dark:border-white/10 mb-4">
                 <div className="flex items-center gap-2">

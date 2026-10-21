@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
-import OrderSuccessModal from '@/components/OrderSuccessModal';
 import { useCart } from '@/context/CartContext';
 import { Order } from '@/lib/types';
 import {
@@ -51,6 +50,9 @@ export default function DirectPaymentInvoicePage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    // Clear global orderSuccess modal so this invoice page shows its own inline receipt directly
+    setOrderSuccess(null);
+
     const fetchOrderAndSettings = async () => {
       if (!rawId) return;
       setLoading(true);
@@ -243,8 +245,9 @@ export default function DirectPaymentInvoicePage() {
         throw new Error(data.error || 'Failed to submit payment proof.');
       }
 
+      // Update local order so isAlreadyPaid becomes true and directly renders the in-page receipt
       setOrder(data.order);
-      setOrderSuccess(data.order);
+      setOrderSuccess(null);
     } catch (err: unknown) {
       setFormError((err as Error).message || 'Something went wrong. Please try again.');
     } finally {
@@ -707,7 +710,6 @@ export default function DirectPaymentInvoicePage() {
       </div>
 
       <Footer />
-      <OrderSuccessModal />
       <FloatingWhatsApp />
     </main>
   );

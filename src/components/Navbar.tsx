@@ -141,19 +141,30 @@ function Navbar({ onSearchClick }: NavbarProps) {
                   </div>
 
                   <div className="py-1 border-b border-[#f0ebeb] dark:border-white/10 mb-1 space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        setIsCartOpen(true);
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#1f2937] dark:text-zinc-200 hover:bg-[#faf8f8] dark:hover:bg-[#161622] transition text-left cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <ShoppingCart className="w-3.5 h-3.5 text-[#660000] dark:text-[#ff6b6b]" />
+                        <span>Shopping Cart</span>
+                      </span>
+                      {cartCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-[#660000] text-white text-[10px] font-black leading-none">
+                          {cartCount}
+                        </span>
+                      )}
+                    </button>
                     <Link
                       href="/track-order"
                       onClick={() => setUserDropdownOpen(false)}
                       className="block px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#1f2937] dark:text-zinc-200 hover:bg-[#faf8f8] dark:hover:bg-[#161622] transition"
                     >
                       Track My Orders
-                    </Link>
-                    <Link
-                      href="/checkout"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="block px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#1f2937] dark:text-zinc-200 hover:bg-[#faf8f8] dark:hover:bg-[#161622] transition"
-                    >
-                      Express Checkout
                     </Link>
                   </div>
 

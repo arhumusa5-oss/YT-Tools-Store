@@ -414,7 +414,12 @@ export default function CheckoutModal() {
   const paymentAccounts = settings?.paymentAccounts;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setIsCheckoutOpen(false);
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/40 backdrop-blur-sm dark:bg-black/60 overflow-y-auto animate-in fade-in duration-200"
+    >
       <div className="relative w-full max-w-xl my-6 bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl transition-all duration-200">
         
         {/* ================= STAGE 1: CHOICE SCREEN ================= */}

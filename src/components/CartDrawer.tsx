@@ -78,7 +78,7 @@ export default function CartDrawer() {
       {/* Backdrop overlay */}
       <div
         onClick={() => setIsCartOpen(false)}
-        className={`absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-black/35 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
           isCartOpen ? 'opacity-100' : 'opacity-0'
         }`}
       />

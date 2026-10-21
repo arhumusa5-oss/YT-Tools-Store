@@ -135,7 +135,7 @@ export default function AuthModal() {
       {/* Backdrop with Blur */}
       <div
         onClick={closeAuthModal}
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity duration-300"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60 transition-opacity duration-300"
       />
 
       {/* Modal Card */}
