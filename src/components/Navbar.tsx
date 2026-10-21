@@ -84,6 +84,20 @@ function Navbar({ onSearchClick }: NavbarProps) {
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
           </Link>
           <Link
+            href="/signin"
+            className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
+          >
+            Sign In
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
+          </Link>
+          <Link
+            href="/signup"
+            className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
+          >
+            Sign Up
+            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
+          </Link>
+          <Link
             href="/#reviews"
             className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
           >
@@ -170,15 +184,23 @@ function Navbar({ onSearchClick }: NavbarProps) {
               )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => openAuthModal('signin')}
-              className="flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#660000] hover:text-white dark:hover:bg-[#660000] dark:hover:text-white text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
-              title="Sign In to Your Account"
-            >
-              <UserIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sign In</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <Link
+                href="/signin"
+                className="flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#660000] hover:text-white dark:hover:bg-[#660000] dark:hover:text-white text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
+                title="Sign In to Your Account"
+              >
+                <UserIcon className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </Link>
+              <Link
+                href="/signup"
+                className="hidden sm:inline-flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-transparent hover:bg-[#660000]/10 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/30 hover:border-[#660000] text-xs font-bold transition-all active:scale-95 cursor-pointer"
+                title="Create a New Account"
+              >
+                <span>Sign Up</span>
+              </Link>
+            </div>
           )}
 
           {/* Header Primary CTA */}
@@ -245,17 +267,23 @@ function Navbar({ onSearchClick }: NavbarProps) {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                openAuthModal('signin');
-              }}
-              className="w-full flex items-center gap-2 py-2 px-3 rounded-xl bg-[#660000] text-white text-xs font-bold justify-center shadow-sm cursor-pointer"
-            >
-              <UserIcon className="w-4 h-4" />
-              <span>Sign In / Create Account</span>
-            </button>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <Link
+                href="/signin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-[#660000] text-white text-xs font-bold justify-center shadow-sm"
+              >
+                <UserIcon className="w-4 h-4" />
+                <span>Sign In</span>
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 py-2.5 px-3 rounded-xl bg-[#f4efef] dark:bg-[#161620] text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 text-xs font-bold justify-center"
+              >
+                <span>Sign Up</span>
+              </Link>
+            </div>
           )}
 
           <Link

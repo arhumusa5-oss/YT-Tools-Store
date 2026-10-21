@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { validateEmail, validateWhatsAppNumber } from '@/lib/validation';
 import { X, Mail, Lock, User as UserIcon, Phone, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -259,19 +260,16 @@ export default function AuthModal() {
                 </button>
 
                 {/* Bottom Switch to Sign Up */}
-                <div className="pt-4 text-center border-t border-[#f0ebeb] dark:border-white/10">
+                <div className="pt-4 text-center border-t border-[#f0ebeb] dark:border-white/10 space-y-1">
                   <p className="text-xs text-[#6b7280] dark:text-zinc-400">
                     Don&apos;t have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setErrorMsg('');
-                        setAuthModalTab('signup');
-                      }}
-                      className="font-black text-[#660000] dark:text-[#ff6b6b] hover:underline cursor-pointer"
+                    <Link
+                      href="/signup"
+                      onClick={() => closeAuthModal()}
+                      className="font-black text-[#660000] dark:text-[#ff6b6b] hover:underline"
                     >
-                      Create Account
-                    </button>
+                      Sign Up / Create Account
+                    </Link>
                   </p>
                 </div>
               </form>
@@ -382,19 +380,16 @@ export default function AuthModal() {
                 </button>
 
                 {/* Bottom Switch to Sign In */}
-                <div className="pt-4 text-center border-t border-[#f0ebeb] dark:border-white/10">
+                <div className="pt-4 text-center border-t border-[#f0ebeb] dark:border-white/10 space-y-1">
                   <p className="text-xs text-[#6b7280] dark:text-zinc-400">
                     Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setErrorMsg('');
-                        setAuthModalTab('signin');
-                      }}
-                      className="font-black text-[#660000] dark:text-[#ff6b6b] hover:underline cursor-pointer"
+                    <Link
+                      href="/signin"
+                      onClick={() => closeAuthModal()}
+                      className="font-black text-[#660000] dark:text-[#ff6b6b] hover:underline"
                     >
-                      Sign In
-                    </button>
+                      Sign In here
+                    </Link>
                   </p>
                 </div>
               </form>

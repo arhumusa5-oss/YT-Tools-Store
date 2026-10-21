@@ -320,9 +320,9 @@ export default function SignInPage() {
                   Don't have an account yet?{' '}
                   <Link
                     href="/signup"
-                    className="font-bold text-[#660000] dark:text-[#ff6b6b] hover:underline"
+                    className="font-black text-[#660000] dark:text-[#ff6b6b] hover:underline"
                   >
-                    Create Account
+                    Sign Up / Create Account
                   </Link>
                 </p>
               </div>
