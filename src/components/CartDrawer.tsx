@@ -1,143 +1,285 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight } from 'lucide-react';
+import WhatsAppIcon from './WhatsAppIcon';
 
 export default function CartDrawer() {
   const {
     cart,
+    cartCount,
     isCartOpen,
     setIsCartOpen,
     removeFromCart,
     updateQuantity,
+    clearCart,
     cartTotalPKR,
     cartTotalUSD,
     formatPrice,
-    openCheckoutWithItems,
+    settings,
   } = useCart();
 
-  if (!isCartOpen) return null;
+  // Lock body scroll when cart is open
+  useEffect(() => {
+    if (isCartOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isCartOpen]);
 
-  const handleCheckout = () => {
-    setIsCartOpen(false);
-    openCheckoutWithItems(cart);
-  };
+  // Handle ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCartOpen) {
+        setIsCartOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCartOpen, setIsCartOpen]);
+
+  const targetWhatsApp = useMemo(() => {
+    return (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  }, [settings?.whatsappNumber]);
+
+  // Construct WhatsApp checkout URL with comprehensive formatted message
+  const whatsappCheckoutUrl = useMemo(() => {
+    if (cart.length === 0) return '#';
+
+    const itemsList = cart
+      .map((item, idx) => {
+        const itemTotal = item.pricePKR * item.quantity;
+        return `${idx + 1}. *${item.title}*\n   • Quantity: ${item.quantity}\n   • Price: Rs ${item.pricePKR.toLocaleString()} each\n   • Subtotal: Rs ${itemTotal.toLocaleString()}`;
+      })
+      .join('\n\n');
+
+    const rawMessage = `Assalam o Alaikum! I would like to order the following items from YT Tools Store:\n\n🛒 *ORDER DETAILS (${cartCount} items):*\n----------------------------------------\n${itemsList}\n----------------------------------------\n💵 *Grand Total:* Rs ${cartTotalPKR.toLocaleString()}\n\nPlease confirm my order and share payment details (EasyPaisa / JazzCash / Bank). Thank you!`;
+
+    return `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(rawMessage)}`;
+  }, [cart, cartCount, cartTotalPKR, targetWhatsApp]);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
+    <div
+      className={`fixed inset-0 z-50 overflow-hidden transition-opacity duration-300 ${
+        isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+      }`}
+      aria-hidden={!isCartOpen}
+    >
+      {/* Backdrop overlay */}
       <div
         onClick={() => setIsCartOpen(false)}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+        className={`absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+          isCartOpen ? 'opacity-100' : 'opacity-0'
+        }`}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white dark:bg-[#0C0C0E] border-l border-zinc-200 dark:border-[#222228] flex flex-col shadow-2xl transition-colors duration-150">
+      {/* Left-Side Slide-Over Container */}
+      <div className="fixed inset-y-0 left-0 max-w-full flex pr-10 sm:pr-14">
+        <div
+          className={`w-screen max-w-md bg-white dark:bg-[#0c0c12] border-r border-[#e8e1e1] dark:border-white/10 flex flex-col shadow-2xl transition-transform duration-300 ease-out transform ${
+            isCartOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
           {/* Header */}
-          <div className="p-5 border-b border-zinc-200 dark:border-[#1E1E26] flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-[#FF5500]" />
-              <h3 className="font-extrabold text-zinc-900 dark:text-white text-base">Your Cart</h3>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-[#1A1A22] text-zinc-700 dark:text-zinc-300 font-bold border border-zinc-200 dark:border-[#2B2B36]">
-                {cart.length}
-              </span>
+          <div className="p-4 sm:p-5 border-b border-[#f0ebeb] dark:border-white/10 flex items-center justify-between bg-white dark:bg-[#0c0c12]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-[#660000]/10 dark:bg-[#660000]/30 flex items-center justify-center text-[#660000] dark:text-[#ff6b6b]">
+                <ShoppingCart className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base sm:text-lg text-[#0a0a0a] dark:text-white tracking-tight">
+                  Shopping Cart
+                </h3>
+                <span className="text-[11px] font-semibold text-[#6b7280] dark:text-zinc-400">
+                  {cartCount} {cartCount === 1 ? 'item' : 'items'}
+                </span>
+              </div>
             </div>
-            <button
-              onClick={() => setIsCartOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1E1E26] transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
+
+            <div className="flex items-center gap-2">
+              {cart.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+                  title="Remove all items from cart"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Clear</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(false)}
+                className="p-2 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 cursor-pointer"
+                aria-label="Close Cart"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Cart Item List */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Cart Items List */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar">
             {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-[#14141C] border border-zinc-200 dark:border-[#222228] flex items-center justify-center text-zinc-400 mb-4">
-                  <ShoppingBag className="w-8 h-8" />
+              <div className="h-full flex flex-col items-center justify-center text-center py-16 px-4">
+                <div className="w-16 h-16 rounded-2xl bg-[#660000]/10 dark:bg-[#660000]/20 border border-[#660000]/20 dark:border-[#660000]/30 flex items-center justify-center text-[#660000] dark:text-[#ff6b6b] mb-4 shadow-sm">
+                  <ShoppingCart className="w-8 h-8" />
                 </div>
-                <h4 className="text-base font-bold text-zinc-900 dark:text-white">Your cart is empty</h4>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-xs">
-                  Browse our catalog of YouTube & digital tools to get started.
+                <h4 className="text-base font-black text-[#0a0a0a] dark:text-white">
+                  Your cart is empty
+                </h4>
+                <p className="mt-1.5 text-xs text-[#6b7280] dark:text-zinc-400 max-w-xs leading-relaxed">
+                  You haven&apos;t added any tools or subscriptions yet. Explore our top digital creator tools to get started.
                 </p>
                 <button
-                  onClick={() => setIsCartOpen(false)}
-                  className="mt-5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold shadow-md hover:opacity-90 transition"
+                  type="button"
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    const el = document.getElementById('products');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="mt-6 px-6 py-2.5 rounded-full bg-[#660000] hover:bg-[#520000] text-white text-xs font-black shadow-md shadow-[#660000]/20 transition-all active:scale-95 cursor-pointer flex items-center gap-2"
                 >
-                  Explore Catalog
+                  <span>Explore Tools</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
-              cart.map((item) => (
-                <div
-                  key={item.productId}
-                  className="p-3.5 rounded-xl bg-zinc-50 dark:bg-[#08080A] border border-zinc-200 dark:border-[#1E1E26] flex gap-3.5 items-center"
-                >
-                  <img
-                    src={item.image || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'}
-                    alt={item.title}
-                    className="w-16 h-16 rounded-lg object-cover bg-zinc-200 dark:bg-black shrink-0 border border-zinc-200 dark:border-[#232838]"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white truncate">{item.title}</h4>
-                    <p className="text-xs font-extrabold text-[#FF5500] mt-0.5">
-                      {formatPrice(item.pricePKR, item.priceUSD)}
-                    </p>
+              cart.map((item) => {
+                const itemTotal = item.pricePKR * item.quantity;
+                return (
+                  <div
+                    key={item.productId}
+                    className="p-3.5 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#f0ebeb] dark:border-white/10 flex gap-3.5 items-center transition-all hover:border-[#660000]/40 dark:hover:border-[#660000]/50"
+                  >
+                    {/* Item Thumbnail */}
+                    <img
+                      src={
+                        item.image ||
+                        'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'
+                      }
+                      alt={item.title}
+                      className="w-16 h-16 rounded-xl object-cover bg-[#f0ebeb] dark:bg-[#1a1a26] shrink-0 border border-[#e8e1e1] dark:border-white/10"
+                    />
 
-                    {/* Quantity Selector */}
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className="flex items-center gap-1 bg-zinc-100 dark:bg-[#14141C] rounded-lg border border-zinc-200 dark:border-[#252530] px-1 py-0.5">
+                    {/* Item Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-xs sm:text-sm font-black text-[#0a0a0a] dark:text-white truncate">
+                          {item.title}
+                        </h4>
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                          className="p-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                          type="button"
+                          onClick={() => removeFromCart(item.productId)}
+                          className="text-[#9ca3af] hover:text-red-600 dark:hover:text-red-400 p-1 transition-colors active:scale-90 cursor-pointer"
+                          title="Remove item"
                         >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="text-xs font-bold text-zinc-900 dark:text-white px-2">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                          className="p-1 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-                        >
-                          <Plus className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
 
-                      <button
-                        onClick={() => removeFromCart(item.productId)}
-                        className="text-zinc-400 hover:text-red-500 p-1 transition"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <span className="text-xs font-bold text-[#660000] dark:text-[#ff6b6b]">
+                          Rs {itemTotal.toLocaleString()}
+                        </span>
+                        {item.quantity > 1 && (
+                          <span className="text-[10px] text-[#6b7280] dark:text-zinc-500 font-medium">
+                            (Rs {item.pricePKR.toLocaleString()} each)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Quantity Stepper & Controls */}
+                      <div className="mt-2.5 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 bg-white dark:bg-[#181824] rounded-xl border border-[#e8e1e1] dark:border-white/10 px-1 py-0.5 shadow-inner">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                            className="w-6 h-6 rounded-lg text-xs font-black text-[#1f2937] dark:text-zinc-200 hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] flex items-center justify-center transition active:scale-90 cursor-pointer"
+                            title="Decrease quantity"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-black text-[#0a0a0a] dark:text-white px-2 min-w-[20px] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                            className="w-6 h-6 rounded-lg text-xs font-black text-[#1f2937] dark:text-zinc-200 hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] flex items-center justify-center transition active:scale-90 cursor-pointer"
+                            title="Increase quantity"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                          Instant Access
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
-          {/* Footer with Subtotal & Checkout */}
+          {/* Footer with Subtotal & Checkout on WhatsApp */}
           {cart.length > 0 && (
-            <div className="p-5 border-t border-zinc-200 dark:border-[#1E1E26] bg-zinc-50 dark:bg-[#08080A] space-y-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Subtotal</span>
-                <span className="text-xl font-black text-zinc-900 dark:text-white">
-                  {formatPrice(cartTotalPKR, cartTotalUSD)}
-                </span>
+            <div className="p-4 sm:p-5 border-t border-[#f0ebeb] dark:border-white/10 bg-white dark:bg-[#0c0c12] space-y-3.5 shadow-lg">
+              {/* Price Breakdown */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-[#6b7280] dark:text-zinc-400 font-semibold">
+                  <span>Total Items</span>
+                  <span>{cartCount}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-[#0a0a0a] dark:text-white">
+                    Grand Total
+                  </span>
+                  <span className="text-xl sm:text-2xl font-black text-[#660000] dark:text-[#ff6b6b] tracking-tight">
+                    {formatPrice(cartTotalPKR, cartTotalUSD)}
+                  </span>
+                </div>
               </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                ⚡ Instant WhatsApp/Email delivery after payment verification.
-              </p>
-              <button
-                onClick={handleCheckout}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:from-[#E64A00] hover:to-[#CC3D00] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition active:scale-95"
+
+              {/* Delivery / Warranty Guarantee Notice */}
+              <div className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/20 text-[11px] font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold">⚡</span>
+                <span>Instant delivery directly via WhatsApp after payment confirmation.</span>
+              </div>
+
+              {/* Checkout on WhatsApp Button */}
+              <a
+                href={whatsappCheckoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  // Keep drawer open or allow user to see it when returning
+                }}
+                className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/35 active:scale-95 cursor-pointer tracking-tight"
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4" />
+                <WhatsAppIcon className="w-5 h-5 fill-current text-white shrink-0" />
+                <span>Checkout on WhatsApp</span>
+              </a>
+
+              {/* Continue Shopping button */}
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(false)}
+                className="w-full py-2.5 text-center text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#660000] dark:hover:text-white transition-colors cursor-pointer"
+              >
+                Continue Browsing Catalog →
               </button>
             </div>
           )}

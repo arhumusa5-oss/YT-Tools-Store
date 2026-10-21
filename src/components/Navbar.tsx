@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { Search, Menu, X, Play, Sun, Moon } from 'lucide-react';
+import { Search, Menu, X, Play, Sun, Moon, ShoppingCart } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 interface NavbarProps {
@@ -11,33 +11,51 @@ interface NavbarProps {
 }
 
 function Navbar({ onSearchClick }: NavbarProps) {
-  const { settings, theme, toggleTheme } = useCart();
+  const { settings, theme, toggleTheme, cartCount, setIsCartOpen } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const whatsappHref = `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20want%20to%20order%20digital%20tools.`;
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/95 dark:bg-[#060608]/95 border-b border-[#e8e1e1] dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] transition-colors duration-200">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-lg shadow-[#660000]/25 group-hover:scale-105 group-hover:shadow-[#660000]/40 transition-all duration-300">
-            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-xl tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors">
-                YT Tools
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-3 sm:gap-4">
+        {/* Left Section: Cart Button (at arrow position) + Logo */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Cart Icon Button */}
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-2 sm:p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer flex items-center justify-center group"
+            aria-label="Open Shopping Cart"
+            title="Shopping Cart"
+          >
+            <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-5 px-1 rounded-full bg-[#660000] text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center shadow-md animate-pulse">
+                {cartCount > 99 ? '99+' : cartCount}
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-black tracking-widest bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 uppercase">
-                STORE
-              </span>
+            )}
+          </button>
+
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-lg shadow-[#660000]/25 group-hover:scale-105 group-hover:shadow-[#660000]/40 transition-all duration-300 shrink-0">
+              <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white ml-0.5" />
             </div>
-            <p className="text-[10px] font-medium text-[#6b7280] dark:text-zinc-400 hidden sm:block tracking-normal">
-              Official Creator Subscriptions & Digital Assets
-            </p>
-          </div>
-        </Link>
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors">
+                  YT Tools
+                </span>
+                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-black tracking-widest bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 uppercase">
+                  STORE
+                </span>
+              </div>
+              <p className="text-[10px] font-medium text-[#6b7280] dark:text-zinc-400 hidden sm:block tracking-normal">
+                Official Creator Subscriptions & Digital Assets
+              </p>
+            </div>
+          </Link>
+        </div>
 
         {/* Desktop Nav Links - Centered with Nexcore blood-red hover underline */}
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-[#1f2937] dark:text-zinc-200 absolute left-1/2 -translate-x-1/2">
@@ -121,6 +139,24 @@ function Navbar({ onSearchClick }: NavbarProps) {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white/98 dark:bg-[#0c0c12]/98 backdrop-blur-2xl border-b border-[#e8e1e1] dark:border-white/10 px-4 py-4 space-y-3 shadow-lg">
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              setIsCartOpen(true);
+            }}
+            className="w-full flex items-center justify-between text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5 cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4 text-[#660000] dark:text-[#ff4d4d]" />
+              <span>Shopping Cart</span>
+            </div>
+            {cartCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-[#660000] text-white text-[10px] font-black">
+                {cartCount} {cartCount === 1 ? 'item' : 'items'}
+              </span>
+            )}
+          </button>
+
           <Link
             href="/#products"
             onClick={() => setMobileMenuOpen(false)}

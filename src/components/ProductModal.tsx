@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCart } from '@/context/CartContext';
-import { X, Check, Star, Clock, Mail, Share2 } from 'lucide-react';
+import { X, Check, Star, Clock, Mail, Share2, ShoppingCart } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 import { Product } from '@/lib/types';
 
@@ -12,6 +12,7 @@ export default function ProductModal() {
     setActiveProductModal,
     formatPrice,
     settings,
+    addToCart,
   } = useCart();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -402,17 +403,33 @@ export default function ProductModal() {
                   This item is currently sold out. Please contact us on WhatsApp for restock updates.
                 </div>
               ) : (
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
-                >
-                  <WhatsAppIcon className="w-5 h-5 fill-current text-white" />
-                  <span>
-                    {buttonLabel} {product.allowQuantity && currentQty > 1 ? `(${currentQty} items)` : ''}
-                  </span>
-                </a>
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addToCart(product, currentQty);
+                      handleClose();
+                    }}
+                    className="flex-1 py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#520000] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#660000]/25 transition active:scale-[0.99] cursor-pointer"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>
+                      Add to Cart {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
+                    </span>
+                  </button>
+
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                  >
+                    <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
+                    <span>
+                      {buttonLabel} {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
+                    </span>
+                  </a>
+                </div>
               )}
             </div>
           </div>

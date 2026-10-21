@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
-import { Check, Star, Eye } from 'lucide-react';
+import { Check, Star, Eye, ShoppingCart } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 interface ProductCardProps {
@@ -16,9 +16,17 @@ function ProductCard({ product }: ProductCardProps) {
     formatPrice,
     setActiveProductModal,
     settings,
+    addToCart,
   } = useCart();
 
   const [quantity, setQuantity] = useState<number | string>(1);
+  const [added, setAdded] = useState(false);
+
+  const handleAddToCart = () => {
+    addToCart(product, currentQty);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
 
   const isService = (product.category || '').toLowerCase().includes('service');
   const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
@@ -326,7 +334,7 @@ function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 space-y-2">
           {product.isSoldOut ? (
             <button
               disabled
@@ -336,23 +344,51 @@ function ProductCard({ product }: ProductCardProps) {
             </button>
           ) : (
             <>
+              {/* Primary Actions: Add to Cart + Details */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className={`flex-1 py-2.5 px-3 rounded-full text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer ${
+                    added
+                      ? 'bg-emerald-600 shadow-emerald-500/30'
+                      : 'bg-[#660000] hover:bg-[#520000] shadow-[#660000]/25 hover:shadow-[#660000]/40'
+                  }`}
+                  title="Add to Shopping Cart"
+                >
+                  {added ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Added!</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                      <span>Add to Cart</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveProductModal(product)}
+                  className="px-4 py-2.5 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#660000] dark:hover:bg-[#660000] text-[#1f2937] dark:text-zinc-200 hover:text-white border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all duration-150 active:scale-95 shadow-sm cursor-pointer"
+                  title="View Full Details"
+                >
+                  Details
+                </button>
+              </div>
+
+              {/* Direct Order on WhatsApp */}
               <a
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 py-3 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 transition-all active:scale-95 hover:shadow-lg hover:shadow-emerald-500/30"
+                className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
               >
-                <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
-                <span className="text-white font-extrabold">{buttonLabel}</span>
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-white shrink-0" />
+                <span>{buttonLabel}</span>
               </a>
-
-              <button
-                onClick={() => setActiveProductModal(product)}
-                className="px-5 py-3 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#660000] dark:hover:bg-[#660000] text-[#1f2937] dark:text-zinc-200 hover:text-white border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all duration-200 active:scale-95 shadow-sm cursor-pointer"
-                title="View Full Details"
-              >
-                Details
-              </button>
             </>
           )}
         </div>

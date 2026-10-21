@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import CustomCursor from '@/components/CustomCursor';
+import CartDrawer from '@/components/CartDrawer';
 
 const fontSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -150,6 +151,7 @@ export default function RootLayout({
 
         <CartProvider>
           {children}
+          <CartDrawer />
         </CartProvider>
       </body>
     </html>
