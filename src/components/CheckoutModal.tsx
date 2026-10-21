@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { validateEmail, validateWhatsAppNumber } from '@/lib/validation';
@@ -14,7 +14,6 @@ import {
   Copy,
   Check,
   Upload,
-  Image as ImageIcon,
   AlertCircle,
   ShoppingBag,
   ShieldCheck,
@@ -76,6 +75,106 @@ export default function CheckoutModal() {
       setUploadError('');
     }
   }, [isCheckoutOpen]);
+
+  // Filter ONLY available/enabled payment methods that store admin has configured
+  const availablePaymentMethods = useMemo(() => {
+    const list: Array<{
+      id: 'easypaisa' | 'jazzcash' | 'bank' | 'binance';
+      name: string;
+      sub: string;
+      icon: typeof Smartphone | typeof Building2 | typeof DollarSign;
+      color: string;
+      activeBorder: string;
+      activeBg: string;
+    }> = [];
+
+    const acc = settings?.paymentAccounts;
+
+    // EasyPaisa: enabled by default or explicitly true
+    if (acc?.easypaisa?.enabled !== false && acc?.easypaisa?.number) {
+      list.push({
+        id: 'easypaisa',
+        name: 'EasyPaisa',
+        sub: 'Mobile Account',
+        icon: Smartphone,
+        color: 'text-[#009E49]',
+        activeBorder: 'border-[#009E49] ring-2 ring-[#009E49]/40',
+        activeBg: 'bg-[#009E49]/10',
+      });
+    }
+
+    // JazzCash: enabled by default or explicitly true
+    if (acc?.jazzcash?.enabled !== false && acc?.jazzcash?.number) {
+      list.push({
+        id: 'jazzcash',
+        name: 'JazzCash',
+        sub: 'Mobile Account',
+        icon: Smartphone,
+        color: 'text-[#E30613]',
+        activeBorder: 'border-[#E30613] ring-2 ring-[#E30613]/40',
+        activeBg: 'bg-[#E30613]/10',
+      });
+    }
+
+    // Bank Transfer / Raast
+    if (acc?.bank?.enabled !== false && (acc?.bank?.accountNumber || acc?.bank?.iban || acc?.bank?.raastId)) {
+      list.push({
+        id: 'bank',
+        name: 'Bank / Raast',
+        sub: 'Instant Transfer',
+        icon: Building2,
+        color: 'text-blue-500',
+        activeBorder: 'border-blue-500 ring-2 ring-blue-500/40',
+        activeBg: 'bg-blue-600/10',
+      });
+    }
+
+    // Binance USDT (Only if explicitly enabled)
+    if (acc?.binance?.enabled && (acc?.binance?.payId || acc?.binance?.usdtTrc20)) {
+      list.push({
+        id: 'binance',
+        name: 'Binance USDT',
+        sub: 'Crypto Pay',
+        icon: DollarSign,
+        color: 'text-amber-500',
+        activeBorder: 'border-amber-500 ring-2 ring-amber-500/40',
+        activeBg: 'bg-amber-500/10',
+      });
+    }
+
+    // Fallback if settings empty
+    if (list.length === 0) {
+      list.push(
+        {
+          id: 'easypaisa',
+          name: 'EasyPaisa',
+          sub: 'Mobile Account',
+          icon: Smartphone,
+          color: 'text-[#009E49]',
+          activeBorder: 'border-[#009E49] ring-2 ring-[#009E49]/40',
+          activeBg: 'bg-[#009E49]/10',
+        },
+        {
+          id: 'jazzcash',
+          name: 'JazzCash',
+          sub: 'Mobile Account',
+          icon: Smartphone,
+          color: 'text-[#E30613]',
+          activeBorder: 'border-[#E30613] ring-2 ring-[#E30613]/40',
+          activeBg: 'bg-[#E30613]/10',
+        }
+      );
+    }
+
+    return list;
+  }, [settings?.paymentAccounts]);
+
+  // Ensure selected payment method is one of the enabled methods
+  useEffect(() => {
+    if (availablePaymentMethods.length > 0 && !availablePaymentMethods.some((m) => m.id === paymentMethod)) {
+      setPaymentMethod(availablePaymentMethods[0].id);
+    }
+  }, [availablePaymentMethods, paymentMethod]);
 
   // Lock background scroll when open
   useEffect(() => {
@@ -177,8 +276,9 @@ export default function CheckoutModal() {
       }
 
       setPaymentProofUrl(data.url);
+      setErrorMsg(''); // Clear any previous screenshot missing error
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again or paste image link.');
+      setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
       setUploadingReceipt(false);
     }
@@ -190,7 +290,7 @@ export default function CheckoutModal() {
     setErrorMsg('');
 
     if (!customerName.trim()) {
-      setErrorMsg('Please enter your full name.');
+      setErrorMsg('Full Name lazmi hai. Please enter your name.');
       return;
     }
 
@@ -208,9 +308,15 @@ export default function CheckoutModal() {
       return;
     }
 
-    // Mandatory Transaction ID
+    // MANDATORY 1: Transaction ID (TID)
     if (!transactionId.trim()) {
-      setErrorMsg('Please enter your Transaction ID (TID) or sender account info.');
+      setErrorMsg('⚠️ Transaction ID (TID) lazmi hai. Please payment bhej kar Transaction ID enter karein.');
+      return;
+    }
+
+    // MANDATORY 2: Payment Screenshot Proof URL
+    if (!paymentProofUrl.trim()) {
+      setErrorMsg('⚠️ Payment Screenshot / Receipt upload karna lazmi hai. Please payment screenshot attach karein.');
       return;
     }
 
@@ -239,9 +345,39 @@ export default function CheckoutModal() {
         throw new Error(data.error || 'Failed to place order.');
       }
 
+      // Generate full WhatsApp message with ALL details including image, TID, order ID, items
+      const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+      const itemsListText = checkoutItems
+        .map((i) => `📦 *Tool:* ${i.title}\n   *Quantity:* ${i.quantity}\n   *Price:* Rs ${(i.pricePKR * i.quantity).toLocaleString()}`)
+        .join('\n\n');
+
+      const waMsg = encodeURIComponent(
+        `*⚡ NEW ORDER PLACED ON YT TOOLS STORE*\n\n` +
+        `🆔 *Order ID:* ${data.order.id}\n` +
+        `👤 *Customer Name:* ${data.order.customerName}\n` +
+        `📱 *WhatsApp:* ${data.order.customerWhatsApp}\n` +
+        (data.order.customerEmail ? `✉️ *Email:* ${data.order.customerEmail}\n` : '') +
+        `\n*🛍️ ORDERED PRODUCTS:*\n${itemsListText}\n\n` +
+        `💰 *Grand Total:* Rs ${data.order.totalPKR.toLocaleString()}\n` +
+        `💳 *Payment Method:* ${data.order.paymentMethod.toUpperCase()}\n` +
+        `🔢 *Transaction ID (TID):* ${data.order.transactionId}\n` +
+        (data.order.paymentProofUrl ? `🧾 *Payment Receipt Screenshot:*\n${data.order.paymentProofUrl}\n` : '') +
+        (data.order.channelOrDeliveryNote ? `📝 *Notes:* ${data.order.channelOrDeliveryNote}\n` : '') +
+        `\nAssalam o Alaikum! Please verify my payment screenshot & TID and activate my digital tools. Thank you!`
+      );
+
+      const redirectUrl = `https://wa.me/${targetWhatsApp}?text=${waMsg}`;
+
+      // Auto redirect to WhatsApp
+      try {
+        window.open(redirectUrl, '_blank');
+      } catch {
+        // Handled in OrderSuccessModal
+      }
+
       clearCart();
       setIsCheckoutOpen(false);
-      setOrderSuccess(data.order);
+      setOrderSuccess({ ...data.order, autoWhatsAppUrl: redirectUrl });
     } catch (err) {
       setErrorMsg((err as Error).message || 'Something went wrong. Please try again.');
     } finally {
@@ -349,7 +485,7 @@ export default function CheckoutModal() {
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-white/20 text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform backdrop-blur-sm">
-                    <Zap className="w-6 h-6 fill-current" />
+                    <Zap className="w-6 h-6 fill-current text-amber-300" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
@@ -410,7 +546,7 @@ export default function CheckoutModal() {
             {/* Scrollable Form Body */}
             <form onSubmit={handleSubmitOrder} className="p-5 sm:p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
               {errorMsg && (
-                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                <div className="p-3.5 rounded-xl bg-red-500/10 border-2 border-red-500/40 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2 animate-shake">
                   <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
                   <span>{errorMsg}</span>
                 </div>
@@ -508,76 +644,46 @@ export default function CheckoutModal() {
                 </div>
               </div>
 
-              {/* Step 2: Payment Method */}
+              {/* Step 2: Payment Method (Only Enabled Methods Shown!) */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[#0a0a0a] dark:text-white flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black">
-                    2
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#0a0a0a] dark:text-white flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black">
+                      2
+                    </span>
+                    <span>Select Payment Method</span>
+                  </h4>
+                  <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">
+                    {availablePaymentMethods.length} {availablePaymentMethods.length === 1 ? 'method' : 'methods'} available
                   </span>
-                  <span>Select Payment Method</span>
-                </h4>
+                </div>
 
-                {/* Method Tabs */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('easypaisa')}
-                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                      paymentMethod === 'easypaisa'
-                        ? 'bg-[#009E49]/10 border-[#009E49] text-[#0a0a0a] dark:text-white shadow-sm ring-1 ring-[#009E49]'
-                        : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4 mb-2 text-[#009E49]" />
-                    <span className="text-xs font-bold block">EasyPaisa</span>
-                    <span className="text-[10px] text-[#9ca3af]">Mobile Account</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('jazzcash')}
-                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                      paymentMethod === 'jazzcash'
-                        ? 'bg-[#E30613]/10 border-[#E30613] text-[#0a0a0a] dark:text-white shadow-sm ring-1 ring-[#E30613]'
-                        : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4 mb-2 text-[#E30613]" />
-                    <span className="text-xs font-bold block">JazzCash</span>
-                    <span className="text-[10px] text-[#9ca3af]">Mobile Account</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('bank')}
-                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                      paymentMethod === 'bank'
-                        ? 'bg-blue-600/10 border-blue-500 text-[#0a0a0a] dark:text-white shadow-sm ring-1 ring-blue-500'
-                        : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
-                    }`}
-                  >
-                    <Building2 className="w-4 h-4 mb-2 text-blue-500" />
-                    <span className="text-xs font-bold block">Bank / Raast</span>
-                    <span className="text-[10px] text-[#9ca3af]">Instant Transfer</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('binance')}
-                    className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                      paymentMethod === 'binance'
-                        ? 'bg-amber-500/10 border-amber-500 text-[#0a0a0a] dark:text-white shadow-sm ring-1 ring-amber-500'
-                        : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
-                    }`}
-                  >
-                    <DollarSign className="w-4 h-4 mb-2 text-amber-500" />
-                    <span className="text-xs font-bold block">Binance USDT</span>
-                    <span className="text-[10px] text-[#9ca3af]">Crypto Pay</span>
-                  </button>
+                {/* Dynamic Payment Method Tabs */}
+                <div className={`grid grid-cols-2 sm:grid-cols-${Math.min(availablePaymentMethods.length, 4)} gap-2`}>
+                  {availablePaymentMethods.map((m) => {
+                    const Icon = m.icon;
+                    const isSelected = paymentMethod === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(m.id)}
+                        className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? `${m.activeBg} ${m.activeBorder} text-[#0a0a0a] dark:text-white shadow-sm`
+                            : 'bg-[#faf8f8] dark:bg-[#14141e] border-[#e8e1e1] dark:border-white/10 text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 mb-2 ${m.color}`} />
+                        <span className="text-xs font-bold block">{m.name}</span>
+                        <span className="text-[10px] text-[#9ca3af]">{m.sub}</span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Details Box for Selected Method */}
-                <div className="p-4 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 space-y-2.5">
+                <div className="p-4 rounded-xl bg-[#faf8f8] dark:bg-[#14141c] border border-[#e8e1e1] dark:border-white/10 space-y-2.5">
                   {paymentMethod === 'easypaisa' && (
                     <div className="space-y-2 text-xs">
                       <div className="flex items-center justify-between">
@@ -594,7 +700,7 @@ export default function CheckoutModal() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => copyToClipboard(paymentAccounts?.easypaisa?.number || '03000000000', 'ep')}
+                            onClick={() => copyToClipboard(paymentAccounts?.easypaisa?.number || '', 'ep')}
                             className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] text-[#1f2937] dark:text-zinc-200 transition cursor-pointer"
                             title="Copy Number"
                           >
@@ -624,7 +730,7 @@ export default function CheckoutModal() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => copyToClipboard(paymentAccounts?.jazzcash?.number || '03000000000', 'jc')}
+                            onClick={() => copyToClipboard(paymentAccounts?.jazzcash?.number || '', 'jc')}
                             className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] text-[#1f2937] dark:text-zinc-200 transition cursor-pointer"
                             title="Copy Number"
                           >
@@ -652,21 +758,23 @@ export default function CheckoutModal() {
                           {paymentAccounts?.bank?.accountTitle || 'YT Tools Store'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">IBAN / Account:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs text-[#0a0a0a] dark:text-white">
-                            {paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber || 'PK00XXXX0000000000000000'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber || '', 'iban')}
-                            className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] transition cursor-pointer"
-                          >
-                            {copiedField === 'iban' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                          </button>
+                      {(paymentAccounts?.bank?.accountNumber || paymentAccounts?.bank?.iban) && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#6b7280] dark:text-zinc-400">Account / IBAN:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-[#0a0a0a] dark:text-white font-bold">
+                              {paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(paymentAccounts?.bank?.iban || paymentAccounts?.bank?.accountNumber || '', 'iban')}
+                              className="p-1 rounded bg-[#eae4e4] dark:bg-[#20202c] hover:bg-[#ded6d6] transition cursor-pointer"
+                            >
+                              {copiedField === 'iban' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       {paymentAccounts?.bank?.raastId && (
                         <div className="flex items-center justify-between">
                           <span className="text-[#6b7280] dark:text-zinc-400">Raast ID:</span>
@@ -689,13 +797,13 @@ export default function CheckoutModal() {
 
                   {paymentMethod === 'binance' && (
                     <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[#6b7280] dark:text-zinc-400">Binance Pay ID:</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-amber-500 font-bold">
-                            {paymentAccounts?.binance?.payId || 'Contact Support'}
-                          </span>
-                          {paymentAccounts?.binance?.payId && (
+                      {paymentAccounts?.binance?.payId && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#6b7280] dark:text-zinc-400">Binance Pay ID:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-amber-500 font-bold">
+                              {paymentAccounts.binance.payId}
+                            </span>
                             <button
                               type="button"
                               onClick={() => copyToClipboard(paymentAccounts?.binance?.payId || '', 'payid')}
@@ -703,9 +811,9 @@ export default function CheckoutModal() {
                             >
                               {copiedField === 'payid' ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
-                          )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       {paymentAccounts?.binance?.usdtTrc20 && (
                         <div className="flex items-center justify-between">
                           <span className="text-[#6b7280] dark:text-zinc-400">USDT (TRC20):</span>
@@ -728,35 +836,46 @@ export default function CheckoutModal() {
                 </div>
               </div>
 
-              {/* Step 3: Payment Verification & Proof */}
+              {/* Step 3: Payment Verification & Proof (BOTH MANDATORY / LAZMI) */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#0a0a0a] dark:text-white flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black">
                     3
                   </span>
-                  <span>Payment Verification (TID & Screenshot)</span>
+                  <span>Payment Verification (TID & Screenshot - Lazmi)</span>
                 </h4>
 
                 {/* Mandatory TID Input */}
                 <div>
                   <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                    Transaction ID (TID) / Sender Account <span className="text-red-500">* Required</span>
+                    Transaction ID (TID) / Sender Info <span className="text-red-500 font-bold">* (Lazmi / Required)</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. EasyPaisa TID: 01928374652 or Sender: 0300-XXXXXXX"
+                    placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: 0300-XXXXXXX"
                     value={transactionId}
                     onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
                   />
                 </div>
 
-                {/* Receipt Screenshot Upload */}
+                {/* Mandatory Receipt Screenshot Upload */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                    Payment Screenshot / Receipt <span className="text-[#9ca3af]">(Recommended for instant verification)</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400">
+                      Payment Screenshot / Receipt <span className="text-red-500 font-bold">* (Lazmi / Required)</span>
+                    </label>
+                    {paymentProofUrl ? (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Attached
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-red-500 font-bold">
+                        Screenshot Required
+                      </span>
+                    )}
+                  </div>
 
                   {/* Hidden File Input */}
                   <input
@@ -769,9 +888,9 @@ export default function CheckoutModal() {
 
                   {paymentProofUrl ? (
                     /* Uploaded Thumbnail Preview */
-                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/30 flex items-center justify-between gap-3">
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-500/40 flex items-center justify-between gap-3 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-emerald-500/30">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-emerald-500/30">
                           <img
                             src={paymentProofUrl}
                             alt="Receipt"
@@ -781,10 +900,10 @@ export default function CheckoutModal() {
                         <div>
                           <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            Receipt Uploaded Successfully
+                            Screenshot Uploaded Successfully
                           </span>
-                          <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 block">
-                            Screenshot attached to order
+                          <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 block mt-0.5">
+                            Proof image linked to order & WhatsApp
                           </span>
                         </div>
                       </div>
@@ -798,28 +917,28 @@ export default function CheckoutModal() {
                       </button>
                     </div>
                   ) : (
-                    /* Upload Button Box */
+                    /* Upload Button Box with Red Alert Border */
                     <button
                       type="button"
                       disabled={uploadingReceipt}
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-[#e8e1e1] dark:border-white/15 hover:border-[#660000] dark:hover:border-[#ff4d4d] bg-[#faf8f8] dark:bg-[#14141e] hover:bg-[#fcfbfb] dark:hover:bg-[#181824] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-[#660000]/40 dark:border-[#ff4d4d]/40 hover:border-[#660000] dark:hover:border-[#ff4d4d] bg-[#660000]/[0.02] dark:bg-[#14141e] hover:bg-[#660000]/[0.05] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 group"
                     >
                       {uploadingReceipt ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin text-[#660000] dark:text-[#ff6b6b]" />
-                          <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Uploading Receipt...</span>
+                          <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Uploading Receipt Screenshot...</span>
                         </>
                       ) : (
                         <>
-                          <div className="w-8 h-8 rounded-full bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] flex items-center justify-center">
+                          <div className="w-9 h-9 rounded-full bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] flex items-center justify-center group-hover:scale-105 transition-transform">
                             <Upload className="w-4 h-4" />
                           </div>
                           <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">
-                            Click to Upload Payment Screenshot
+                            Upload Payment Screenshot (Required)
                           </span>
-                          <span className="text-[10px] text-[#6b7280] dark:text-zinc-400">
-                            PNG, JPG, WebP up to 10MB
+                          <span className="text-[10px] text-red-500 font-semibold">
+                            ⚠️ Screenshot lazmi upload karein tabhi order confirm hoga
                           </span>
                         </>
                       )}
@@ -844,17 +963,17 @@ export default function CheckoutModal() {
                   {submitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Processing Order...</span>
+                      <span>Placing Order & Redirecting to WhatsApp...</span>
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4 fill-current" />
+                      <Zap className="w-4 h-4 fill-current text-amber-300" />
                       <span>Confirm & Place Order</span>
                     </>
                   )}
                 </button>
                 <p className="text-[11px] text-center text-[#6b7280] dark:text-zinc-400 mt-2.5">
-                  🔒 100% Secure Checkout. Your order details will be dispatched immediately.
+                  🔒 Order place hotay hi aap automatically WhatsApp par redirect ho jayenge.
                 </p>
               </div>
             </form>

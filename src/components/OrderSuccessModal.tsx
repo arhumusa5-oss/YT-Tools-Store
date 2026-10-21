@@ -1,17 +1,82 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCart } from '@/context/CartContext';
-import { ShoppingCart, Copy, Check, Sparkles, CheckCircle2, ShieldCheck } from 'lucide-react';
+import {
+  ShoppingCart,
+  Copy,
+  Check,
+  Sparkles,
+  CheckCircle2,
+  ShieldCheck,
+  ExternalLink,
+  Package,
+} from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 export default function OrderSuccessModal() {
   const { orderSuccess, setOrderSuccess, formatPrice, settings } = useCart();
   const [copied, setCopied] = useState(false);
-
-  if (!orderSuccess) return null;
+  const [redirectCountdown, setRedirectCountdown] = useState(2);
 
   const order = orderSuccess;
+
+  // Build rich WhatsApp message containing:
+  // Order ID, Customer Name, WhatsApp, Email, Product Name(s), Quantity, Total, Payment Method, TID, and Image Link!
+  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+
+  const itemsListText = (order?.items || [])
+    .map(
+      (item) =>
+        `📦 *Tool:* ${item.title}\n   *Quantity:* ${item.quantity}\n   *Price:* ${formatPrice(
+          item.pricePKR * item.quantity,
+          item.priceUSD * item.quantity
+        )}`
+    )
+    .join('\n\n');
+
+  const fullWhatsAppMessage = encodeURIComponent(
+    `*⚡ NEW ORDER CONFIRMATION - YT TOOLS STORE*\n\n` +
+    `🆔 *Order ID:* ${order?.id || ''}\n` +
+    `👤 *Customer Name:* ${order?.customerName || ''}\n` +
+    `📱 *WhatsApp:* ${order?.customerWhatsApp || ''}\n` +
+    (order?.customerEmail ? `✉️ *Email:* ${order?.customerEmail}\n` : '') +
+    `\n*🛍️ ORDERED PRODUCTS:*\n${itemsListText}\n\n` +
+    `💰 *Grand Total:* ${formatPrice(order?.totalPKR || 0, order?.totalUSD || 0)}\n` +
+    `💳 *Payment Method:* ${(order?.paymentMethod || '').toUpperCase()}\n` +
+    `🔢 *Transaction ID (TID):* ${order?.transactionId || ''}\n` +
+    (order?.paymentProofUrl ? `🧾 *Payment Screenshot Proof:*\n${order.paymentProofUrl}\n` : '') +
+    (order?.channelOrDeliveryNote ? `📝 *Notes:* ${order.channelOrDeliveryNote}\n` : '') +
+    `\nAssalam o Alaikum! Please verify my payment screenshot & TID and activate my order. Thank you!`
+  );
+
+  const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${fullWhatsAppMessage}`;
+
+  // Auto-Redirect to WhatsApp on mount
+  useEffect(() => {
+    if (!order) return;
+
+    // Immediately trigger window.open
+    const popup = window.open(whatsappUrl, '_blank');
+
+    // Countdown timer for fallback auto-redirect if popup was blocked
+    const interval = setInterval(() => {
+      setRedirectCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            window.location.href = whatsappUrl;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [order, whatsappUrl]);
+
+  if (!order) return null;
 
   const copyOrderId = () => {
     navigator.clipboard.writeText(order.id);
@@ -19,133 +84,154 @@ export default function OrderSuccessModal() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const itemsList = order.items.map((i) => `${i.title} (x${i.quantity})`).join(', ');
-
-  const whatsappMessage = encodeURIComponent(
-    `Assalam o Alaikum! I placed order ${order.id} on YT Tools Store.\n\n` +
-    `• Customer: ${order.customerName}\n` +
-    `• WhatsApp: ${order.customerWhatsApp}\n` +
-    (order.customerEmail ? `• Email: ${order.customerEmail}\n` : '') +
-    `• Items: ${itemsList}\n` +
-    `• Total: ${formatPrice(order.totalPKR, order.totalUSD)}\n` +
-    `• Payment Method: ${order.paymentMethod.toUpperCase()}\n` +
-    `• Transaction ID (TID): ${order.transactionId}\n` +
-    (order.paymentProofUrl ? `• Receipt Screenshot: ${order.paymentProofUrl}\n` : '') +
-    (order.channelOrDeliveryNote ? `• Notes: ${order.channelOrDeliveryNote}\n` : '') +
-    `\nPlease verify and activate my digital tools.`
-  );
-
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
-  const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg my-6 bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center shadow-2xl transition-all duration-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg my-6 bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-2xl sm:rounded-3xl p-5 sm:p-7 text-center shadow-2xl transition-all duration-200 overflow-hidden">
         
-        {/* Glow Accent Backdrop */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#660000]/15 dark:bg-[#ff4d4d]/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Ambient Top Glow */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-[#660000]/15 dark:bg-[#ff4d4d]/15 rounded-full blur-3xl pointer-events-none" />
 
-        {/* ================= CART FILLING ANIMATION ================= */}
-        <div className="relative py-4 mb-2 flex flex-col items-center justify-center">
-          {/* Animated Falling Item Badges into Cart */}
-          <div className="relative w-48 h-20 flex items-center justify-center overflow-hidden">
-            {order.items.slice(0, 3).map((item, idx) => (
+        {/* ================= REDESIGNED ANIMATED CART HEADER ================= */}
+        <div className="relative pt-2 pb-4 flex flex-col items-center justify-center">
+          {/* Floating Staggered Badges of Selected Products */}
+          <div className="relative w-full max-w-xs h-12 flex items-center justify-center mb-1">
+            {order.items.slice(0, 2).map((item, idx) => (
               <div
                 key={idx}
-                className="absolute px-3 py-1 rounded-lg bg-gradient-to-r from-[#660000] to-[#880000] text-white text-[10px] font-black shadow-md border border-[#990000] flex items-center gap-1.5 animate-bounce"
+                className="absolute px-3 py-1 rounded-full bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] text-white text-[11px] font-black shadow-lg border border-white/20 flex items-center gap-1.5 animate-bounce"
                 style={{
-                  animationDuration: `${1.2 + idx * 0.3}s`,
-                  animationDelay: `${idx * 0.2}s`,
-                  top: `${idx * 6}px`,
-                  transform: `rotate(${(idx - 1) * 8}deg)`,
+                  animationDuration: `${1.4 + idx * 0.3}s`,
+                  top: `${idx * 4}px`,
+                  transform: `rotate(${(idx === 0 ? -1 : 1) * 4}deg)`,
                 }}
               >
-                <Sparkles className="w-3 h-3 text-amber-300" />
-                <span className="truncate max-w-[120px]">{item.title}</span>
-                <span className="text-amber-200">x{item.quantity}</span>
+                <Package className="w-3.5 h-3.5 text-amber-300" />
+                <span className="truncate max-w-[140px]">{item.title}</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-black/30 text-amber-200 text-[10px]">
+                  x{item.quantity}
+                </span>
               </div>
             ))}
           </div>
 
-          {/* Glowing Shopping Cart Centerpiece */}
-          <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-[#660000] via-[#7a0000] to-[#8b0000] text-white flex items-center justify-center shadow-xl shadow-[#660000]/35 border-2 border-white/20 animate-pulse">
+          {/* Glowing Animated Shopping Cart Icon */}
+          <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] text-white flex items-center justify-center shadow-xl shadow-[#660000]/30 border-2 border-white/25">
             <ShoppingCart className="w-10 h-10 fill-current" />
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md ring-2 ring-white dark:ring-[#0c0c12]">
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-lg ring-2 ring-white dark:ring-[#0c0c12]">
               <CheckCircle2 className="w-4 h-4 stroke-[3]" />
             </div>
           </div>
         </div>
 
-        {/* Confirmation Status Tag */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-black uppercase tracking-wider border border-emerald-500/30 mb-2">
+        {/* Status Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-black uppercase tracking-wider border border-emerald-500/30 mb-2">
           <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
           <span>Order Confirmed & Received</span>
         </div>
 
-        {/* User's Exact Requested Message Phrasing */}
-        <h2 className="text-lg sm:text-xl font-black text-[#0a0a0a] dark:text-white leading-snug px-2">
+        {/* User's Exact Requested Text */}
+        <h2 className="text-xl sm:text-2xl font-black text-[#0a0a0a] dark:text-white leading-tight">
           Thank You For Choosing YT Tools Store
         </h2>
-        <p className="mt-2 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-300 font-medium leading-relaxed max-w-md mx-auto">
+        <p className="mt-1.5 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-300 font-medium max-w-md mx-auto">
           Our team will contact you, thanks for your patience your order id is{' '}
-          <strong className="text-[#660000] dark:text-[#ff6b6b] font-black font-mono text-sm sm:text-base">
+          <strong className="text-[#660000] dark:text-[#ff6b6b] font-black font-mono text-base sm:text-lg">
             {order.id}
           </strong>
         </p>
 
-        {/* Order ID Box with Copy Button */}
-        <div className="mt-5 p-3.5 rounded-2xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 flex items-center justify-between">
-          <div className="text-left">
-            <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 uppercase font-black tracking-wider block">
-              Official Order Reference
-            </span>
-            <span className="text-xl font-mono font-black text-[#0a0a0a] dark:text-white tracking-wider">
-              {order.id}
+        {/* Auto-Redirecting Banner */}
+        <div className="mt-3.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-left">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <span>
+              {redirectCountdown > 0
+                ? `Redirecting to WhatsApp in ${redirectCountdown}s...`
+                : 'Redirecting to WhatsApp now...'}
             </span>
           </div>
+          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+            Auto-Connecting ⚡
+          </span>
+        </div>
 
-          <button
-            type="button"
-            onClick={copyOrderId}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-[#1f1f2e] hover:bg-[#eae4e4] dark:hover:bg-[#2a2a3e] text-xs font-bold text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 transition cursor-pointer active:scale-95 shadow-sm"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-black">Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy ID</span>
-              </>
+        {/* ================= REDESIGNED DIGITAL RECEIPT CARD ================= */}
+        <div className="mt-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 overflow-hidden text-left shadow-sm">
+          {/* Order ID Reference Row */}
+          <div className="p-3.5 bg-[#f0eded] dark:bg-[#161622] border-b border-[#e8e1e1] dark:border-white/10 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 uppercase font-black tracking-wider block">
+                Official Order Reference
+              </span>
+              <span className="text-lg font-mono font-black text-[#0a0a0a] dark:text-white tracking-wider">
+                {order.id}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={copyOrderId}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-[#20202e] hover:bg-[#eae4e4] dark:hover:bg-[#2a2a3e] text-xs font-bold text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 transition cursor-pointer active:scale-95 shadow-xs"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black text-[11px]">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Copy ID</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Details Body */}
+          <div className="p-3.5 space-y-2 text-xs">
+            <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
+              <span>Customer:</span>
+              <span className="font-bold text-[#0a0a0a] dark:text-white">{order.customerName}</span>
+            </div>
+
+            <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
+              <span>Payment Method:</span>
+              <span className="font-extrabold uppercase text-[#0a0a0a] dark:text-white">{order.paymentMethod}</span>
+            </div>
+
+            <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
+              <span>Transaction ID (TID):</span>
+              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                {order.transactionId}
+              </span>
+            </div>
+
+            {order.paymentProofUrl && (
+              <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400 pt-1 border-t border-[#f0ebeb] dark:border-white/5">
+                <span>Payment Screenshot:</span>
+                <a
+                  href={order.paymentProofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400 hover:underline text-[11px]"
+                >
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                  <span>Attached & Verified</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             )}
-          </button>
-        </div>
 
-        {/* Order Brief Summary */}
-        <div className="mt-3.5 p-3 rounded-xl bg-[#fcfbfb] dark:bg-[#101018] border border-[#f0ebeb] dark:border-white/5 text-xs text-left space-y-1.5">
-          <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
-            <span>Customer:</span>
-            <span className="font-bold text-[#0a0a0a] dark:text-white">{order.customerName}</span>
-          </div>
-          <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
-            <span>Payment Method:</span>
-            <span className="font-bold uppercase text-[#0a0a0a] dark:text-white">{order.paymentMethod}</span>
-          </div>
-          <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400">
-            <span>Transaction ID (TID):</span>
-            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{order.transactionId}</span>
-          </div>
-          <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400 pt-1 border-t border-[#f0ebeb] dark:border-white/5">
-            <span>Total Amount:</span>
-            <span className="font-black text-[#660000] dark:text-[#ff6b6b] text-sm">
-              {formatPrice(order.totalPKR, order.totalUSD)}
-            </span>
+            <div className="flex items-center justify-between text-[#6b7280] dark:text-zinc-400 pt-1.5 border-t border-[#f0ebeb] dark:border-white/10">
+              <span className="font-bold text-[#0a0a0a] dark:text-white">Total Amount Paid:</span>
+              <span className="font-black text-[#660000] dark:text-[#ff6b6b] text-base">
+                {formatPrice(order.totalPKR, order.totalUSD)}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Primary Action: Send Details on WhatsApp */}
+        {/* Primary Action Button */}
         <div className="mt-5 space-y-2">
           <a
             href={whatsappUrl}
@@ -157,18 +243,17 @@ export default function OrderSuccessModal() {
             <span>Send Details on WhatsApp (Instant Activation)</span>
           </a>
 
-          {/* Close / Return Button */}
           <button
             type="button"
             onClick={() => setOrderSuccess(null)}
-            className="w-full py-2.5 text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#0a0a0a] dark:hover:text-white transition-colors cursor-pointer"
+            className="w-full py-2 text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#0a0a0a] dark:hover:text-white transition-colors cursor-pointer"
           >
             Close & Return to Store →
           </button>
         </div>
 
-        {/* Security & Warranty Assurance */}
-        <div className="mt-4 pt-3 border-t border-[#f0ebeb] dark:border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-[#9ca3af]">
+        {/* Security Assurance */}
+        <div className="mt-3 pt-2.5 border-t border-[#f0ebeb] dark:border-white/5 flex items-center justify-center gap-1.5 text-[10px] text-[#9ca3af]">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
           <span>Your order is logged and verified with 100% replacement warranty</span>
         </div>

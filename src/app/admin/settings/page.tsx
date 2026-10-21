@@ -279,10 +279,35 @@ export default function AdminSettingsPage() {
 
       {/* EasyPaisa Settings */}
       <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
-        <h3 className="text-sm font-bold text-[#009E49] uppercase tracking-wider flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-[#009E49]" />
-          <span>EasyPaisa Payment Account</span>
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[#009E49] uppercase tracking-wider flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-[#009E49]" />
+            <span>EasyPaisa Payment Account</span>
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.paymentAccounts.easypaisa.enabled !== false}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  paymentAccounts: {
+                    ...settings.paymentAccounts,
+                    easypaisa: {
+                      ...settings.paymentAccounts.easypaisa,
+                      enabled: e.target.checked,
+                    },
+                  },
+                })
+              }
+              className="w-4 h-4 rounded accent-[#009E49]"
+            />
+            <span className={settings.paymentAccounts.easypaisa.enabled !== false ? 'text-[#009E49]' : 'text-zinc-500'}>
+              {settings.paymentAccounts.easypaisa.enabled !== false ? 'Enabled on Checkout' : 'Disabled'}
+            </span>
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -349,10 +374,35 @@ export default function AdminSettingsPage() {
 
       {/* JazzCash Settings */}
       <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
-        <h3 className="text-sm font-bold text-[#E30613] uppercase tracking-wider flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-[#E30613]" />
-          <span>JazzCash Payment Account</span>
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[#E30613] uppercase tracking-wider flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-[#E30613]" />
+            <span>JazzCash Payment Account</span>
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.paymentAccounts.jazzcash.enabled !== false}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  paymentAccounts: {
+                    ...settings.paymentAccounts,
+                    jazzcash: {
+                      ...settings.paymentAccounts.jazzcash,
+                      enabled: e.target.checked,
+                    },
+                  },
+                })
+              }
+              className="w-4 h-4 rounded accent-[#E30613]"
+            />
+            <span className={settings.paymentAccounts.jazzcash.enabled !== false ? 'text-[#E30613]' : 'text-zinc-500'}>
+              {settings.paymentAccounts.jazzcash.enabled !== false ? 'Enabled on Checkout' : 'Disabled'}
+            </span>
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -419,10 +469,35 @@ export default function AdminSettingsPage() {
 
       {/* Bank & Raast Settings */}
       <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
-        <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-blue-400" />
-          <span>Bank Transfer & Raast Details</span>
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-blue-400" />
+            <span>Bank Transfer & Raast Details</span>
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.paymentAccounts.bank.enabled !== false}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  paymentAccounts: {
+                    ...settings.paymentAccounts,
+                    bank: {
+                      ...settings.paymentAccounts.bank,
+                      enabled: e.target.checked,
+                    },
+                  },
+                })
+              }
+              className="w-4 h-4 rounded accent-blue-500"
+            />
+            <span className={settings.paymentAccounts.bank.enabled !== false ? 'text-blue-400' : 'text-zinc-500'}>
+              {settings.paymentAccounts.bank.enabled !== false ? 'Enabled on Checkout' : 'Disabled'}
+            </span>
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
@@ -525,10 +600,35 @@ export default function AdminSettingsPage() {
 
       {/* Binance USDT Settings */}
       <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
-        <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-amber-400" />
-          <span>Binance Pay & USDT (Crypto)</span>
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-amber-400" />
+            <span>Binance Pay & USDT (Crypto)</span>
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+            <input
+              type="checkbox"
+              checked={Boolean(settings.paymentAccounts.binance.enabled)}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  paymentAccounts: {
+                    ...settings.paymentAccounts,
+                    binance: {
+                      ...settings.paymentAccounts.binance,
+                      enabled: e.target.checked,
+                    },
+                  },
+                })
+              }
+              className="w-4 h-4 rounded accent-amber-500"
+            />
+            <span className={settings.paymentAccounts.binance.enabled ? 'text-amber-400' : 'text-zinc-500'}>
+              {settings.paymentAccounts.binance.enabled ? 'Enabled on Checkout' : 'Disabled'}
+            </span>
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>

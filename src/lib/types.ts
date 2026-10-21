@@ -73,25 +73,31 @@ export interface StoreSettings {
   nextOrderNumber?: number;
   paymentAccounts: {
     easypaisa: {
+      enabled?: boolean;
       title: string;
       number: string;
       instructions: string;
     };
     jazzcash: {
+      enabled?: boolean;
       title: string;
       number: string;
       instructions: string;
     };
     bank: {
+      enabled?: boolean;
       bankName: string;
       accountTitle: string;
       accountNumber: string;
       iban: string;
       raastId: string;
+      instructions?: string;
     };
     binance: {
+      enabled?: boolean;
       payId: string;
       usdtTrc20: string;
+      instructions?: string;
     };
   };
   emailAlerts?: {

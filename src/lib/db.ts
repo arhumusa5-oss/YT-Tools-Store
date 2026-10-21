@@ -19,16 +19,19 @@ const DEFAULT_SETTINGS: StoreSettings = {
   nextOrderNumber: 2504,
   paymentAccounts: {
     easypaisa: {
+      enabled: true,
       title: 'Your Account Title',
       number: '0300 0000000',
       instructions: 'Send payment via EasyPaisa and enter Transaction ID (TID) below.',
     },
     jazzcash: {
+      enabled: true,
       title: 'Your Account Title',
       number: '0300 0000000',
       instructions: 'Send payment via JazzCash mobile account and enter TID.',
     },
     bank: {
+      enabled: true,
       bankName: 'Meezan Bank / Any Bank',
       accountTitle: 'Your Account Title',
       accountNumber: '000000000000',
@@ -36,6 +39,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
       raastId: '03000000000',
     },
     binance: {
+      enabled: false,
       payId: '',
       usdtTrc20: '',
     },
