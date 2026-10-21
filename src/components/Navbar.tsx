@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { Search, Menu, X, Play, Sun, Moon, ShoppingCart, User as UserIcon, LogOut } from 'lucide-react';
+import { Menu, X, Play, Sun, Moon, ShoppingCart, User as UserIcon, LogOut } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 interface NavbarProps {
@@ -60,8 +60,8 @@ function Navbar({ onSearchClick }: NavbarProps) {
           </Link>
         </div>
 
-        {/* Desktop Nav Links - Centered with Nexcore blood-red hover underline */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-[#1f2937] dark:text-zinc-200 absolute left-1/2 -translate-x-1/2">
+        {/* Desktop Nav Links */}
+        <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-bold text-[#1f2937] dark:text-zinc-200">
           <Link
             href="/"
             className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
@@ -80,32 +80,6 @@ function Navbar({ onSearchClick }: NavbarProps) {
 
         {/* Actions Right */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Search Trigger Button */}
-          {onSearchClick && (
-            <button
-              onClick={onSearchClick}
-              className="p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer"
-              aria-label="Search Products"
-              title="Search"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Theme Toggle Button (Light / Dark) */}
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-amber-400 border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer"
-            aria-label="Toggle Theme"
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Moon className="w-4 h-4 text-[#1f2937]" />
-            )}
-          </button>
-
           {/* WhatsApp Quick Chat */}
           <a
             href={whatsappHref}
