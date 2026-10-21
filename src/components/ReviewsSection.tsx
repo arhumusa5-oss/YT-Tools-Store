@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Review, Product } from '@/lib/types';
+import { useCart } from '@/context/CartContext';
 import {
   Star,
   CheckCircle2,
@@ -11,9 +12,14 @@ import {
   Loader2,
   AlertCircle,
   Sparkles,
+  Image as ImageIcon,
+  Maximize2,
+  Trash2,
+  Upload,
 } from 'lucide-react';
 
 export default function ReviewsSection() {
+  const { settings } = useCart();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,11 +31,15 @@ export default function ReviewsSection() {
   const [customProductTitle, setCustomProductTitle] = useState('');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only fetch reviews if enabled or settings loaded
     const fetchReviewsAndProducts = async () => {
       try {
         setLoading(true);
@@ -56,15 +66,53 @@ export default function ReviewsSection() {
     fetchReviewsAndProducts();
   }, []);
 
+  // Default is hidden: If showReviewsSection is false or undefined, return null so storefront looks clean as before
+  if (!settings?.showReviewsSection) {
+    return null;
+  }
+
   const handleOpenModal = () => {
     setCustomerName('');
     setProductTitle(products[0]?.title || 'General Store Review');
     setCustomProductTitle('');
     setRating(5);
     setComment('');
+    setImageUrl('');
     setSubmitSuccess(false);
     setSubmitError('');
     setModalOpen(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setSubmitError('Image size must be less than 10MB.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setSubmitError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setImageUrl(data.url);
+      } else {
+        setSubmitError(data.error || 'Failed to upload image.');
+      }
+    } catch {
+      setSubmitError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
@@ -89,6 +137,7 @@ export default function ReviewsSection() {
           productTitle: finalProduct || 'General Store Review',
           rating,
           comment: comment.trim(),
+          imageUrl: imageUrl.trim() || undefined,
           isVerifiedPurchase: true,
           status: 'pending', // Starts as pending moderation
         }),
@@ -178,6 +227,28 @@ export default function ReviewsSection() {
                   <p className="text-xs sm:text-sm text-[#1f2937] dark:text-zinc-300 leading-relaxed italic">
                     &ldquo;{rev.comment}&rdquo;
                   </p>
+
+                  {/* Customer Attached Image Proof */}
+                  {rev.imageUrl && (
+                    <div className="mt-3.5 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewImage(rev.imageUrl!)}
+                        className="group/img relative inline-block rounded-xl overflow-hidden border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#ff4d4d] transition-all cursor-pointer shadow-sm"
+                        title="Click to view full image"
+                      >
+                        <img
+                          src={rev.imageUrl}
+                          alt="Customer feedback screenshot"
+                          className="h-28 w-auto max-w-[200px] object-cover group-hover/img:scale-105 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>View Proof</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Author & Verification */}
@@ -344,10 +415,61 @@ export default function ReviewsSection() {
                     />
                   </div>
 
+                  {/* Optional Image / Screenshot Proof Upload */}
+                  <div>
+                    <label className="block text-xs font-bold text-[#1f2937] dark:text-zinc-300 mb-1">
+                      Attach Screenshot / Photo Proof <span className="text-[#6b7280] font-normal text-[11px]">(Optional)</span>
+                    </label>
+
+                    {imageUrl ? (
+                      <div className="relative inline-block rounded-xl overflow-hidden border border-[#e8e1e1] dark:border-white/10 p-1 bg-white dark:bg-[#161622]">
+                        <img
+                          src={imageUrl}
+                          alt="Review attachment preview"
+                          className="h-24 w-auto rounded-lg object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setImageUrl('')}
+                          className="absolute top-2 right-2 p-1 rounded-full bg-red-600 text-white hover:bg-red-700 transition shadow-md cursor-pointer"
+                          title="Remove image"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#ff4d4d] rounded-2xl cursor-pointer bg-[#faf8f8] dark:bg-[#14141e] transition-colors group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          disabled={uploadingImage}
+                          className="hidden"
+                        />
+                        {uploadingImage ? (
+                          <div className="flex items-center gap-2 text-xs text-[#660000] dark:text-[#ff6b6b] font-bold">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Uploading photo...</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-center">
+                            <Upload className="w-5 h-5 text-[#6b7280] group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors" />
+                            <span className="text-xs font-bold text-[#1f2937] dark:text-zinc-200">
+                              Upload Proof Screenshot / Image
+                            </span>
+                            <span className="text-[10px] text-[#6b7280]">
+                              JPG, PNG, WebP up to 10MB
+                            </span>
+                          </div>
+                        )}
+                      </label>
+                    )}
+                  </div>
+
                   <div className="pt-2">
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || uploadingImage}
                       className="w-full py-3.5 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-black text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-[#660000]/25 disabled:opacity-50 cursor-pointer active:scale-95"
                     >
                       {submitting ? (
@@ -362,6 +484,29 @@ export default function ReviewsSection() {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ================= LIGHTBOX IMAGE PREVIEW MODAL ================= */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div className="relative max-w-4xl max-h-[90vh] bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl p-2" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/70 hover:bg-black text-white hover:text-red-400 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <img
+                src={previewImage}
+                alt="Enlarged review proof"
+                className="max-h-[85vh] w-auto max-w-full rounded-xl object-contain mx-auto"
+              />
             </div>
           </div>
         )}

@@ -34,6 +34,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [adminNotesMap, setAdminNotesMap] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -286,6 +287,36 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleDeleteOrder = async (id: string, orderNumber: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to permanently delete order ${orderNumber}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrders((prev) =>
+          prev.filter(
+            (o) =>
+              o.id !== id &&
+              o.id.replace(/^#/, '').toLowerCase() !== id.replace(/^#/, '').toLowerCase()
+          )
+        );
+      } else {
+        alert(data.error || 'Failed to delete order.');
+      }
+    } catch {
+      alert('Network error. Failed to delete order.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filtered = orders.filter((o) => {
     const s = search.toLowerCase();
     const matchSearch =
@@ -413,10 +444,26 @@ export default function AdminOrdersPage() {
                     )}
                   </div>
 
-                  <span className="text-xs text-zinc-500 font-medium">
-                    {new Date(order.createdAt).toLocaleDateString()} at{' '}
-                    {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-zinc-500 font-medium">
+                      {new Date(order.createdAt).toLocaleDateString()} at{' '}
+                      {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOrder(order.id, order.id)}
+                      disabled={deletingId === order.id}
+                      className="px-2.5 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                      title="Permanently delete this order"
+                    >
+                      {deletingId === order.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                      )}
+                      <span>Delete</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Details Grid */}

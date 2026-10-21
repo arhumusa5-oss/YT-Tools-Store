@@ -136,3 +136,19 @@ export async function PUT(
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const deleted = await db.deleteOrder(id);
+    if (!deleted) {
+      return NextResponse.json({ success: false, error: 'Order not found or could not be deleted' }, { status: 404 });
+    }
+    return NextResponse.json({ success: true, message: 'Order deleted successfully' });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+  }
+}

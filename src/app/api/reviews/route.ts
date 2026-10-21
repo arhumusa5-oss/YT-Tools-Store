@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customerName, productTitle, rating, comment, isVerifiedPurchase, date, status } = body;
+    const { customerName, productTitle, rating, comment, isVerifiedPurchase, date, status, imageUrl } = body;
 
     if (!customerName || !comment) {
       return NextResponse.json(
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       productTitle: (productTitle || 'General Store Review').trim(),
       rating: Number(rating) || 5,
       comment: comment.trim(),
+      imageUrl: typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : undefined,
       isVerifiedPurchase: isVerifiedPurchase !== undefined ? Boolean(isVerifiedPurchase) : true,
       status: finalStatus,
       date: date?.trim() || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),

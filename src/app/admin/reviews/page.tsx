@@ -16,6 +16,10 @@ import {
   EyeOff,
   AlertCircle,
   Check,
+  Image as ImageIcon,
+  Maximize2,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 
 export default function AdminReviewsPage() {
@@ -24,6 +28,8 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [showReviewsOnStore, setShowReviewsOnStore] = useState(false);
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
 
   // Form State
   const [customerName, setCustomerName] = useState('');
@@ -31,6 +37,9 @@ export default function AdminReviewsPage() {
   const [customProductTitle, setCustomProductTitle] = useState('');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isVerifiedPurchase, setIsVerifiedPurchase] = useState(true);
   const [reviewDate, setReviewDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -39,16 +48,21 @@ export default function AdminReviewsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [revRes, prodRes] = await Promise.all([
+      const [revRes, prodRes, settingsRes] = await Promise.all([
         fetch('/api/reviews?all=true'),
         fetch('/api/products'),
+        fetch('/api/settings'),
       ]);
 
       const revData = await revRes.json();
       const prodData = await prodRes.json();
+      const settingsData = await settingsRes.json();
 
       if (revData.success) setReviews(revData.reviews);
       if (prodData.success) setProducts(prodData.products);
+      if (settingsData.success && settingsData.settings) {
+        setShowReviewsOnStore(Boolean(settingsData.settings.showReviewsSection));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -66,10 +80,65 @@ export default function AdminReviewsPage() {
     setCustomProductTitle('');
     setRating(5);
     setComment('');
+    setImageUrl('');
     setIsVerifiedPurchase(true);
     setReviewDate(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
     setErrorMsg('');
     setModalOpen(true);
+  };
+
+  const handleToggleVisibility = async () => {
+    setTogglingVisibility(true);
+    try {
+      const nextVal = !showReviewsOnStore;
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showReviewsSection: nextVal }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowReviewsOnStore(nextVal);
+      } else {
+        alert('Failed to update storefront visibility.');
+      }
+    } catch {
+      alert('Network error updating visibility.');
+    } finally {
+      setTogglingVisibility(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 10MB.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setErrorMsg('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setImageUrl(data.url);
+      } else {
+        setErrorMsg(data.error || 'Failed to upload photo.');
+      }
+    } catch {
+      setErrorMsg('Failed to upload photo.');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleCreateReview = async (e: React.FormEvent) => {
@@ -94,6 +163,7 @@ export default function AdminReviewsPage() {
           productTitle: finalTitle || 'General Store Review',
           rating,
           comment: comment.trim(),
+          imageUrl: imageUrl.trim() || undefined,
           isVerifiedPurchase,
           status: 'approved', // Admin created reviews are live by default
           date: reviewDate.trim(),
@@ -182,6 +252,53 @@ export default function AdminReviewsPage() {
         >
           <Plus className="w-4 h-4 stroke-[3]" />
           <span>Add Review</span>
+        </button>
+      </div>
+
+      {/* Public Storefront Visibility Switch Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${showReviewsOnStore ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800/70 text-zinc-400 border border-zinc-700/50'}`}>
+            <Eye className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white">Storefront Reviews Section Visibility</h3>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${showReviewsOnStore ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}>
+                {showReviewsOnStore ? '● Active on Website' : '○ Hidden from Website (Default)'}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {showReviewsOnStore
+                ? 'The Reviews section & navbar link are currently visible to visitors on your homepage.'
+                : 'The Reviews section is hidden. Visitors see the original clean storefront UI without reviews.'}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleToggleVisibility}
+          disabled={togglingVisibility}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition active:scale-95 cursor-pointer shrink-0 ${
+            showReviewsOnStore
+              ? 'bg-red-950/60 hover:bg-red-900/60 text-red-300 border border-red-500/40'
+              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20'
+          }`}
+        >
+          {togglingVisibility ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : showReviewsOnStore ? (
+            <>
+              <EyeOff className="w-4 h-4" />
+              <span>Hide Reviews from Website</span>
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4" />
+              <span>Show Reviews on Website</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -345,6 +462,28 @@ export default function AdminReviewsPage() {
                     <p className="text-xs text-zinc-300 leading-relaxed italic">
                       &ldquo;{rev.comment}&rdquo;
                     </p>
+
+                    {/* Image Attachment Proof */}
+                    {rev.imageUrl && (
+                      <div className="mt-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(rev.imageUrl!)}
+                          className="group/img relative inline-block rounded-xl overflow-hidden border border-zinc-800 hover:border-zinc-600 transition cursor-pointer"
+                          title="Click to view full image"
+                        >
+                          <img
+                            src={rev.imageUrl}
+                            alt="Review attachment"
+                            className="h-20 w-auto max-w-[160px] object-cover rounded-lg group-hover/img:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold gap-1">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                            <span>View Proof</span>
+                          </div>
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Customer details & Moderation Actions */}
@@ -536,6 +675,52 @@ export default function AdminReviewsPage() {
                 />
               </div>
 
+              {/* Optional Screenshot / Photo Proof Upload */}
+              <div>
+                <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  Attach Photo / Screenshot Proof <span className="text-zinc-500 font-normal text-[11px]">(Optional)</span>
+                </label>
+
+                {imageUrl ? (
+                  <div className="relative inline-block rounded-xl overflow-hidden border border-zinc-800 p-1 bg-black">
+                    <img
+                      src={imageUrl}
+                      alt="Review proof attachment"
+                      className="h-20 w-auto rounded-lg object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-red-600 text-white hover:bg-red-700 transition shadow-md cursor-pointer"
+                      title="Remove image"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl cursor-pointer bg-black/60 transition group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                    {uploadingImage ? (
+                      <div className="flex items-center gap-2 text-xs text-amber-400 font-bold">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Uploading photo...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-zinc-400 group-hover:text-zinc-200">
+                        <Upload className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Upload Photo Proof (JPG, PNG, WebP)</span>
+                      </div>
+                    )}
+                  </label>
+                )}
+              </div>
+
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
@@ -559,6 +744,32 @@ export default function AdminReviewsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ================= LIGHTBOX IMAGE PREVIEW MODAL ================= */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-black rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/70 hover:bg-black text-white hover:text-red-400 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={previewImage}
+              alt="Enlarged review proof"
+              className="max-h-[85vh] w-auto max-w-full rounded-xl object-contain mx-auto"
+            />
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@ import {
   Megaphone,
   Mail,
   Send,
+  Star,
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -275,6 +276,34 @@ export default function AdminSettingsPage() {
             className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
           />
         </div>
+      </div>
+
+      {/* Storefront Customer Reviews Display */}
+      <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-400" />
+            <span>Storefront Customer Reviews Display</span>
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+            <input
+              type="checkbox"
+              checked={Boolean(settings.showReviewsSection)}
+              onChange={(e) =>
+                setSettings({ ...settings, showReviewsSection: e.target.checked })
+              }
+              className="w-4 h-4 rounded accent-emerald-500"
+            />
+            <span className={settings.showReviewsSection ? 'text-emerald-400' : 'text-zinc-400'}>
+              {settings.showReviewsSection ? 'Enabled (Showing on Website)' : 'Disabled (Hidden by Default)'}
+            </span>
+          </label>
+        </div>
+
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          When disabled (default), the customer reviews section and the &quot;Reviews&quot; navigation link are completely hidden from the public website, keeping your storefront minimal and clean. Toggle this ON whenever you want customer reviews to be visible to store visitors.
+        </p>
       </div>
 
       {/* EasyPaisa Settings */}

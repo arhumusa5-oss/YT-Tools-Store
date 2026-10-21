@@ -83,13 +83,15 @@ function Navbar({ onSearchClick }: NavbarProps) {
             Track Order
             <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
           </Link>
-          <Link
-            href="/#reviews"
-            className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
-          >
-            Reviews
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
-          </Link>
+          {Boolean(settings?.showReviewsSection) && (
+            <Link
+              href="/#reviews"
+              className="relative py-1 hover:text-[#660000] dark:hover:text-[#ff4d4d] transition-colors group/nav"
+            >
+              Reviews
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#660000] dark:bg-[#ff4d4d] rounded-full transition-all duration-200 group-hover/nav:w-full" />
+            </Link>
+          )}
         </nav>
 
         {/* Actions Right */}
@@ -270,13 +272,15 @@ function Navbar({ onSearchClick }: NavbarProps) {
             Track Order
           </Link>
 
-          <Link
-            href="/#reviews"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5"
-          >
-            Customer Reviews
-          </Link>
+          {Boolean(settings?.showReviewsSection) && (
+            <Link
+              href="/#reviews"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5"
+            >
+              Customer Reviews
+            </Link>
+          )}
 
           <div className="flex items-center justify-between pt-2 border-t border-[#f0ebeb] dark:border-white/10">
             <span className="text-xs font-bold text-[#6b7280] dark:text-zinc-400">Theme</span>

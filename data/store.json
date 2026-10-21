@@ -580,6 +580,7 @@
     "adminPin": "12388127",
     "currencyRateUSDToPKR": 280,
     "nextOrderNumber": 2505,
+    "showReviewsSection": false,
     "paymentAccounts": {
       "easypaisa": {
         "enabled": true,

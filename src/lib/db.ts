@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: StoreSettings = {
   adminPin: '12388127',
   currencyRateUSDToPKR: 280,
   nextOrderNumber: 2504,
+  showReviewsSection: false,
   paymentAccounts: {
     easypaisa: {
       enabled: true,
@@ -420,6 +421,20 @@ export const db = {
     };
     await saveData(data);
     return data.orders[index];
+  },
+
+  async deleteOrder(id: string): Promise<boolean> {
+    const data = await getData();
+    const cleanId = id.replace(/^#/, '').toLowerCase();
+    const prevLen = data.orders.length;
+    data.orders = data.orders.filter(
+      (o) => o.id !== id && o.id.replace(/^#/, '').toLowerCase() !== cleanId
+    );
+    if (data.orders.length !== prevLen) {
+      await saveData(data);
+      return true;
+    }
+    return false;
   },
 
   // Reviews

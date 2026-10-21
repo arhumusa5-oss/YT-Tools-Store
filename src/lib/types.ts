@@ -58,6 +58,7 @@ export interface Review {
   productTitle: string;
   rating: number; // 1 to 5
   comment: string;
+  imageUrl?: string;
   isVerifiedPurchase: boolean;
   date: string;
   createdAt: string;
@@ -74,6 +75,7 @@ export interface StoreSettings {
   adminPin: string;
   currencyRateUSDToPKR: number;
   nextOrderNumber?: number;
+  showReviewsSection?: boolean;
   paymentAccounts: {
     easypaisa: {
       enabled?: boolean;
