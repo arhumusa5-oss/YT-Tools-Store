@@ -4,6 +4,7 @@ import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import CustomCursor from '@/components/CustomCursor';
 import CartDrawer from '@/components/CartDrawer';
+import CartToast from '@/components/CartToast';
 
 const fontSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -152,6 +153,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartDrawer />
+          <CartToast />
         </CartProvider>
       </body>
     </html>

@@ -3,6 +3,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, OrderItem, Order, StoreSettings } from '@/lib/types';
 
+export interface CartNotification {
+  id: string;
+  title: string;
+  image?: string;
+  quantity: number;
+}
+
 interface CartContextType {
   cart: OrderItem[];
   cartCount: number;
@@ -16,6 +23,8 @@ interface CartContextType {
   clearCart: () => void;
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
+  cartNotification: CartNotification | null;
+  clearCartNotification: () => void;
   isCheckoutOpen: boolean;
   setIsCheckoutOpen: (open: boolean) => void;
   checkoutItems: OrderItem[];
@@ -38,6 +47,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [currency, setCurrency] = useState<'PKR' | 'USD'>('PKR');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartNotification, setCartNotification] = useState<CartNotification | null>(null);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState<OrderItem[]>([]);
   const [activeProductModal, setActiveProductModal] = useState<Product | null>(null);
@@ -115,6 +125,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearCartNotification = () => {
+    setCartNotification(null);
+  };
+
   const addToCart = (product: Product, quantity = 1) => {
     if (product.isSoldOut) return;
     setCart((prev) => {
@@ -136,7 +150,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-    setIsCartOpen(true);
+
+    // Show non-intrusive toast notification without opening drawer
+    setCartNotification({
+      id: Date.now().toString(),
+      title: product.title,
+      image: product.images[0] || '',
+      quantity,
+    });
   };
 
   const removeFromCart = (productId: string) => {
@@ -199,6 +220,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         isCartOpen,
         setIsCartOpen,
+        cartNotification,
+        clearCartNotification,
         isCheckoutOpen,
         setIsCheckoutOpen,
         checkoutItems,
