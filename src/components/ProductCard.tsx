@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { Check, Star, Eye, ShoppingCart } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
@@ -18,6 +19,7 @@ function ProductCard({ product }: ProductCardProps) {
     settings,
     addToCart,
   } = useCart();
+  const { user } = useAuth();
 
   const [quantity, setQuantity] = useState<number | string>(1);
   const [added, setAdded] = useState(false);
@@ -57,14 +59,15 @@ function ProductCard({ product }: ProductCardProps) {
   const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
 
   const whatsappUrl = useMemo(() => {
+    const customerLine = user ? ` (Customer: ${user.name} - ${user.whatsappNumber})` : '';
     const whatsappMessage = encodeURIComponent(
       `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
         totalPKR,
         totalUSD
-      )}) from YT Tools Store.`
+      )})${customerLine} from YT Tools Store.`
     );
     return `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
-  }, [actionPhrase, qtyPrefix, product.title, formatPrice, totalPKR, totalUSD, targetWhatsApp]);
+  }, [actionPhrase, qtyPrefix, product.title, formatPrice, totalPKR, totalUSD, targetWhatsApp, user]);
 
   const displayDescription = useMemo(() => {
     if (product.shortDescription?.trim()) {
@@ -401,6 +404,10 @@ function ProductCard({ product }: ProductCardProps) {
                           },
                         ],
                         totalPKR,
+                        customerName: user?.name,
+                        customerWhatsApp: user?.whatsappNumber,
+                        customerEmail: user?.email,
+                        isRegisteredUser: Boolean(user),
                       }),
                     }).catch(() => {});
                   } catch {

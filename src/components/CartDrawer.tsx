@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
@@ -19,6 +20,7 @@ export default function CartDrawer() {
     formatPrice,
     settings,
   } = useCart();
+  const { user } = useAuth();
 
   // Lock body scroll when cart is open
   useEffect(() => {
@@ -58,10 +60,12 @@ export default function CartDrawer() {
       })
       .join('\n\n');
 
-    const rawMessage = `Assalam o Alaikum! I would like to order the following items from YT Tools Store:\n\n🛒 *ORDER DETAILS (${cartCount} items):*\n----------------------------------------\n${itemsList}\n----------------------------------------\n💵 *Grand Total:* Rs ${cartTotalPKR.toLocaleString()}\n\nPlease confirm my order and share payment details (EasyPaisa / JazzCash / Bank). Thank you!`;
+    const customerLine = user ? `\n👤 *Customer:* ${user.name} (${user.whatsappNumber})` : '';
+
+    const rawMessage = `Assalam o Alaikum! I would like to order the following items from YT Tools Store:\n\n🛒 *ORDER DETAILS (${cartCount} items):*\n----------------------------------------\n${itemsList}\n----------------------------------------\n💵 *Grand Total:* Rs ${cartTotalPKR.toLocaleString()}${customerLine}\n\nPlease confirm my order and share payment details (EasyPaisa / JazzCash / Bank). Thank you!`;
 
     return `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(rawMessage)}`;
-  }, [cart, cartCount, cartTotalPKR, targetWhatsApp]);
+  }, [cart, cartCount, cartTotalPKR, targetWhatsApp, user]);
 
   return (
     <div
@@ -279,6 +283,10 @@ export default function CartDrawer() {
                           image: i.image,
                         })),
                         totalPKR: cartTotalPKR,
+                        customerName: user?.name,
+                        customerWhatsApp: user?.whatsappNumber,
+                        customerEmail: user?.email,
+                        isRegisteredUser: Boolean(user),
                       }),
                     }).catch(() => {});
                   } catch {

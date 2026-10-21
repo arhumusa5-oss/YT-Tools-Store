@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { neon, NeonQueryFunction } from '@neondatabase/serverless';
-import { Product, Order, Review, StoreSettings } from './types';
+import { Product, Order, Review, StoreSettings, User } from './types';
 import bundledStoreData from '../../data/store.json';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -56,6 +56,7 @@ interface DatabaseSchema {
   orders: Order[];
   reviews: Review[];
   settings: StoreSettings;
+  users?: User[];
 }
 
 // Check if running with Cloud Database (e.g. on Vercel)
@@ -131,6 +132,7 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         orders: parsed.orders || [],
         reviews: parsed.reviews || [],
         settings: mergedSettings,
+        users: parsed.users || [],
       };
 
       if (needsAutoSeed) {
@@ -147,6 +149,7 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         products: (bundledStoreData.products || []) as Product[],
         orders: [],
         reviews: [],
+        users: [],
         settings: {
           ...DEFAULT_SETTINGS,
           ...(bundledStoreData.settings || {}),
@@ -192,6 +195,7 @@ function getLocalData(): DatabaseSchema {
       products: (bundledStoreData.products || []) as Product[],
       orders: [],
       reviews: [],
+      users: [],
       settings: {
         ...DEFAULT_SETTINGS,
         ...(bundledStoreData.settings || {}),
@@ -208,6 +212,7 @@ function getLocalData(): DatabaseSchema {
       products: parsed.products || (bundledStoreData.products as Product[]) || [],
       orders: parsed.orders || [],
       reviews: parsed.reviews || [],
+      users: parsed.users || [],
       settings: parsed.settings ? { ...DEFAULT_SETTINGS, ...parsed.settings } : DEFAULT_SETTINGS,
     };
   } catch {
@@ -215,6 +220,7 @@ function getLocalData(): DatabaseSchema {
       products: (bundledStoreData.products || []) as Product[],
       orders: [],
       reviews: [],
+      users: [],
       settings: {
         ...DEFAULT_SETTINGS,
         ...(bundledStoreData.settings || {}),
@@ -428,6 +434,72 @@ export const db = {
     };
     await saveData(data);
     return data.settings;
+  },
+
+  // Users (Customer Accounts)
+  async getUsers(): Promise<User[]> {
+    const data = await getData();
+    return data.users || [];
+  },
+
+  async getUserById(id: string): Promise<User | null> {
+    const data = await getData();
+    return (data.users || []).find((u) => u.id === id) || null;
+  },
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const data = await getData();
+    const cleanEmail = email.trim().toLowerCase();
+    return (data.users || []).find((u) => u.email.trim().toLowerCase() === cleanEmail) || null;
+  },
+
+  async getUserByResetToken(token: string): Promise<User | null> {
+    const data = await getData();
+    return (
+      (data.users || []).find(
+        (u) => u.resetToken === token && u.resetTokenExpiry && u.resetTokenExpiry > Date.now()
+      ) || null
+    );
+  },
+
+  async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+    const data = await getData();
+    data.users = data.users || [];
+    const newUser: User = {
+      ...userData,
+      id: 'usr-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      email: userData.email.trim().toLowerCase(),
+      createdAt: new Date().toISOString(),
+    };
+    data.users.unshift(newUser);
+    await saveData(data);
+    return newUser;
+  },
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
+    const data = await getData();
+    data.users = data.users || [];
+    const index = data.users.findIndex((u) => u.id === id);
+    if (index === -1) return null;
+    data.users[index] = {
+      ...data.users[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveData(data);
+    return data.users[index];
+  },
+
+  async deleteUser(id: string): Promise<boolean> {
+    const data = await getData();
+    data.users = data.users || [];
+    const initialLen = data.users.length;
+    data.users = data.users.filter((u) => u.id !== id);
+    if (data.users.length !== initialLen) {
+      await saveData(data);
+      return true;
+    }
+    return false;
   },
 
   // Seed / Sync Data from bundled store.json

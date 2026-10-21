@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
-import { Search, Menu, X, Play, Sun, Moon, ShoppingCart } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Search, Menu, X, Play, Sun, Moon, ShoppingCart, User as UserIcon, LogOut } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 interface NavbarProps {
@@ -12,7 +13,9 @@ interface NavbarProps {
 
 function Navbar({ onSearchClick }: NavbarProps) {
   const { settings, theme, toggleTheme, cartCount, setIsCartOpen } = useCart();
+  const { user, openAuthModal, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const whatsappHref = `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20want%20to%20order%20digital%20tools.`;
 
@@ -118,6 +121,61 @@ function Navbar({ onSearchClick }: NavbarProps) {
             <span>Order on WhatsApp</span>
           </a>
 
+          {/* User Account / Sign In Button */}
+          {user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] border border-[#e8e1e1] dark:border-white/10 text-xs font-bold text-[#1f2937] dark:text-zinc-200 transition active:scale-95 cursor-pointer shadow-sm"
+              >
+                <div className="w-6 h-6 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black uppercase shadow-sm">
+                  {user.name.charAt(0)}
+                </div>
+                <span className="hidden sm:inline max-w-[85px] truncate">{user.name.split(' ')[0]}</span>
+              </button>
+
+              {/* User Dropdown */}
+              {userDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/15 shadow-2xl p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-2.5 py-2 border-b border-[#f0ebeb] dark:border-white/10 mb-2">
+                    <p className="text-xs font-black text-[#0a0a0a] dark:text-white truncate">
+                      {user.name}
+                    </p>
+                    <p className="text-[11px] text-[#6b7280] dark:text-zinc-400 truncate mt-0.5">
+                      {user.email}
+                    </p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold truncate mt-0.5 font-mono">
+                      WhatsApp: {user.whatsappNumber}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      signOut();
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => openAuthModal('signin')}
+              className="flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#660000] hover:text-white dark:hover:bg-[#660000] dark:hover:text-white text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
+              title="Sign In to Your Account"
+            >
+              <UserIcon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign In</span>
+            </button>
+          )}
+
           {/* Header Primary CTA */}
           <Link
             href="/#products"
@@ -156,6 +214,44 @@ function Navbar({ onSearchClick }: NavbarProps) {
               </span>
             )}
           </button>
+
+          {/* Mobile User Account Link */}
+          {user ? (
+            <div className="py-2 px-3 rounded-2xl bg-[#f4efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-[#660000] text-white flex items-center justify-center text-xs font-black shrink-0">
+                  {user.name.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-black text-[#0a0a0a] dark:text-white truncate">{user.name}</p>
+                  <p className="text-[10px] text-[#6b7280] dark:text-zinc-400 truncate">{user.email}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  signOut();
+                }}
+                className="p-1.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-bold shrink-0"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openAuthModal('signin');
+              }}
+              className="w-full flex items-center gap-2 py-2 px-3 rounded-xl bg-[#660000] text-white text-xs font-bold justify-center shadow-sm cursor-pointer"
+            >
+              <UserIcon className="w-4 h-4" />
+              <span>Sign In / Create Account</span>
+            </button>
+          )}
 
           <Link
             href="/#products"

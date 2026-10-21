@@ -20,7 +20,10 @@ export async function POST(req: NextRequest) {
       type: body.type === 'order' ? 'order' : 'add_to_cart',
       items: Array.isArray(body.items) ? body.items : [],
       totalPKR: typeof body.totalPKR === 'number' ? body.totalPKR : undefined,
+      customerName: body.customerName,
       customerWhatsApp: body.customerWhatsApp,
+      customerEmail: body.customerEmail,
+      isRegisteredUser: Boolean(body.isRegisteredUser),
       notes: body.notes,
     };
 

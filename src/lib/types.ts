@@ -111,3 +111,23 @@ export interface Category {
   icon?: string;
   description?: string;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  whatsappNumber: string;
+  passwordHash: string;
+  resetToken?: string;
+  resetTokenExpiry?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface UserSession {
+  id: string;
+  name: string;
+  email: string;
+  whatsappNumber: string;
+  token?: string;
+}

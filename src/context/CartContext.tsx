@@ -161,6 +161,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     // Silent background email alert trigger
     try {
+      let currentUser: { name?: string; email?: string; whatsappNumber?: string } | null = null;
+      try {
+        const saved = localStorage.getItem('yt_user_session');
+        if (saved) currentUser = JSON.parse(saved);
+      } catch {}
+
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,6 +182,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             },
           ],
           totalPKR: product.pricePKR * quantity,
+          customerName: currentUser?.name,
+          customerWhatsApp: currentUser?.whatsappNumber,
+          customerEmail: currentUser?.email,
+          isRegisteredUser: Boolean(currentUser),
         }),
       }).catch(() => {});
     } catch {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { X, Check, Star, Clock, Mail, Share2, ShoppingCart } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 import { Product } from '@/lib/types';
@@ -14,6 +15,7 @@ export default function ProductModal() {
     settings,
     addToCart,
   } = useCart();
+  const { user } = useAuth();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
@@ -117,11 +119,12 @@ export default function ProductModal() {
   const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
   const actionPhrase = isQuery ? 'inquire about' : 'order';
   const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
+  const customerLine = user ? ` (Customer: ${user.name} - ${user.whatsappNumber})` : '';
   const whatsappMessage = encodeURIComponent(
     `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
       totalPKR,
       totalUSD
-    )}) from YT Tools Store.`
+    )})${customerLine} from YT Tools Store.`
   );
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
@@ -439,6 +442,10 @@ export default function ProductModal() {
                               },
                             ],
                             totalPKR,
+                            customerName: user?.name,
+                            customerWhatsApp: user?.whatsappNumber,
+                            customerEmail: user?.email,
+                            isRegisteredUser: Boolean(user),
                           }),
                         }).catch(() => {});
                       } catch {

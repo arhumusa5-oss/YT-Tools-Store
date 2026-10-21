@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
+import { AuthProvider } from '@/context/AuthContext';
 import CustomCursor from '@/components/CustomCursor';
 import CartDrawer from '@/components/CartDrawer';
 import CartToast from '@/components/CartToast';
+import AuthModal from '@/components/AuthModal';
 
 const fontSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -150,11 +152,14 @@ export default function RootLayout({
         {/* Interactive Dual Cursor */}
         <CustomCursor />
 
-        <CartProvider>
-          {children}
-          <CartDrawer />
-          <CartToast />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            {children}
+            <CartDrawer />
+            <CartToast />
+            <AuthModal />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

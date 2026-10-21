@@ -11,7 +11,10 @@ export interface EmailNotificationPayload {
     image?: string;
   }>;
   totalPKR?: number;
+  customerName?: string;
   customerWhatsApp?: string;
+  customerEmail?: string;
+  isRegisteredUser?: boolean;
   notes?: string;
 }
 
@@ -116,6 +119,34 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
             <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">
               Timestamp: <strong>${nowFormatted} PKT</strong>
             </p>
+          </div>
+
+          <!-- Customer Info Box -->
+          <div style="margin-bottom: 20px; padding: 14px 18px; background: ${
+            payload.isRegisteredUser ? '#eff6ff' : '#f9fafb'
+          }; border: 1px solid ${
+            payload.isRegisteredUser ? '#bfdbfe' : '#e5e7eb'
+          }; border-radius: 12px;">
+            <p style="margin: 0; font-size: 13px; font-weight: 700; color: ${
+              payload.isRegisteredUser ? '#1e40af' : '#4b5563'
+            };">
+              👤 ${payload.isRegisteredUser ? 'Registered Customer Profile' : 'Guest Visitor (Not Signed In)'}
+            </p>
+            ${
+              payload.customerName
+                ? `<p style="margin: 6px 0 0; font-size: 13px; color: #111;"><strong>Name:</strong> ${payload.customerName}</p>`
+                : ''
+            }
+            ${
+              payload.customerWhatsApp
+                ? `<p style="margin: 4px 0 0; font-size: 13px; color: #111;"><strong>WhatsApp:</strong> <a href="https://wa.me/${payload.customerWhatsApp.replace(/[^0-9]/g, '')}" style="color: #059669; font-weight: bold; text-decoration: none;">${payload.customerWhatsApp}</a></p>`
+                : ''
+            }
+            ${
+              payload.customerEmail
+                ? `<p style="margin: 4px 0 0; font-size: 13px; color: #111;"><strong>Email:</strong> ${payload.customerEmail}</p>`
+                : ''
+            }
           </div>
 
           <!-- Items Table -->
@@ -259,4 +290,74 @@ export async function sendTestEmail(recipientEmail: string, service?: string, cr
   }
 
   return sendEmailNotification(testPayload);
+}
+
+export async function sendPasswordResetEmail(recipientEmail: string, resetUrl: string) {
+  try {
+    const settings = await db.getSettings();
+    const alertConfig = settings.emailAlerts;
+
+    const resendKey = alertConfig?.resendApiKey?.trim() || process.env.RESEND_API_KEY || '';
+    const gmailUser = alertConfig?.gmailUser?.trim() || process.env.SMTP_USER || '';
+    const gmailPass = alertConfig?.gmailAppPassword?.trim() || process.env.SMTP_PASSWORD || '';
+
+    const subject = '🔐 Reset Your Password - YT Tools Store';
+    const html = `
+      <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e8e1e1; border-radius: 16px;">
+        <h2 style="color: #660000; margin-top: 0;">YT Tools Store</h2>
+        <p style="font-size: 15px; color: #111;">Assalam o Alaikum,</p>
+        <p style="font-size: 14px; color: #444; line-height: 1.6;">
+          You requested to reset your password. Click the button below to set a new password. This link will expire in 1 hour.
+        </p>
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${resetUrl}" style="display: inline-block; background: #660000; color: #ffffff; padding: 12px 28px; border-radius: 10px; font-weight: bold; text-decoration: none; font-size: 14px;">
+            Reset Password
+          </a>
+        </div>
+        <p style="font-size: 12px; color: #888; line-height: 1.4;">
+          If the button doesn't work, copy and paste this link into your browser:<br/>
+          <a href="${resetUrl}" style="color: #660000; word-break: break-all;">${resetUrl}</a>
+        </p>
+        <p style="font-size: 12px; color: #888; line-height: 1.4; margin-top: 20px;">
+          If you did not request this, please ignore this email. Your password will remain safe and unchanged.
+        </p>
+      </div>
+    `;
+
+    if (resendKey) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'YT Tools Store <onboarding@resend.dev>',
+          to: recipientEmail,
+          subject,
+          html,
+        }),
+      });
+      if (res.ok) return { success: true, provider: 'resend' };
+    }
+
+    if (gmailUser && gmailPass) {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: gmailUser, pass: gmailPass },
+      });
+      await transporter.sendMail({
+        from: `"YT Tools Store" <${gmailUser}>`,
+        to: recipientEmail,
+        subject,
+        html,
+      });
+      return { success: true, provider: 'gmail_smtp' };
+    }
+
+    return { success: false, message: 'Email credentials not configured.' };
+  } catch (err: unknown) {
+    console.error('Password reset email error:', err);
+    return { success: false, error: String(err) };
+  }
 }
