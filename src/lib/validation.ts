@@ -66,28 +66,36 @@ export function validateWhatsAppNumber(phone: string): { valid: boolean; error?:
     return { valid: false, error: 'Mobile / WhatsApp number is required.' };
   }
 
-  // Check if it contains letters / alphabets
+  // Check if it contains letters / alphabets (like "Saleem", etc.)
   if (/[a-zA-Z]/.test(trimmed)) {
-    return { valid: false, error: 'Mobile number can ONLY contain numbers (0-9). Alphabets are not allowed.' };
+    return { valid: false, error: 'Phone number cannot contain letters or names. Please enter digits only (0-9).' };
   }
 
-  // Check for invalid special characters
+  // Check for invalid special characters (allow digits, +, spaces, hyphens, and parentheses)
   if (/[^0-9+\s\-()]/.test(trimmed)) {
-    return { valid: false, error: 'Mobile number contains invalid characters. Only digits (0-9) and + are allowed.' };
+    return { valid: false, error: 'Phone number contains invalid characters. Only digits (0-9) and + are allowed.' };
   }
 
-  // Clean to digits only
+  // Clean to digits only (preserve leading + for international numbers)
+  const startsWithPlus = trimmed.startsWith('+');
   const digitsOnly = trimmed.replace(/[^0-9]/g, '');
 
-  if (digitsOnly.length < 10) {
-    return { valid: false, error: 'Mobile number is too short. Please enter a full 11-digit mobile number (e.g. 03001234567).' };
+  // International ITU-T E.164 standard: phone numbers are between 7 and 15 digits
+  if (digitsOnly.length < 7) {
+    return {
+      valid: false,
+      error: 'Phone number is too short. Please enter a valid number with at least 7 digits (e.g. +1 234 567 8900 or 03001234567).',
+    };
   }
 
   if (digitsOnly.length > 15) {
-    return { valid: false, error: 'Mobile number is too long. Please enter a valid phone number.' };
+    return {
+      valid: false,
+      error: 'Phone number cannot exceed 15 digits (international ITU standard).',
+    };
   }
 
-  // If Pakistani local format starting with 03
+  // Pakistani local mobile number check (starts with 03)
   if (digitsOnly.startsWith('03') && digitsOnly.length !== 11) {
     return {
       valid: false,
@@ -95,13 +103,14 @@ export function validateWhatsAppNumber(phone: string): { valid: boolean; error?:
     };
   }
 
-  // If Pakistani international format starting with 923
+  // Pakistani international format check (starts with 923)
   if (digitsOnly.startsWith('923') && digitsOnly.length !== 12) {
     return {
       valid: false,
-      error: `International Pakistani mobile number must be 12 digits (e.g. 923001234567 or +923001234567). You entered ${digitsOnly.length} digits.`,
+      error: `Pakistani international number (+92) must be 12 digits (e.g. +92 300 1234567). You entered ${digitsOnly.length} digits.`,
     };
   }
 
-  return { valid: true, cleanPhone: digitsOnly };
+  const formattedClean = startsWithPlus ? `+${digitsOnly}` : digitsOnly;
+  return { valid: true, cleanPhone: formattedClean };
 }

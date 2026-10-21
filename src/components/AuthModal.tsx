@@ -306,18 +306,18 @@ export default function AuthModal() {
                     <input
                       type="tel"
                       required
-                      placeholder="e.g. 03001234567"
+                      placeholder="e.g. +92 300 1234567 or +1 234 567 8900"
                       value={whatsappNumber}
                       onChange={(e) => {
-                        // Allow maths digits (0-9) and leading + only
-                        const val = e.target.value.replace(/[^0-9+]/g, '');
+                        // Allow digits (0-9) and leading + only
+                        const val = e.target.value.replace(/[^0-9+ ]/g, '');
                         setWhatsappNumber(val);
                       }}
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white placeholder-zinc-400 focus:outline-none focus:border-[#660000] dark:focus:border-[#ff4d4d] transition select-text font-mono"
                     />
                   </div>
                   <p className="text-[10px] text-zinc-500 mt-1">
-                    Numbers only (e.g. 03001234567)
+                    All country numbers allowed (digits 0-9 &amp; + only)
                   </p>
                 </div>
 

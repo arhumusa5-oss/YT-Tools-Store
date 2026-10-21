@@ -44,6 +44,10 @@ export default function CheckoutModal() {
   const [customerEmail, setCustomerEmail] = useState('');
   const [channelOrDeliveryNote, setChannelOrDeliveryNote] = useState('');
 
+  // Inline Validation States
+  const [phoneError, setPhoneError] = useState('');
+  const [emailError, setEmailError] = useState('');
+
   // Payment Details Form State
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'bank' | 'binance'>('easypaisa');
   const [transactionId, setTransactionId] = useState('');
@@ -73,6 +77,8 @@ export default function CheckoutModal() {
       setStage('choice');
       setErrorMsg('');
       setUploadError('');
+      setPhoneError('');
+      setEmailError('');
     }
   }, [isCheckoutOpen]);
 
@@ -284,19 +290,68 @@ export default function CheckoutModal() {
     }
   };
 
+  // Real-time Phone Input Handler (Allows numbers from any country, strictly detects letters)
+  const handlePhoneChange = (val: string) => {
+    setCustomerWhatsApp(val);
+    if (/[a-zA-Z]/.test(val)) {
+      setPhoneError('Letters or names are not allowed. Please enter numbers only (0-9).');
+    } else {
+      const digits = val.replace(/[^0-9]/g, '');
+      if (val.trim() && digits.length > 15) {
+        setPhoneError('Phone number cannot exceed 15 digits.');
+      } else {
+        setPhoneError('');
+      }
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    if (!customerWhatsApp.trim()) {
+      setPhoneError('');
+      return;
+    }
+    const check = validateWhatsAppNumber(customerWhatsApp);
+    if (!check.valid) {
+      setPhoneError(check.error || 'Please enter a valid phone number.');
+    } else {
+      setPhoneError('');
+    }
+  };
+
+  const handleEmailChange = (val: string) => {
+    setCustomerEmail(val);
+    if (emailError) setEmailError('');
+  };
+
+  const handleEmailBlur = () => {
+    if (!customerEmail.trim()) {
+      setEmailError('');
+      return;
+    }
+    const check = validateEmail(customerEmail);
+    if (!check.valid) {
+      setEmailError(check.error || 'Please enter a valid email address.');
+    } else {
+      setEmailError('');
+    }
+  };
+
   // Submit On-Site Order
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setPhoneError('');
+    setEmailError('');
 
     if (!customerName.trim()) {
-      setErrorMsg('Full Name lazmi hai. Please enter your name.');
+      setErrorMsg('Please enter your full name.');
       return;
     }
 
-    // Strict Phone Validation
+    // Strict Phone Validation (All countries supported)
     const phoneVal = validateWhatsAppNumber(customerWhatsApp);
     if (!phoneVal.valid) {
+      setPhoneError(phoneVal.error || 'Please enter a valid mobile / WhatsApp number.');
       setErrorMsg(phoneVal.error || 'Please enter a valid mobile / WhatsApp number.');
       return;
     }
@@ -304,19 +359,20 @@ export default function CheckoutModal() {
     // Strict Email Validation (blocks .con typos etc.)
     const emailVal = validateEmail(customerEmail);
     if (!emailVal.valid) {
+      setEmailError(emailVal.error || 'Please enter a valid email address.');
       setErrorMsg(emailVal.error || 'Please enter a valid email address.');
       return;
     }
 
     // MANDATORY 1: Transaction ID (TID)
     if (!transactionId.trim()) {
-      setErrorMsg('⚠️ Transaction ID (TID) lazmi hai. Please payment bhej kar Transaction ID enter karein.');
+      setErrorMsg('⚠️ Transaction ID (TID) is required. Please send payment and enter your TID.');
       return;
     }
 
     // MANDATORY 2: Payment Screenshot Proof URL
     if (!paymentProofUrl.trim()) {
-      setErrorMsg('⚠️ Payment Screenshot / Receipt upload karna lazmi hai. Please payment screenshot attach karein.');
+      setErrorMsg('⚠️ Payment screenshot / receipt is required. Please upload your payment proof.');
       return;
     }
 
@@ -576,11 +632,26 @@ export default function CheckoutModal() {
                     <input
                       type="tel"
                       required
-                      placeholder="e.g. 03001234567"
+                      placeholder="e.g. +92 300 1234567 or +1 234 567 8900"
                       value={customerWhatsApp}
-                      onChange={(e) => setCustomerWhatsApp(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onBlur={handlePhoneBlur}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border ${
+                        phoneError
+                          ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                          : 'border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d]'
+                      } text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors`}
                     />
+                    {phoneError ? (
+                      <p className="mt-1 text-[11px] font-bold text-red-500 flex items-center gap-1 animate-in fade-in duration-150">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{phoneError}</span>
+                      </p>
+                    ) : (
+                      <p className="mt-1 text-[10px] text-[#9ca3af]">
+                        All countries allowed (digits 0-9 &amp; + only)
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -594,9 +665,20 @@ export default function CheckoutModal() {
                       required
                       placeholder="e.g. yourname@gmail.com"
                       value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      onBlur={handleEmailBlur}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border ${
+                        emailError
+                          ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20'
+                          : 'border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d]'
+                      } text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors`}
                     />
+                    {emailError && (
+                      <p className="mt-1 text-[11px] font-bold text-red-500 flex items-center gap-1 animate-in fade-in duration-150">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{emailError}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -806,24 +888,24 @@ export default function CheckoutModal() {
                 </div>
               </div>
 
-              {/* Step 3: Payment Verification & Proof (BOTH MANDATORY / LAZMI) */}
+              {/* Step 3: Payment Verification & Proof (BOTH MANDATORY) */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#0a0a0a] dark:text-white flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black">
                     3
                   </span>
-                  <span>Payment Verification (TID & Screenshot - Lazmi)</span>
+                  <span>Payment Verification (TID & Screenshot Required)</span>
                 </h4>
 
                 {/* Mandatory TID Input */}
                 <div>
                   <label className="block text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400 mb-1">
-                    Transaction ID (TID) / Sender Info <span className="text-red-500 font-bold">* (Lazmi / Required)</span>
+                    Transaction ID (TID) / Sender Info <span className="text-red-500 font-bold">* (Required)</span>
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: 0300-XXXXXXX"
+                    placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: +92 300 1234567"
                     value={transactionId}
                     onChange={(e) => setTransactionId(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#9ca3af] focus:outline-none transition-colors"
@@ -834,7 +916,7 @@ export default function CheckoutModal() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[11px] font-semibold text-[#4b5563] dark:text-zinc-400">
-                      Payment Screenshot / Receipt <span className="text-red-500 font-bold">* (Lazmi / Required)</span>
+                      Payment Screenshot / Receipt <span className="text-red-500 font-bold">* (Required)</span>
                     </label>
                     {paymentProofUrl ? (
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
@@ -873,7 +955,7 @@ export default function CheckoutModal() {
                             Screenshot Uploaded Successfully
                           </span>
                           <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 block mt-0.5">
-                            Proof image linked to order & WhatsApp
+                            Proof image attached to your order
                           </span>
                         </div>
                       </div>
@@ -908,7 +990,7 @@ export default function CheckoutModal() {
                             Upload Payment Screenshot (Required)
                           </span>
                           <span className="text-[10px] text-red-500 font-semibold">
-                            ⚠️ Screenshot lazmi upload karein tabhi order confirm hoga
+                            ⚠️ Please upload payment screenshot to confirm order
                           </span>
                         </>
                       )}
@@ -943,7 +1025,7 @@ export default function CheckoutModal() {
                   )}
                 </button>
                 <p className="text-[11px] text-center text-[#6b7280] dark:text-zinc-400 mt-2.5">
-                  🔒 Order confirm hote hi aapko samne Order ID & Confirmation Ticket mil jayegi.
+                  🔒 Your Order ID &amp; Confirmation Ticket will appear immediately upon confirmation.
                 </p>
               </div>
             </form>
