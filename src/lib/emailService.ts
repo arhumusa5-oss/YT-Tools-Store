@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 import { db } from './db';
 
 export interface EmailNotificationPayload {
@@ -79,6 +81,16 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
       dateStyle: 'medium',
       timeStyle: 'short',
     });
+
+    const siteBaseUrl =
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL.replace(/\/$/, '')}` : '') ||
+      'https://yt-tools-store.vercel.app';
+
+    let absoluteProofUrl = payload.paymentProofUrl?.trim() || '';
+    if (absoluteProofUrl && absoluteProofUrl.startsWith('/')) {
+      absoluteProofUrl = `${siteBaseUrl}${absoluteProofUrl}`;
+    }
 
     const itemsHtml = payload.items
       .map((item, idx) => {
@@ -173,8 +185,29 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
                 : ''
             }
             ${
-              payload.paymentProofUrl
-                ? `<p style="margin: 6px 0 0; font-size: 13px; color: #111;"><strong>Receipt Screenshot:</strong> <a href="${payload.paymentProofUrl}" style="color: #2563eb; font-weight: bold;" target="_blank">View Receipt Image</a></p>`
+              absoluteProofUrl
+                ? `
+              <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #fde68a;">
+                <p style="margin: 0 0 6px 0; font-size: 13px; color: #111;"><strong>Payment Receipt Screenshot:</strong></p>
+                <div style="margin: 6px 0 10px 0;">
+                  <a href="${absoluteProofUrl}" style="display: inline-block; padding: 10px 18px; background-color: #2563eb; color: #ffffff; font-weight: bold; font-size: 13px; text-decoration: none; border-radius: 8px;" target="_blank" rel="noopener noreferrer">
+                    🔍 Open Screenshot In New Tab
+                  </a>
+                </div>
+                ${
+                  !absoluteProofUrl.startsWith('data:')
+                    ? `
+                  <div style="max-width: 340px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #ffffff;">
+                    <a href="${absoluteProofUrl}" target="_blank" rel="noopener noreferrer">
+                      <img src="${absoluteProofUrl}" alt="Payment Receipt Screenshot" style="width: 100%; max-height: 280px; object-fit: contain; display: block;" />
+                    </a>
+                    <p style="margin: 4px 0; font-size: 10px; color: #6b7280; text-align: center;">Click image to enlarge</p>
+                  </div>
+                `
+                    : ''
+                }
+              </div>
+            `
                 : ''
             }
           </div>
@@ -253,11 +286,41 @@ export async function sendEmailNotification(payload: EmailNotificationPayload) {
         },
       });
 
+      // Prepare attachments for receipt screenshot image
+      const emailAttachments: Array<{
+        filename: string;
+        path?: string;
+        content?: Buffer;
+        contentType?: string;
+      }> = [];
+
+      if (payload.paymentProofUrl) {
+        if (payload.paymentProofUrl.startsWith('/uploads/')) {
+          const localPath = path.join(process.cwd(), 'public', payload.paymentProofUrl);
+          if (fs.existsSync(localPath)) {
+            emailAttachments.push({
+              filename: `payment_receipt_${payload.orderId || 'proof'}${path.extname(localPath) || '.png'}`,
+              path: localPath,
+            });
+          }
+        } else if (payload.paymentProofUrl.startsWith('data:image/')) {
+          const matches = payload.paymentProofUrl.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+          if (matches) {
+            emailAttachments.push({
+              filename: `payment_receipt_${payload.orderId || 'proof'}.png`,
+              content: Buffer.from(matches[2], 'base64'),
+              contentType: matches[1],
+            });
+          }
+        }
+      }
+
       await transporter.sendMail({
         from: `"YT Tools Store Alerts" <${gmailUser}>`,
         to: recipient,
         subject,
         html: htmlContent,
+        attachments: emailAttachments.length > 0 ? emailAttachments : undefined,
       });
 
       return { success: true, provider: 'gmail_smtp' };

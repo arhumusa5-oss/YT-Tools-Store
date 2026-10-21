@@ -428,9 +428,9 @@ export default function ProductModal() {
                       openCheckoutWithProduct(product, currentQty);
                       handleClose();
                     }}
-                    className="flex-1 py-3.5 px-4 rounded-full bg-gradient-to-r from-[#660000] via-[#7a0000] to-[#8b0000] hover:opacity-95 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#660000]/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                    className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                   >
-                    <Zap className="w-4 h-4 fill-current text-amber-300 shrink-0" />
+                    <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
                     <span>
                       Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
                     </span>

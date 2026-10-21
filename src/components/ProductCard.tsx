@@ -383,14 +383,14 @@ function ProductCard({ product }: ProductCardProps) {
                 </button>
               </div>
 
-              {/* Primary: Proceed to Checkout Button */}
+              {/* Primary: Proceed to Checkout Button (Green & White) */}
               <button
                 type="button"
                 onClick={() => openCheckoutWithProduct(product, currentQty)}
-                className="w-full py-2.5 px-3 rounded-full bg-gradient-to-r from-[#660000] via-[#7a0000] to-[#8b0000] hover:opacity-95 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#660000]/25 transition-all active:scale-95 cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
                 title="Proceed to Checkout"
               >
-                <Zap className="w-3.5 h-3.5 fill-current text-amber-300 shrink-0" />
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-white shrink-0" />
                 <span>Proceed to Checkout</span>
               </button>
             </>
