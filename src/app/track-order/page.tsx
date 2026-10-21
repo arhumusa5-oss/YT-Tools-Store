@@ -12,16 +12,13 @@ import {
   Search,
   ShieldCheck,
   AlertCircle,
-  Package,
   ArrowLeft,
   CheckCircle2,
   Clock,
   Zap,
   Mail,
   Bell,
-  Star,
   Check,
-  ExternalLink,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Link from 'next/link';
@@ -30,7 +27,7 @@ import { validateEmail } from '@/lib/validation';
 function TrackOrderContent() {
   const searchParams = useSearchParams();
   const initialId = searchParams.get('id') || searchParams.get('orderId') || '';
-  const { formatPrice, settings } = useCart();
+  const { settings } = useCart();
 
   const [query, setQuery] = useState(initialId);
   const [order, setOrder] = useState<Order | null>(null);
@@ -112,28 +109,28 @@ function TrackOrderContent() {
       case 'completed':
         return {
           label: 'Completed & Delivered',
-          badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+          badgeClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40',
           desc: 'Your digital tool access has been activated and delivered.',
           step: 3,
         };
       case 'processing':
         return {
           label: 'In Progress / Running',
-          badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+          badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/40',
           desc: 'Payment verified! Our team is currently configuring your tool credentials.',
           step: 2,
         };
       case 'cancelled':
         return {
           label: 'Cancelled',
-          badgeClass: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30',
+          badgeClass: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/40',
           desc: 'This order was cancelled. Please contact support on WhatsApp for help.',
           step: 0,
         };
       default:
         return {
           label: 'Pending Verification',
-          badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+          badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40',
           desc: 'Order received. Awaiting admin TID / screenshot payment verification.',
           step: 1,
         };
@@ -143,7 +140,7 @@ function TrackOrderContent() {
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10 sm:py-16">
+    <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16 relative z-20">
       {/* Back button */}
       <Link
         href="/"
@@ -155,9 +152,6 @@ function TrackOrderContent() {
 
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 flex items-center justify-center mx-auto mb-3 shadow-md shadow-[#660000]/10">
-          <ShieldCheck className="w-7 h-7" />
-        </div>
         <h1 className="text-2xl sm:text-3xl font-black text-[#0a0a0a] dark:text-white tracking-tight">
           Track Your Order Status
         </h1>
@@ -166,7 +160,7 @@ function TrackOrderContent() {
         </p>
       </div>
 
-      {/* Search Input Box */}
+      {/* Search Input Box (Solid Opaque Surface) */}
       <div className="relative mb-8">
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
@@ -177,7 +171,7 @@ function TrackOrderContent() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Enter Order ID (e.g. #2505) or WhatsApp..."
-              className="w-full pl-11 pr-4 py-3.5 bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] rounded-2xl text-[#0a0a0a] dark:text-white text-sm placeholder-[#9ca3af] focus:outline-none transition shadow-sm"
+              className="w-full pl-11 pr-4 py-3.5 bg-[#ffffff] dark:bg-[#12121a] border-2 border-[#e5e0e0] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] rounded-2xl text-[#0a0a0a] dark:text-white text-sm placeholder-[#9ca3af] focus:outline-none transition shadow-sm font-medium"
             />
           </div>
           <button
@@ -198,20 +192,21 @@ function TrackOrderContent() {
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 mb-6">
+        <div className="p-4 rounded-2xl bg-[#ffffff] dark:bg-[#12121a] border-2 border-red-500/40 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2 mb-6 shadow-sm">
           <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Order Details Card */}
+      {/* Order Status Card (Solid Pure Opaque Surface - No Transparency) */}
       {order && (
-        <div className="bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-3xl p-5 sm:p-8 space-y-6 shadow-2xl animate-in fade-in transition-colors">
+        <div className="bg-[#ffffff] dark:bg-[#0e0e14] border-2 border-[#e5e0e0] dark:border-white/15 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in transition-colors">
+          
           {/* Top Row: Reference & Status */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0ebeb] dark:border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-[#f0ebeb] dark:border-white/10">
             <div>
-              <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 uppercase font-bold tracking-wider block">
-                Official Order Reference
+              <span className="text-[10px] text-[#6b7280] dark:text-zinc-400 uppercase font-black tracking-wider block">
+                OFFICIAL ORDER REFERENCE
               </span>
               <span className="text-2xl font-mono font-black text-[#0a0a0a] dark:text-white tracking-wider">
                 {order.id}
@@ -222,9 +217,9 @@ function TrackOrderContent() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-start sm:self-auto">
               <span
-                className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border-2 ${
                   getStatusBadge(order.status).badgeClass
                 }`}
               >
@@ -238,7 +233,7 @@ function TrackOrderContent() {
             <div className="grid grid-cols-3 gap-2 text-center">
               {/* Step 1: Placed */}
               <div className="flex flex-col items-center">
-                <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs mb-1.5 shadow-md shadow-emerald-500/20">
+                <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs mb-1.5 shadow-md shadow-emerald-500/25">
                   <Check className="w-4 h-4 stroke-[3]" />
                 </div>
                 <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Order Received</span>
@@ -248,10 +243,10 @@ function TrackOrderContent() {
               {/* Step 2: Running / Processing */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition ${
                     order.status === 'processing' || order.status === 'completed'
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                      : 'bg-[#faf8f8] dark:bg-[#1a1a26] text-[#9ca3af] border border-[#e8e1e1] dark:border-white/10'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                      : 'bg-[#f4efef] dark:bg-[#1a1a26] text-[#9ca3af] border border-[#e8e1e1] dark:border-white/10'
                   }`}
                 >
                   {order.status === 'processing' || order.status === 'completed' ? (
@@ -267,10 +262,10 @@ function TrackOrderContent() {
               {/* Step 3: Delivered */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition ${
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 transition ${
                     order.status === 'completed'
-                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
-                      : 'bg-[#faf8f8] dark:bg-[#1a1a26] text-[#9ca3af] border border-[#e8e1e1] dark:border-white/10'
+                      ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
+                      : 'bg-[#f4efef] dark:bg-[#1a1a26] text-[#9ca3af] border border-[#e8e1e1] dark:border-white/10'
                   }`}
                 >
                   {order.status === 'completed' ? (
@@ -284,13 +279,14 @@ function TrackOrderContent() {
               </div>
             </div>
 
-            <div className="mt-3 p-3 rounded-xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 text-center text-xs text-[#4b5563] dark:text-zinc-300">
+            {/* Status Description Box */}
+            <div className="mt-4 p-3.5 rounded-2xl bg-[#f5efef] dark:bg-[#181822] border border-[#e8e1e1] dark:border-white/10 text-center text-xs font-medium text-[#1f2937] dark:text-zinc-200">
               {getStatusBadge(order.status).desc}
             </div>
           </div>
 
-          {/* Email Notification Alert Box */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#660000]/[0.04] to-[#880000]/[0.08] dark:from-[#660000]/20 dark:to-[#880000]/10 border border-[#660000]/20 space-y-3">
+          {/* Email Notification Alert Box (Solid Opaque Fill) */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#fffafa] dark:bg-[#161214] border-2 border-[#660000]/25 shadow-sm space-y-3">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl bg-[#660000] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
                 <Bell className="w-4 h-4" />
@@ -313,14 +309,14 @@ function TrackOrderContent() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="Enter your email for notifications..."
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs text-[#0a0a0a] dark:text-white placeholder-[#9ca3af] focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#ffffff] dark:bg-[#0c0c10] border-2 border-[#e8e1e1] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs text-[#0a0a0a] dark:text-white placeholder-[#9ca3af] focus:outline-none font-medium"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleSubscribeEmail}
                 disabled={subscribingEmail}
-                className="px-4 py-2.5 rounded-xl bg-[#660000] hover:bg-[#800000] text-white text-xs font-bold transition shadow-sm disabled:opacity-50 cursor-pointer active:scale-95"
+                className="px-5 py-2.5 rounded-xl bg-[#660000] hover:bg-[#800000] text-white text-xs font-bold transition shadow-sm disabled:opacity-50 cursor-pointer active:scale-95"
               >
                 {subscribingEmail ? 'Saving...' : 'Save & Subscribe'}
               </button>
@@ -341,96 +337,29 @@ function TrackOrderContent() {
             )}
           </div>
 
-          {/* Customer & Payment Info Card */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 text-xs">
-            <div>
-              <span className="text-[#6b7280] dark:text-zinc-400 block mb-1 font-semibold uppercase text-[10px] tracking-wider">
-                Customer Details:
-              </span>
-              <p className="font-bold text-[#0a0a0a] dark:text-white">{order.customerName}</p>
-              <p className="text-[#6b7280] dark:text-zinc-400 font-mono mt-0.5">{order.customerWhatsApp}</p>
-              {order.customerEmail && (
-                <p className="text-[#6b7280] dark:text-zinc-400 truncate max-w-[220px]">{order.customerEmail}</p>
-              )}
-            </div>
-
-            <div>
-              <span className="text-[#6b7280] dark:text-zinc-400 block mb-1 font-semibold uppercase text-[10px] tracking-wider">
-                Payment Verification:
-              </span>
-              <p className="font-extrabold uppercase text-[#0a0a0a] dark:text-white">{order.paymentMethod}</p>
-              <p className="font-mono text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
-                TID: {order.transactionId}
-              </p>
-              {order.paymentProofUrl && (
-                <a
-                  href={order.paymentProofUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline mt-1 text-[11px] font-bold"
-                >
-                  <span>View Uploaded Receipt</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Purchased Items */}
-          <div>
-            <h4 className="text-xs font-bold text-[#6b7280] dark:text-zinc-400 uppercase tracking-wider mb-2.5">
-              Ordered Products
-            </h4>
-            <div className="space-y-2">
-              {order.items.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 flex items-center justify-between text-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Package className="w-4 h-4 text-[#660000] dark:text-[#ff6b6b]" />
-                    <span className="font-bold text-[#0a0a0a] dark:text-white">
-                      {item.title} <span className="text-[#6b7280] dark:text-zinc-400 font-normal">x{item.quantity}</span>
-                    </span>
-                  </div>
-                  <span className="font-bold text-[#660000] dark:text-[#ff6b6b]">
-                    {formatPrice(item.pricePKR * item.quantity, item.priceUSD * item.quantity)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 flex items-center justify-between p-3.5 rounded-xl bg-[#f5efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10">
-              <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Total Amount Paid:</span>
-              <span className="text-base font-black text-[#660000] dark:text-[#ff6b6b]">
-                {formatPrice(order.totalPKR, order.totalUSD)}
-              </span>
-            </div>
-          </div>
-
           {/* Admin Dispatch Note if any */}
           {order.adminNotes && (
-            <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border border-blue-500/30 text-xs">
+            <div className="p-4 rounded-2xl bg-[#eff6ff] dark:bg-[#101b2e] border-2 border-blue-500/30 text-xs">
               <span className="font-bold text-blue-700 dark:text-blue-400 block mb-1">
                 Store Dispatch Note:
               </span>
-              <p className="text-[#1f2937] dark:text-zinc-200 leading-relaxed whitespace-pre-wrap">
+              <p className="text-[#1f2937] dark:text-zinc-200 leading-relaxed whitespace-pre-wrap font-medium">
                 {order.adminNotes}
               </p>
             </div>
           )}
 
-          {/* WhatsApp Support Action */}
+          {/* WhatsApp Support Button (Clean, prominent CTA right after email box) */}
           <div className="pt-2">
             <a
               href={`https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(
-                `Assalam o Alaikum! I am checking on my order #${order.id} for "${order.items.map((i) => i.title).join(', ')}". Could you please update me? Thank you!`
+                `Assalam o Alaikum! I am checking on my YT Tools Store order #${order.id}. Current status is "${getStatusBadge(order.status).label}". Could you please update me? Thank you!`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-95 cursor-pointer"
+              className="w-full py-4 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-95 cursor-pointer tracking-tight"
             >
-              <WhatsAppIcon className="w-4 h-4 fill-current text-white" />
+              <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
               <span>Contact Store Support on WhatsApp</span>
             </a>
           </div>
@@ -442,7 +371,7 @@ function TrackOrderContent() {
 
 export default function TrackOrderPage() {
   return (
-    <main className="min-h-screen flex flex-col bg-white dark:bg-[#07070b] text-[#0a0a0a] dark:text-white transition-colors">
+    <main className="min-h-screen flex flex-col bg-[#fcfbfb] dark:bg-[#060608] text-[#0a0a0a] dark:text-white transition-colors relative z-10">
       <Navbar />
       <div className="flex-1">
         <Suspense fallback={<div className="text-center py-20 text-xs text-[#6b7280]">Loading order tracker...</div>}>
