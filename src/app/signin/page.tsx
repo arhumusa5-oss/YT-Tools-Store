@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   UserCheck,
+  UserPlus,
 } from 'lucide-react';
 import { validateEmail } from '@/lib/validation';
 
@@ -221,7 +222,7 @@ export default function SignInPage() {
           ) : (
             /* Sign In Form */
             <div>
-              <div className="text-center mb-6">
+              <div className="text-center mb-5">
                 <div className="w-12 h-12 rounded-2xl bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 flex items-center justify-center mx-auto mb-3">
                   <LogIn className="w-6 h-6" />
                 </div>
@@ -231,6 +232,19 @@ export default function SignInPage() {
                 <p className="text-xs text-[#6b7280] dark:text-zinc-400 mt-1">
                   Sign in to access your synchronized cart, orders &amp; saved details.
                 </p>
+              </div>
+
+              {/* Tab Switcher: Sign In vs Sign Up */}
+              <div className="flex rounded-2xl bg-[#f4efef] dark:bg-[#14141e] p-1 mb-6 border border-[#e8e1e1] dark:border-white/10">
+                <div className="flex-1 py-2 text-center text-xs font-black rounded-xl bg-[#660000] text-white shadow-sm">
+                  Sign In
+                </div>
+                <Link
+                  href="/signup"
+                  className="flex-1 py-2 text-center text-xs font-bold text-[#6b7280] dark:text-zinc-400 hover:text-[#660000] dark:hover:text-white transition rounded-xl"
+                >
+                  Sign Up
+                </Link>
               </div>
 
               {errorMsg && (
@@ -314,17 +328,18 @@ export default function SignInPage() {
                 </button>
               </form>
 
-              {/* Sign Up Link */}
-              <div className="mt-6 pt-5 border-t border-[#f0ebeb] dark:border-white/10 text-center">
-                <p className="text-xs text-[#6b7280] dark:text-zinc-400">
-                  Don't have an account yet?{' '}
-                  <Link
-                    href="/signup"
-                    className="font-black text-[#660000] dark:text-[#ff6b6b] hover:underline"
-                  >
-                    Sign Up / Create Account
-                  </Link>
+              {/* Prominent Sign Up CTA Button */}
+              <div className="mt-6 pt-5 border-t border-[#f0ebeb] dark:border-white/10 text-center space-y-3">
+                <p className="text-xs font-semibold text-[#6b7280] dark:text-zinc-400">
+                  Don&apos;t have an account yet?
                 </p>
+                <Link
+                  href="/signup"
+                  className="w-full py-3 px-4 rounded-full border-2 border-[#660000] dark:border-[#ff4d4d] text-[#660000] dark:text-[#ff4d4d] hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] dark:hover:text-black font-extrabold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-sm"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Create Account / Sign Up</span>
+                </Link>
               </div>
             </div>
           )}
