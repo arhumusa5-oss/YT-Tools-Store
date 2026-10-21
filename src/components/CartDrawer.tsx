@@ -265,7 +265,25 @@ export default function CartDrawer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
-                  // Keep drawer open or allow user to see it when returning
+                  try {
+                    fetch('/api/notify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'order',
+                        items: cart.map((i) => ({
+                          title: i.title,
+                          quantity: i.quantity,
+                          pricePKR: i.pricePKR,
+                          priceUSD: i.priceUSD,
+                          image: i.image,
+                        })),
+                        totalPKR: cartTotalPKR,
+                      }),
+                    }).catch(() => {});
+                  } catch {
+                    // ignore
+                  }
                 }}
                 className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/25 transition-all hover:shadow-emerald-500/35 active:scale-95 cursor-pointer tracking-tight"
               >

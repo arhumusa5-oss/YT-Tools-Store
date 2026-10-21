@@ -1,0 +1,262 @@
+import nodemailer from 'nodemailer';
+import { db } from './db';
+
+export interface EmailNotificationPayload {
+  type: 'order' | 'add_to_cart';
+  items: Array<{
+    title: string;
+    quantity: number;
+    pricePKR: number;
+    priceUSD?: number;
+    image?: string;
+  }>;
+  totalPKR?: number;
+  customerWhatsApp?: string;
+  notes?: string;
+}
+
+export async function sendEmailNotification(payload: EmailNotificationPayload) {
+  try {
+    const settings = await db.getSettings();
+    const alertConfig = settings.emailAlerts;
+
+    // Check if alerts are enabled
+    if (alertConfig && alertConfig.enabled === false) {
+      return { success: false, message: 'Email alerts are disabled in store settings.' };
+    }
+
+    if (payload.type === 'order' && alertConfig && alertConfig.notifyOnOrder === false) {
+      return { success: false, message: 'Order alerts disabled.' };
+    }
+
+    if (payload.type === 'add_to_cart' && alertConfig && alertConfig.notifyOnAddToCart === false) {
+      return { success: false, message: 'Add to cart alerts disabled.' };
+    }
+
+    const recipient =
+      alertConfig?.recipientEmail?.trim() ||
+      process.env.ADMIN_ALERT_EMAIL ||
+      settings.supportEmail ||
+      '';
+
+    if (!recipient) {
+      console.warn('[EmailAlerts] No recipient email specified.');
+      return { success: false, message: 'No recipient email configured.' };
+    }
+
+    const service = alertConfig?.service || 'gmail';
+    const resendKey = alertConfig?.resendApiKey?.trim() || process.env.RESEND_API_KEY || '';
+    const gmailUser = alertConfig?.gmailUser?.trim() || process.env.SMTP_USER || '';
+    const gmailPass = alertConfig?.gmailAppPassword?.trim() || process.env.SMTP_PASSWORD || '';
+
+    // If neither Resend nor Gmail is configured, log warning
+    if (!resendKey && (!gmailUser || !gmailPass)) {
+      console.info(
+        `[EmailAlerts] Notification (${payload.type}) generated, but email credentials not configured yet. Configure Gmail SMTP or Resend API key in Admin Settings.`
+      );
+      return {
+        success: true,
+        mocked: true,
+        message: 'Notification logged (email credentials pending).',
+      };
+    }
+
+    const isOrder = payload.type === 'order';
+    const subject = isOrder
+      ? `🚨 [New Order Initiated] Rs ${(payload.totalPKR || 0).toLocaleString()} - YT Tools Store`
+      : `🛒 [Add to Cart Alert] ${payload.items[0]?.title || 'Tool'} - YT Tools Store`;
+
+    const nowFormatted = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Karachi',
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+
+    const itemsHtml = payload.items
+      .map((item, idx) => {
+        const itemTotal = item.pricePKR * item.quantity;
+        return `
+          <tr style="border-bottom: 1px solid #f0ebeb;">
+            <td style="padding: 12px 8px; font-weight: 600; color: #111;">
+              ${idx + 1}. ${item.title}
+            </td>
+            <td style="padding: 12px 8px; text-align: center; color: #444;">
+              ${item.quantity}
+            </td>
+            <td style="padding: 12px 8px; text-align: right; color: #660000; font-weight: 700;">
+              Rs ${itemTotal.toLocaleString()}
+            </td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    const htmlContent = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e8e1e1; border-radius: 16px; overflow: hidden;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #660000 0%, #880000 100%); padding: 24px 28px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
+            YT Tools Store
+          </h1>
+          <p style="color: #ffcccc; margin: 6px 0 0; font-size: 13px; font-weight: 500;">
+            ${isOrder ? '🚨 Instant Order Notification' : '🛒 Customer Cart Activity Alert'}
+          </p>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 28px 24px;">
+          <div style="margin-bottom: 20px; padding: 14px 18px; background: ${isOrder ? '#f0fdf4' : '#faf8f8'}; border: 1px solid ${isOrder ? '#86efac' : '#e8e1e1'}; border-radius: 12px;">
+            <p style="margin: 0; font-size: 14px; font-weight: 700; color: ${isOrder ? '#15803d' : '#1f2937'};">
+              ${
+                isOrder
+                  ? 'A customer has initiated checkout on WhatsApp!'
+                  : 'A customer added an item to their cart!'
+              }
+            </p>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #6b7280;">
+              Timestamp: <strong>${nowFormatted} PKT</strong>
+            </p>
+          </div>
+
+          <!-- Items Table -->
+          <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 2px solid #e8e1e1; background: #faf8f8;">
+                <th style="padding: 10px 8px; text-align: left; color: #374151;">Product</th>
+                <th style="padding: 10px 8px; text-align: center; color: #374151;">Qty</th>
+                <th style="padding: 10px 8px; text-align: right; color: #374151;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <!-- Grand Total (for orders) -->
+          ${
+            payload.totalPKR !== undefined
+              ? `
+            <div style="margin-top: 20px; padding-top: 14px; border-top: 2px dashed #e8e1e1; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 15px; font-weight: 700; color: #111;">Estimated Order Value:</span>
+              <span style="font-size: 20px; font-weight: 900; color: #660000; text-align: right; display: block;">
+                Rs ${payload.totalPKR.toLocaleString()}
+              </span>
+            </div>
+          `
+              : ''
+          }
+
+          <!-- Footer note -->
+          <div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid #f0ebeb; text-align: center; font-size: 11px; color: #9ca3af;">
+            <p style="margin: 0;">This is an automated alert from your YT Tools Store system.</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 1. Try Resend if configured
+    if (resendKey) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'YT Tools Store <onboarding@resend.dev>',
+          to: recipient,
+          subject,
+          html: htmlContent,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('[Resend Error]', errText);
+        throw new Error(`Resend error: ${errText}`);
+      }
+
+      return { success: true, provider: 'resend' };
+    }
+
+    // 2. Try Gmail SMTP if configured
+    if (gmailUser && gmailPass) {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"YT Tools Store Alerts" <${gmailUser}>`,
+        to: recipient,
+        subject,
+        html: htmlContent,
+      });
+
+      return { success: true, provider: 'gmail_smtp' };
+    }
+
+    return { success: false, message: 'No valid provider credentials configured.' };
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('[EmailNotification Error]', errorMsg);
+    return { success: false, error: errorMsg };
+  }
+}
+
+export async function sendTestEmail(recipientEmail: string, service?: string, credentials?: { resendKey?: string; gmailUser?: string; gmailPass?: string }) {
+  const testPayload: EmailNotificationPayload = {
+    type: 'order',
+    items: [
+      {
+        title: 'Canva Pro (1 Month) - Test Alert',
+        quantity: 1,
+        pricePKR: 500,
+      },
+    ],
+    totalPKR: 500,
+    notes: 'This is a test notification to verify your email alert settings.',
+  };
+
+  // If custom credentials provided for test
+  if (credentials?.resendKey) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${credentials.resendKey.trim()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'YT Tools Store <onboarding@resend.dev>',
+        to: recipientEmail,
+        subject: '🧪 [Test Alert] YT Tools Store Email System Working!',
+        html: `<div style="font-family: sans-serif; padding: 20px;"><h2>✅ Test Email Successful!</h2><p>Your email alerts for orders and cart events are configured correctly.</p></div>`,
+      }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return { success: true, provider: 'resend' };
+  }
+
+  if (credentials?.gmailUser && credentials?.gmailPass) {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: credentials.gmailUser.trim(),
+        pass: credentials.gmailPass.trim(),
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"YT Tools Store" <${credentials.gmailUser.trim()}>`,
+      to: recipientEmail,
+      subject: '🧪 [Test Alert] YT Tools Store Email System Working!',
+      html: `<div style="font-family: sans-serif; padding: 20px;"><h2>✅ Test Email Successful!</h2><p>Your Gmail SMTP email alerts are configured and working properly.</p></div>`,
+    });
+    return { success: true, provider: 'gmail_smtp' };
+  }
+
+  return sendEmailNotification(testPayload);
+}

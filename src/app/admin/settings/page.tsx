@@ -10,6 +10,8 @@ import {
   Building2,
   DollarSign,
   Megaphone,
+  Mail,
+  Send,
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -18,6 +20,45 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testEmailMsg, setTestEmailMsg] = useState('');
+
+  const handleTestEmail = async () => {
+    if (!settings) return;
+    const email = settings.emailAlerts?.recipientEmail?.trim() || settings.supportEmail?.trim();
+    if (!email) {
+      setTestEmailMsg('❌ Please enter an alert recipient email first.');
+      return;
+    }
+    setTestingEmail(true);
+    setTestEmailMsg('');
+    try {
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test',
+          recipientEmail: email,
+          service: settings.emailAlerts?.service,
+          credentials: {
+            resendKey: settings.emailAlerts?.resendApiKey,
+            gmailUser: settings.emailAlerts?.gmailUser,
+            gmailPass: settings.emailAlerts?.gmailAppPassword,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestEmailMsg('✅ Test email sent successfully! Please check your inbox / spam.');
+      } else {
+        setTestEmailMsg(`❌ Error: ${data.error || 'Failed to send test email.'}`);
+      }
+    } catch (err: unknown) {
+      setTestEmailMsg(`❌ Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setTestingEmail(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -512,6 +553,266 @@ export default function AdminSettingsPage() {
               }
               className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none font-mono"
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Instant Email Notifications & Alerts */}
+      <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Mail className="w-4 h-4 text-[#FF5500]" />
+              <span>Instant Email Alerts (Order & Cart Notifications)</span>
+            </h3>
+            <p className="mt-1 text-xs text-zinc-400">
+              Get an instant notification email to your Gmail / inbox whenever a customer adds an item to cart or initiates an order.
+            </p>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={settings.emailAlerts?.enabled !== false}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  emailAlerts: {
+                    ...settings.emailAlerts,
+                    enabled: e.target.checked,
+                  },
+                })
+              }
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF5500]" />
+          </label>
+        </div>
+
+        {/* Recipient Email & Event Toggles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#1C1C24]">
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Your Alert Email Address (Where alerts will be sent)
+            </label>
+            <input
+              type="email"
+              placeholder="e.g. yourname@gmail.com"
+              value={settings.emailAlerts?.recipientEmail || ''}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  emailAlerts: {
+                    ...settings.emailAlerts,
+                    recipientEmail: e.target.value,
+                  },
+                })
+              }
+              className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
+            />
+            <p className="text-[11px] text-zinc-500 mt-1">
+              All order and cart notifications will be sent to this email address.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <label className="block text-xs font-semibold text-zinc-300">
+              Select What You Want To Receive:
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={settings.emailAlerts?.notifyOnOrder !== false}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      emailAlerts: {
+                        ...settings.emailAlerts,
+                        notifyOnOrder: e.target.checked,
+                      },
+                    })
+                  }
+                  className="rounded border-[#333] text-[#FF5500] focus:ring-0 bg-black cursor-pointer"
+                />
+                <span className="font-semibold text-emerald-400">Order Alerts (Checkout on WhatsApp)</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={settings.emailAlerts?.notifyOnAddToCart !== false}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      emailAlerts: {
+                        ...settings.emailAlerts,
+                        notifyOnAddToCart: e.target.checked,
+                      },
+                    })
+                  }
+                  className="rounded border-[#333] text-[#FF5500] focus:ring-0 bg-black cursor-pointer"
+                />
+                <span className="font-semibold text-amber-400">Add to Cart Alerts (When user clicks Add to Cart)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Delivery Method / Provider Selection */}
+        <div className="space-y-4 pt-4 border-t border-[#1C1C24]">
+          <label className="block text-xs font-semibold text-zinc-300">
+            Choose Email Sending Provider:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              onClick={() =>
+                setSettings({
+                  ...settings,
+                  emailAlerts: {
+                    ...settings.emailAlerts,
+                    service: 'gmail',
+                  },
+                })
+              }
+              className={`p-4 rounded-xl border cursor-pointer transition ${
+                (settings.emailAlerts?.service || 'gmail') === 'gmail'
+                  ? 'border-[#FF5500] bg-[#FF5500]/10 text-white'
+                  : 'border-[#222228] bg-black/40 text-zinc-400 hover:border-zinc-700'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                <span>Option 1: Gmail SMTP (100% Free)</span>
+              </div>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                Directly uses your Gmail account with a free Google App Password. No 3rd-party sign-up needed.
+              </p>
+            </div>
+
+            <div
+              onClick={() =>
+                setSettings({
+                  ...settings,
+                  emailAlerts: {
+                    ...settings.emailAlerts,
+                    service: 'resend',
+                  },
+                })
+              }
+              className={`p-4 rounded-xl border cursor-pointer transition ${
+                settings.emailAlerts?.service === 'resend'
+                  ? 'border-[#FF5500] bg-[#FF5500]/10 text-white'
+                  : 'border-[#222228] bg-black/40 text-zinc-400 hover:border-zinc-700'
+              }`}
+            >
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
+                <span>Option 2: Resend API (3,000 Free/Mo)</span>
+              </div>
+              <p className="text-[11px] text-zinc-400 mt-1">
+                Modern developer email API. 3,000 free emails monthly, reliable 1-second inbox delivery.
+              </p>
+            </div>
+          </div>
+
+          {/* Conditional Credentials Inputs */}
+          {(settings.emailAlerts?.service || 'gmail') === 'gmail' ? (
+            <div className="p-4 rounded-xl bg-black/50 border border-[#222228] space-y-3">
+              <h4 className="text-xs font-bold text-white">Gmail SMTP Configuration:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                    Your Gmail Address (Sender)
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="yourstore@gmail.com"
+                    value={settings.emailAlerts?.gmailUser || ''}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        emailAlerts: {
+                          ...settings.emailAlerts,
+                          gmailUser: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-black border border-[#222228] focus:border-[#FF5500] rounded-lg text-white text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                    Google App Password (16 characters)
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="xxxx xxxx xxxx xxxx"
+                    value={settings.emailAlerts?.gmailAppPassword || ''}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        emailAlerts: {
+                          ...settings.emailAlerts,
+                          gmailAppPassword: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-black border border-[#222228] focus:border-[#FF5500] rounded-lg text-white text-xs focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                💡 Tip: Generate a 16-character App Password at: <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-[#FF5500] underline">myaccount.google.com/apppasswords</a> (Requires 2-Step Verification).
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-black/50 border border-[#222228] space-y-3">
+              <h4 className="text-xs font-bold text-white">Resend API Configuration:</h4>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1">
+                  Resend API Key (starts with re_...)
+                </label>
+                <input
+                  type="password"
+                  placeholder="re_123456789abcdef..."
+                  value={settings.emailAlerts?.resendApiKey || ''}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      emailAlerts: {
+                        ...settings.emailAlerts,
+                        resendApiKey: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 bg-black border border-[#222228] focus:border-[#FF5500] rounded-lg text-white text-xs focus:outline-none font-mono"
+                />
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                💡 Get your free API key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-[#FF5500] underline">resend.com</a>.
+              </p>
+            </div>
+          )}
+
+          {/* Test Email Button */}
+          <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={handleTestEmail}
+              disabled={testingEmail}
+              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold flex items-center gap-2 border border-zinc-700 transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>{testingEmail ? 'Sending Test Email...' : 'Send Test Alert Email'}</span>
+            </button>
+
+            {testEmailMsg && (
+              <span className={`text-xs font-semibold ${testEmailMsg.startsWith('✅') ? 'text-emerald-400' : 'text-red-400'}`}>
+                {testEmailMsg}
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -39,6 +39,16 @@ const DEFAULT_SETTINGS: StoreSettings = {
       usdtTrc20: '',
     },
   },
+  emailAlerts: {
+    enabled: true,
+    recipientEmail: process.env.ADMIN_ALERT_EMAIL || 'support@yttoolsstore.pk',
+    notifyOnOrder: true,
+    notifyOnAddToCart: true,
+    service: 'gmail',
+    gmailUser: process.env.SMTP_USER || '',
+    gmailAppPassword: process.env.SMTP_PASSWORD || '',
+    resendApiKey: process.env.RESEND_API_KEY || '',
+  },
 };
 
 interface DatabaseSchema {

@@ -384,6 +384,29 @@ function ProductCard({ product }: ProductCardProps) {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => {
+                  try {
+                    fetch('/api/notify', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        type: 'order',
+                        items: [
+                          {
+                            title: product.title,
+                            quantity: currentQty,
+                            pricePKR: product.pricePKR,
+                            priceUSD: product.priceUSD,
+                            image: product.images[0] || '',
+                          },
+                        ],
+                        totalPKR,
+                      }),
+                    }).catch(() => {});
+                  } catch {
+                    // ignore
+                  }
+                }}
                 className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md hover:shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
               >
                 <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-white shrink-0" />

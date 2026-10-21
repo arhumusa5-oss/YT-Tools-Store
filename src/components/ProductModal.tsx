@@ -422,6 +422,29 @@ export default function ProductModal() {
                     href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => {
+                      try {
+                        fetch('/api/notify', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            type: 'order',
+                            items: [
+                              {
+                                title: product.title,
+                                quantity: currentQty,
+                                pricePKR: product.pricePKR,
+                                priceUSD: product.priceUSD,
+                                image: product.images[0] || '',
+                              },
+                            ],
+                            totalPKR,
+                          }),
+                        }).catch(() => {});
+                      } catch {
+                        // ignore
+                      }
+                    }}
                     className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                   >
                     <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />

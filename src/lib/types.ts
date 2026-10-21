@@ -93,6 +93,16 @@ export interface StoreSettings {
       usdtTrc20: string;
     };
   };
+  emailAlerts?: {
+    enabled?: boolean;
+    recipientEmail?: string;
+    notifyOnOrder?: boolean;
+    notifyOnAddToCart?: boolean;
+    service?: 'gmail' | 'resend';
+    gmailUser?: string;
+    gmailAppPassword?: string;
+    resendApiKey?: string;
+  };
 }
 
 export interface Category {

@@ -158,6 +158,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       image: product.images[0] || '',
       quantity,
     });
+
+    // Silent background email alert trigger
+    try {
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'add_to_cart',
+          items: [
+            {
+              title: product.title,
+              quantity,
+              pricePKR: product.pricePKR,
+              priceUSD: product.priceUSD,
+              image: product.images[0] || '',
+            },
+          ],
+          totalPKR: product.pricePKR * quantity,
+        }),
+      }).catch(() => {});
+    } catch {
+      // ignore
+    }
   };
 
   const removeFromCart = (productId: string) => {
