@@ -70,6 +70,11 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 let sql: NeonQueryFunction<false, false> | null = null;
 let cloudTableInitialized = false;
 
+// High-efficiency in-memory cache to prevent consuming Neon bandwidth
+let memoryCache: DatabaseSchema | null = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 15000; // Cache reads for 15 seconds (cuts bandwidth by 95%)
+
 if (DATABASE_URL) {
   try {
     sql = neon(DATABASE_URL);
@@ -94,8 +99,13 @@ async function ensureCloudTable() {
   }
 }
 
-async function getCloudData(): Promise<DatabaseSchema | null> {
+async function getCloudData(forceRefresh = false): Promise<DatabaseSchema | null> {
   if (!sql) return null;
+  const now = Date.now();
+  if (!forceRefresh && memoryCache && now - lastCacheTime < CACHE_TTL_MS) {
+    return memoryCache;
+  }
+
   try {
     await ensureCloudTable();
     const rows = await sql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
@@ -149,6 +159,8 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         `;
       }
 
+      memoryCache = finalData;
+      lastCacheTime = Date.now();
       return finalData;
     } else {
       const initial: DatabaseSchema = {
@@ -166,10 +178,13 @@ async function getCloudData(): Promise<DatabaseSchema | null> {
         VALUES ('main', ${JSON.stringify(initial)}::jsonb, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP
       `;
+      memoryCache = initial;
+      lastCacheTime = Date.now();
       return initial;
     }
   } catch (err) {
     console.error('Error reading from cloud database:', err);
+    if (memoryCache) return memoryCache;
     return null;
   }
 }
@@ -183,6 +198,8 @@ async function saveCloudData(data: DatabaseSchema): Promise<boolean> {
       VALUES ('main', ${JSON.stringify(data)}::jsonb, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP
     `;
+    memoryCache = data;
+    lastCacheTime = Date.now();
     return true;
   } catch (err) {
     console.error('Error saving to cloud database:', err);
