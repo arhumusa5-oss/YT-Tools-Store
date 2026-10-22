@@ -414,18 +414,18 @@ export default function DirectPaymentInvoicePage() {
                 </div>
               )}
               {isSplit && (
-                <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 text-xs space-y-1.5 text-left">
+                <div className="p-3.5 rounded-xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 text-xs space-y-1.5 text-left">
                   <div className="flex justify-between">
-                    <span className="text-zinc-400">Total Deal Value:</span>
-                    <span className="font-mono font-bold text-white">Rs {totalAmountPKR.toLocaleString()}</span>
+                    <span className="text-[#4b5563] dark:text-zinc-400 font-medium">Total Deal Value:</span>
+                    <span className="font-mono font-bold text-[#0a0a0a] dark:text-white">Rs {totalAmountPKR.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-emerald-400 font-bold">✓ Advance Paid:</span>
-                    <span className="font-mono text-emerald-400 font-bold">Rs {advanceAmountPKR.toLocaleString()} ({order.advanceTID || 'Verified'})</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Advance Paid:</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">Rs {advanceAmountPKR.toLocaleString()} ({order.advanceTID || 'Verified'})</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-emerald-400 font-bold">✓ Delivery Balance Paid:</span>
-                    <span className="font-mono text-emerald-400 font-bold">Rs {balanceAmountPKR.toLocaleString()} ({order.balanceTID || 'Verified'})</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Delivery Balance Paid:</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">Rs {balanceAmountPKR.toLocaleString()} ({order.balanceTID || 'Verified'})</span>
                   </div>
                 </div>
               )}
@@ -496,44 +496,47 @@ export default function DirectPaymentInvoicePage() {
 
             {/* Split / Milestone Payment Progress Banner */}
             {isSplit && (
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#181824] to-purple-950/40 border border-purple-500/30 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 font-bold text-purple-300">
-                    <Receipt className="w-4 h-4 text-purple-400" />
+              <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between text-xs pb-2 border-b border-[#e5e7eb] dark:border-white/5">
+                  <div className="flex items-center gap-1.5 font-black text-xs text-[#0a0a0a] dark:text-white uppercase tracking-wider">
+                    <Receipt className="w-3.5 h-3.5 text-[#660000] dark:text-[#ff6b6b]" />
                     <span>Split / Milestone Payment Tracker</span>
                   </div>
-                  <span className="font-mono font-bold text-white text-xs">
-                    Total Deal: Rs {totalAmountPKR.toLocaleString()}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-[10px] text-[#4b5563] dark:text-zinc-400 font-medium">Total Deal: </span>
+                    <span className="font-mono font-bold text-xs text-[#0a0a0a] dark:text-white">
+                      Rs {totalAmountPKR.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
 
                 {/* 2 Step Cards */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
                   {/* Stage 1: Advance */}
                   <div
-                    className={`p-2.5 rounded-xl border transition ${
+                    className={`p-3 rounded-xl border transition ${
                       splitStage === 'stage1_advance'
-                        ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/30'
-                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        ? 'border-2 border-blue-600/70 bg-blue-50/70 dark:bg-blue-950/30 text-blue-950 dark:text-blue-100 shadow-sm'
+                        : 'border border-emerald-500/40 bg-emerald-50/70 dark:bg-emerald-950/25 text-emerald-950 dark:text-emerald-100 shadow-sm'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[11px]">Step 1: Advance</span>
+                      <span className="font-bold text-[11px] text-[#0a0a0a] dark:text-white">Step 1: Advance</span>
                       {splitStage === 'stage1_advance' ? (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-blue-600 text-white uppercase shadow-sm">
                           Due Now
                         </span>
                       ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-600 text-white uppercase shadow-sm">
                           Paid ✓
                         </span>
                       )}
                     </div>
-                    <div className="text-base font-black font-mono text-white mt-1">
+                    <div className="text-base sm:text-lg font-black font-mono text-[#0a0a0a] dark:text-white mt-1">
                       Rs {advanceAmountPKR.toLocaleString()}
                     </div>
                     {order.advanceTID && (
-                      <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5 truncate">
                         TID: {order.advanceTID}
                       </div>
                     )}
@@ -541,35 +544,35 @@ export default function DirectPaymentInvoicePage() {
 
                   {/* Stage 2: Balance on Delivery */}
                   <div
-                    className={`p-2.5 rounded-xl border transition ${
+                    className={`p-3 rounded-xl border transition ${
                       splitStage === 'completed'
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        ? 'border border-emerald-500/40 bg-emerald-50/70 dark:bg-emerald-950/25 text-emerald-950 dark:text-emerald-100 shadow-sm'
                         : splitStage === 'stage2_balance'
-                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-200 ring-1 ring-purple-500/40'
-                        : 'bg-zinc-900/60 border-zinc-800 text-zinc-500'
+                        ? 'border-2 border-blue-600/70 bg-blue-50/70 dark:bg-blue-950/30 text-blue-950 dark:text-blue-100 shadow-sm'
+                        : 'border border-[#d1c7c7] dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/40 text-zinc-500 dark:text-zinc-400'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[11px]">Step 2: Balance</span>
+                      <span className="font-bold text-[11px] text-[#0a0a0a] dark:text-white">Step 2: Balance</span>
                       {splitStage === 'completed' ? (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-emerald-600 text-white uppercase shadow-sm">
                           Paid ✓
                         </span>
                       ) : splitStage === 'stage2_balance' ? (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/30 text-purple-200 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black bg-blue-600 text-white uppercase shadow-sm">
                           Pay Now
                         </span>
                       ) : (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-zinc-400 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 uppercase">
                           On Delivery
                         </span>
                       )}
                     </div>
-                    <div className="text-base font-black font-mono text-white mt-1">
+                    <div className="text-base sm:text-lg font-black font-mono text-[#0a0a0a] dark:text-white mt-1">
                       Rs {balanceAmountPKR.toLocaleString()}
                     </div>
                     {order.balanceTID && (
-                      <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5 truncate">
                         TID: {order.balanceTID}
                       </div>
                     )}
@@ -600,25 +603,25 @@ export default function DirectPaymentInvoicePage() {
               </div>
 
               {isSplit && (
-                <div className="pt-2.5 border-t border-[#d1c7c7] dark:border-white/10 text-xs space-y-1">
-                  <div className="flex justify-between text-zinc-400">
+                <div className="pt-2.5 border-t border-[#d1c7c7] dark:border-white/10 text-xs space-y-1.5">
+                  <div className="flex justify-between text-[#4b5563] dark:text-zinc-400">
                     <span>Total Deal Amount:</span>
-                    <span className="font-mono font-bold text-white">Rs {totalAmountPKR.toLocaleString()}</span>
+                    <span className="font-mono font-bold text-[#0a0a0a] dark:text-white">Rs {totalAmountPKR.toLocaleString()}</span>
                   </div>
                   {splitStage === 'stage1_advance' ? (
-                    <div className="flex justify-between text-amber-400 font-bold">
+                    <div className="flex justify-between text-blue-600 dark:text-blue-400 font-bold">
                       <span>Step 1 Advance Due:</span>
-                      <span className="font-mono">Rs {advanceAmountPKR.toLocaleString()}</span>
+                      <span className="font-mono font-black text-blue-600 dark:text-blue-400">Rs {advanceAmountPKR.toLocaleString()}</span>
                     </div>
                   ) : (
                     <>
-                      <div className="flex justify-between text-emerald-400 font-bold">
+                      <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
                         <span>✓ Step 1 Advance Paid:</span>
-                        <span className="font-mono">Rs {advanceAmountPKR.toLocaleString()}</span>
+                        <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">Rs {advanceAmountPKR.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between text-purple-300 font-bold">
+                      <div className="flex justify-between text-blue-600 dark:text-blue-400 font-bold">
                         <span>Step 2 Balance Due:</span>
-                        <span className="font-mono">Rs {balanceAmountPKR.toLocaleString()}</span>
+                        <span className="font-mono font-black text-blue-600 dark:text-blue-400">Rs {balanceAmountPKR.toLocaleString()}</span>
                       </div>
                     </>
                   )}
