@@ -66,7 +66,13 @@ interface DatabaseSchema {
 }
 
 // Check if running with Cloud Database (e.g. on Vercel)
-const DATABASE_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.STORAGE_URL ||
+  process.env.STORAGE_DATABASE_URL ||
+  process.env.STORAGE_POSTGRES_URL ||
+  process.env.NEON_DATABASE_URL;
 let sql: NeonQueryFunction<false, false> | null = null;
 let cloudTableInitialized = false;
 
