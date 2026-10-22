@@ -26,6 +26,7 @@ import {
   Layers,
   ArrowRight,
   Loader2,
+  X,
 } from 'lucide-react';
 
 type FilterPeriod = 'lifetime' | 'this_month' | 'last_month' | 'custom_month';
@@ -226,8 +227,8 @@ export default function AdminFinancesPage() {
     }
   };
 
-  // Filter orders by Time Period, Vendor Status, and Search Query
-  const filteredOrders = useMemo(() => {
+  // 1. Period-filtered orders (Calculations depend on this, NOT on vendor sub-tab or table search)
+  const periodOrders = useMemo(() => {
     const nowDate = new Date();
     const curYear = nowDate.getFullYear();
     const curMonth = nowDate.getMonth();
@@ -244,97 +245,127 @@ export default function AdminFinancesPage() {
     }
 
     return orders.filter((o) => {
-      // 1. Search filter
-      const s = search.toLowerCase();
-      const currentVendor = editStateMap[o.id]?.vendorName || o.vendorName || '';
-      const matchSearch =
-        !s ||
-        o.id.toLowerCase().includes(s) ||
-        o.customerName.toLowerCase().includes(s) ||
-        o.customerWhatsApp.toLowerCase().includes(s) ||
-        currentVendor.toLowerCase().includes(s) ||
-        o.items.some((i) => i.title.toLowerCase().includes(s));
+      if (filterPeriod === 'lifetime') return true;
+      if (!o.createdAt) return false;
+      const d = new Date(o.createdAt);
+      if (isNaN(d.getTime())) return false;
 
-      // 2. Vendor Status filter
-      const currentVStatus = editStateMap[o.id]?.vendorPaymentStatus || o.vendorPaymentStatus || 'unpaid';
-      let matchVendor = true;
-      if (vendorFilter === 'unpaid') matchVendor = currentVStatus === 'unpaid';
-      if (vendorFilter === 'paid') matchVendor = currentVStatus === 'paid';
-
-      // 3. Time filter
-      let matchTime = true;
       if (filterPeriod === 'this_month') {
-        if (!o.createdAt) matchTime = false;
-        else {
-          const d = new Date(o.createdAt);
-          matchTime = d.getFullYear() === curYear && d.getMonth() === curMonth;
-        }
-      } else if (filterPeriod === 'last_month') {
-        if (!o.createdAt) matchTime = false;
-        else {
-          const d = new Date(o.createdAt);
-          matchTime = d.getFullYear() === lastYear && d.getMonth() === lastMonth;
-        }
-      } else if (filterPeriod === 'custom_month') {
-        if (!o.createdAt) matchTime = false;
-        else {
-          const d = new Date(o.createdAt);
-          matchTime = d.getFullYear() === targetCustomYear && d.getMonth() === targetCustomMonth;
-        }
+        return d.getFullYear() === curYear && d.getMonth() === curMonth;
       }
-
-      return matchSearch && matchVendor && matchTime;
+      if (filterPeriod === 'last_month') {
+        return d.getFullYear() === lastYear && d.getMonth() === lastMonth;
+      }
+      if (filterPeriod === 'custom_month') {
+        return d.getFullYear() === targetCustomYear && d.getMonth() === targetCustomMonth;
+      }
+      return true;
     });
-  }, [orders, search, vendorFilter, filterPeriod, customYearMonth, lastMonthDate, editStateMap]);
+  }, [orders, filterPeriod, customYearMonth, lastMonthDate]);
 
-  // Aggregate Metrics for the active filtered period
+  // Orders that count in Revenue & Costs: valid non-cancelled orders
+  const qualifyingOrders = useMemo(() => {
+    return periodOrders.filter((o) => o.status !== 'cancelled');
+  }, [periodOrders]);
+
+  // Aggregate Metrics for the active period (100% accurate, safe against NaN and string types)
   const totalSalesPKR = useMemo(() => {
-    return filteredOrders
-      .filter((o) => o.status === 'completed' || o.status === 'processing')
-      .reduce((sum, o) => sum + o.totalPKR, 0);
-  }, [filteredOrders]);
+    return qualifyingOrders
+      .filter((o) => o.status === 'completed' || o.status === 'processing' || o.paymentStatus === 'paid')
+      .reduce((sum, o) => sum + (Number(o.totalPKR) || 0), 0);
+  }, [qualifyingOrders]);
 
   const totalCostPKR = useMemo(() => {
-    return filteredOrders.reduce((sum, o) => {
-      const liveCost = editStateMap[o.id]?.costPKR;
-      const cost = liveCost !== '' && liveCost !== undefined ? Number(liveCost) : (o.costPKR || 0);
-      return sum + (isNaN(cost) ? 0 : cost);
-    }, 0);
-  }, [filteredOrders, editStateMap]);
+    return qualifyingOrders
+      .filter((o) => o.status === 'completed' || o.status === 'processing' || o.paymentStatus === 'paid')
+      .reduce((sum, o) => {
+        const liveCost = editStateMap[o.id]?.costPKR;
+        const cost =
+          liveCost !== '' && liveCost !== undefined ? Number(liveCost) : (Number(o.costPKR) || 0);
+        return sum + (isNaN(cost) ? 0 : Math.max(0, cost));
+      }, 0);
+  }, [qualifyingOrders, editStateMap]);
 
   const netProfitPKR = useMemo(() => {
     return totalSalesPKR - totalCostPKR;
   }, [totalSalesPKR, totalCostPKR]);
 
   const profitMarginPercent = useMemo(() => {
-    if (totalSalesPKR === 0) return 0;
+    if (totalSalesPKR <= 0) return 0;
     return Math.round((netProfitPKR / totalSalesPKR) * 100);
   }, [netProfitPKR, totalSalesPKR]);
 
-  // Vendor Payables Calculations
+  // Vendor Payables Calculations (for the active period)
   const vendorPayables = useMemo(() => {
     let unpaidTotal = 0;
     let paidTotal = 0;
     let unpaidCount = 0;
     let paidCount = 0;
 
-    filteredOrders.forEach((o) => {
+    qualifyingOrders.forEach((o) => {
       const liveCost = editStateMap[o.id]?.costPKR;
-      const cost = liveCost !== '' && liveCost !== undefined ? Number(liveCost) : (o.costPKR || 0);
-      const validCost = isNaN(cost) ? 0 : cost;
+      const cost =
+        liveCost !== '' && liveCost !== undefined ? Number(liveCost) : (Number(o.costPKR) || 0);
+      const validCost = isNaN(cost) ? 0 : Math.max(0, cost);
 
-      const liveStatus = editStateMap[o.id]?.vendorPaymentStatus || o.vendorPaymentStatus || 'unpaid';
+      const liveStatus =
+        editStateMap[o.id]?.vendorPaymentStatus || o.vendorPaymentStatus || 'unpaid';
       if (liveStatus === 'unpaid') {
         unpaidTotal += validCost;
-        if (validCost > 0 || editStateMap[o.id]?.vendorName) unpaidCount++;
+        if (validCost > 0 || editStateMap[o.id]?.vendorName || o.vendorName) unpaidCount++;
       } else {
         paidTotal += validCost;
-        if (validCost > 0 || editStateMap[o.id]?.vendorName) paidCount++;
+        if (validCost > 0 || editStateMap[o.id]?.vendorName || o.vendorName) paidCount++;
       }
     });
 
     return { unpaidTotal, paidTotal, unpaidCount, paidCount };
-  }, [filteredOrders, editStateMap]);
+  }, [qualifyingOrders, editStateMap]);
+
+  // 2. Filtered Orders for the Table (supports search across all fields + vendor status filter)
+  const filteredOrders = useMemo(() => {
+    const s = search.toLowerCase().trim();
+    const cleanSearch = s.replace(/^#/, '');
+
+    // If searching, search across all orders; otherwise respect selected period
+    const baseList = s ? orders : periodOrders;
+
+    return baseList.filter((o) => {
+      // 1. Search Filter (never crashes on undefined/null fields)
+      if (s) {
+        const idStr = String(o.id || '').toLowerCase();
+        const cleanIdStr = idStr.replace(/^#/, '');
+        const nameStr = String(o.customerName || '').toLowerCase();
+        const phoneStr = String(o.customerWhatsApp || '').toLowerCase();
+        const vendorStr = String(editStateMap[o.id]?.vendorName || o.vendorName || '').toLowerCase();
+        const tidStr = String(o.transactionId || '').toLowerCase();
+        const notesStr = String(o.adminNotes || o.channelOrDeliveryNote || '').toLowerCase();
+        const itemsStr = Array.isArray(o.items)
+          ? o.items.map((i) => String(i?.title || '')).join(' ').toLowerCase()
+          : '';
+
+        const matchSearch =
+          idStr.includes(s) ||
+          cleanIdStr.includes(cleanSearch) ||
+          nameStr.includes(s) ||
+          phoneStr.includes(s) ||
+          vendorStr.includes(s) ||
+          tidStr.includes(s) ||
+          notesStr.includes(s) ||
+          itemsStr.includes(s);
+
+        if (!matchSearch) return false;
+      }
+
+      // 2. Vendor Status Filter
+      const currentVStatus =
+        editStateMap[o.id]?.vendorPaymentStatus || o.vendorPaymentStatus || 'unpaid';
+      if (vendorFilter === 'unpaid' && currentVStatus !== 'unpaid') return false;
+      if (vendorFilter === 'paid' && currentVStatus !== 'paid') return false;
+
+      return true;
+    });
+  }, [orders, periodOrders, search, vendorFilter, editStateMap]);
 
   return (
     <div className="space-y-6">
@@ -552,8 +583,18 @@ export default function AdminFinancesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by Order ID (#2506), Customer, Vendor Name, or Tool..."
-            className="w-full pl-10 pr-4 py-2.5 bg-black border border-[#222228] focus:border-emerald-500 rounded-xl text-white text-xs placeholder-zinc-500 focus:outline-none"
+            className="w-full pl-10 pr-9 py-2.5 bg-black border border-[#222228] focus:border-emerald-500 rounded-xl text-white text-xs placeholder-zinc-500 focus:outline-none"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white p-0.5 rounded cursor-pointer transition"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
@@ -578,8 +619,16 @@ export default function AdminFinancesPage() {
         <span className="text-zinc-400 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span>Viewing:</span>
-          <strong className="text-white">{activePeriodName}</strong>
-          {filterPeriod !== 'lifetime' && (
+          <strong className="text-white">{search ? `Search results across all records` : activePeriodName}</strong>
+          {search ? (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="text-[11px] text-amber-400 hover:underline ml-1 cursor-pointer flex items-center gap-1"
+            >
+              (Clear search &quot;{search}&quot;)
+            </button>
+          ) : filterPeriod !== 'lifetime' && (
             <button
               type="button"
               onClick={() => setFilterPeriod('lifetime')}

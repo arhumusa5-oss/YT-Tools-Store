@@ -167,16 +167,26 @@ export default function AdminDashboardPage() {
     return orders;
   }, [orders, filterPeriod, customYearMonth, lastMonthDate]);
 
-  // Calculated Stats based on Active Filter
-  const totalRevenuePKR = useMemo(() => {
-    return filteredOrders
-      .filter((o) => o.status === 'completed' || o.status === 'processing')
-      .reduce((sum, o) => sum + o.totalPKR, 0);
+  // Qualifying orders: non-cancelled orders for calculations
+  const qualifyingOrders = useMemo(() => {
+    return filteredOrders.filter((o) => o.status !== 'cancelled');
   }, [filteredOrders]);
 
+  // Calculated Stats based on Active Filter
+  const totalRevenuePKR = useMemo(() => {
+    return qualifyingOrders
+      .filter((o) => o.status === 'completed' || o.status === 'processing' || o.paymentStatus === 'paid')
+      .reduce((sum, o) => sum + (Number(o.totalPKR) || 0), 0);
+  }, [qualifyingOrders]);
+
   const totalCostPKR = useMemo(() => {
-    return filteredOrders.reduce((sum, o) => sum + (o.costPKR || 0), 0);
-  }, [filteredOrders]);
+    return qualifyingOrders
+      .filter((o) => o.status === 'completed' || o.status === 'processing' || o.paymentStatus === 'paid')
+      .reduce((sum, o) => {
+        const cost = Number(o.costPKR) || 0;
+        return sum + Math.max(0, cost);
+      }, 0);
+  }, [qualifyingOrders]);
 
   const netProfitPKR = useMemo(() => {
     return totalRevenuePKR - totalCostPKR;
@@ -193,8 +203,8 @@ export default function AdminDashboardPage() {
     let unpaidCount = 0;
     let paidCount = 0;
 
-    filteredOrders.forEach((o) => {
-      const cost = o.costPKR || 0;
+    qualifyingOrders.forEach((o) => {
+      const cost = Math.max(0, Number(o.costPKR) || 0);
       const status = o.vendorPaymentStatus || 'unpaid';
       if (status === 'unpaid') {
         unpaidTotal += cost;
@@ -206,7 +216,7 @@ export default function AdminDashboardPage() {
     });
 
     return { unpaidTotal, paidTotal, unpaidCount, paidCount };
-  }, [filteredOrders]);
+  }, [qualifyingOrders]);
 
   const pendingOrders = useMemo(() => {
     return filteredOrders.filter((o) => o.status === 'pending');
