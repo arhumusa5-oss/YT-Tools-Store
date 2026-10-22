@@ -23,6 +23,7 @@ import {
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Link from 'next/link';
 import { validateEmail } from '@/lib/validation';
+import CredentialsCard from '@/components/CredentialsCard';
 
 function TrackOrderContent() {
   const searchParams = useSearchParams();
@@ -287,6 +288,20 @@ function TrackOrderContent() {
               {getStatusBadge(order.status).desc}
             </div>
           </div>
+
+          {/* 1-Click Copy Credentials Box (Protected UI) */}
+          {(order.accountEmail || order.accountPassword || order.accountProfileOrPin || order.accountLoginNotes) && (
+            <CredentialsCard
+              orderId={order.id}
+              accountEmail={order.accountEmail}
+              accountPassword={order.accountPassword}
+              accountProfileOrPin={order.accountProfileOrPin}
+              accountLoginNotes={order.accountLoginNotes}
+              subscriptionExpiryDate={order.subscriptionExpiryDate}
+              subscriptionDurationDays={order.subscriptionDurationDays}
+              productTitle={order.items.map((i) => i.title).join(', ')}
+            />
+          )}
 
           {/* Email Notification Alert Box (Solid Opaque Fill) */}
           <div className="p-4 sm:p-5 rounded-2xl bg-[#fffafa] dark:bg-[#161214] border-2 border-[#660000]/25 shadow-sm space-y-3">

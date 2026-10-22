@@ -44,6 +44,15 @@ export async function PUT(
       vendorName,
       vendorPaymentStatus,
       vendorNotes,
+      accountEmail,
+      accountPassword,
+      accountProfileOrPin,
+      accountLoginNotes,
+      credentialsDelivered,
+      subscriptionDurationDays,
+      subscriptionExpiryDate,
+      renewalStatus,
+      renewalNotes,
     } = body;
 
     const updates: Record<string, unknown> = {};
@@ -76,6 +85,27 @@ export async function PUT(
     }
     if (vendorNotes !== undefined) {
       updates.vendorNotes = String(vendorNotes).trim();
+    }
+
+    // Digital Credentials & Dispatch fields
+    if (accountEmail !== undefined) updates.accountEmail = String(accountEmail).trim();
+    if (accountPassword !== undefined) updates.accountPassword = String(accountPassword).trim();
+    if (accountProfileOrPin !== undefined) updates.accountProfileOrPin = String(accountProfileOrPin).trim();
+    if (accountLoginNotes !== undefined) updates.accountLoginNotes = String(accountLoginNotes).trim();
+    if (credentialsDelivered !== undefined) updates.credentialsDelivered = Boolean(credentialsDelivered);
+
+    // Subscription & Renewal fields
+    if (subscriptionDurationDays !== undefined) {
+      updates.subscriptionDurationDays = Number(subscriptionDurationDays) || 30;
+    }
+    if (subscriptionExpiryDate !== undefined) {
+      updates.subscriptionExpiryDate = String(subscriptionExpiryDate).trim();
+    }
+    if (renewalStatus !== undefined) {
+      updates.renewalStatus = renewalStatus;
+    }
+    if (renewalNotes !== undefined) {
+      updates.renewalNotes = String(renewalNotes).trim();
     }
 
     const updated = await db.updateOrder(id, updates);

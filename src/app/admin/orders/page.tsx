@@ -10,6 +10,7 @@ import {
   AlertCircle,
   ExternalLink,
   ChevronDown,
+  ChevronUp,
   User,
   Phone,
   Mail,
@@ -29,6 +30,12 @@ import {
   Calendar,
   CalendarDays,
   Sparkles,
+  KeyRound,
+  Send,
+  Info,
+  Eye,
+  EyeOff,
+  RotateCcw,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import BundleLinkModal from '@/components/admin/BundleLinkModal';
@@ -92,6 +99,26 @@ export default function AdminOrdersPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [invoiceError, setInvoiceError] = useState('');
 
+  // Quick Dispatch & Credentials States
+  const [expandedDispatchId, setExpandedDispatchId] = useState<string | null>(null);
+  const [credentialsMap, setCredentialsMap] = useState<
+    Record<
+      string,
+      {
+        accountEmail: string;
+        accountPassword: string;
+        accountProfileOrPin: string;
+        accountLoginNotes: string;
+        subscriptionDurationDays: number;
+        subscriptionExpiryDate: string;
+      }
+    >
+  >({});
+  const [savingCredsId, setSavingCredsId] = useState<string | null>(null);
+  const [savedCredsSuccessId, setSavedCredsSuccessId] = useState<string | null>(null);
+  const [copiedDispatchId, setCopiedDispatchId] = useState<string | null>(null);
+  const [showPasswordMap, setShowPasswordMap] = useState<Record<string, boolean>>({});
+
   const fetchOrders = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -104,6 +131,25 @@ export default function AdminOrdersPage() {
           map[o.id] = o.adminNotes || '';
         });
         setAdminNotesMap(map);
+
+        setCredentialsMap((prev) => {
+          const next = { ...prev };
+          data.orders.forEach((o: Order) => {
+            if (!next[o.id] || expandedDispatchId !== o.id) {
+              next[o.id] = {
+                accountEmail: o.accountEmail || '',
+                accountPassword: o.accountPassword || '',
+                accountProfileOrPin: o.accountProfileOrPin || '',
+                accountLoginNotes:
+                  o.accountLoginNotes ||
+                  '• 1 Device Login only.\n• Do not change email or account password.\n• Contact support on WhatsApp for any help.',
+                subscriptionDurationDays: o.subscriptionDurationDays || 30,
+                subscriptionExpiryDate: o.subscriptionExpiryDate || '',
+              };
+            }
+          });
+          return next;
+        });
       }
     } catch (err) {
       console.error(err);
@@ -364,6 +410,256 @@ export default function AdminOrdersPage() {
     }
   };
 
+  // Quick Preset Dispatch Templates
+  const PRESET_TEMPLATES = [
+    {
+      id: 'capcut',
+      label: '🎬 CapCut Pro',
+      profileOrPin: '',
+      guidelines:
+        '• 1 Device Login only.\n• Do not change account email or password.\n• Full Pro editing & export features unlocked. Enjoy editing!',
+      days: 30,
+    },
+    {
+      id: 'canva',
+      label: '🎨 Canva Pro',
+      profileOrPin: 'Pro Team Access',
+      guidelines:
+        '• Join via team invite or login with provided credentials.\n• Unlimited brand kits, premium templates & elements unlocked.\n• Enjoy Pro privileges.',
+      days: 30,
+    },
+    {
+      id: 'netflix',
+      label: '🍿 Netflix / OTT Screen',
+      profileOrPin: 'Profile 2 (PIN: 1234)',
+      guidelines:
+        '• Login on 1 screen / device only.\n• Use your designated profile only.\n• Do not modify profile name, language, or master account PIN.\n• UHD 4K Streaming active.',
+      days: 30,
+    },
+    {
+      id: 'aged_mail',
+      label: '📧 Aged Gmails / YT',
+      profileOrPin: 'Recovery: Inside Notes',
+      guidelines:
+        '• Login with the provided email & recovery details.\n• Add your own 2FA / recovery after initial 24 hours.\n• 100% genuine aged accounts with verification guarantee.',
+      days: 365,
+    },
+    {
+      id: 'custom',
+      label: '⚡ Custom Tool',
+      profileOrPin: '',
+      guidelines:
+        '• Genuine verified digital subscription.\n• 1 User login only.\n• Active support & replacement warranty.',
+      days: 30,
+    },
+  ];
+
+  const applyPresetTemplate = (orderId: string, preset: (typeof PRESET_TEMPLATES)[0]) => {
+    const today = new Date();
+    today.setDate(today.getDate() + preset.days);
+    const expDate = today.toISOString().split('T')[0];
+
+    setCredentialsMap((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] || {
+          accountEmail: '',
+          accountPassword: '',
+          accountProfileOrPin: '',
+          accountLoginNotes: '',
+          subscriptionDurationDays: 30,
+          subscriptionExpiryDate: '',
+        }),
+        accountProfileOrPin: prev[orderId]?.accountProfileOrPin || preset.profileOrPin,
+        accountLoginNotes: preset.guidelines,
+        subscriptionDurationDays: preset.days,
+        subscriptionExpiryDate: expDate,
+      },
+    }));
+  };
+
+  const handleDurationChange = (orderId: string, days: number) => {
+    const today = new Date();
+    today.setDate(today.getDate() + days);
+    const expDate = today.toISOString().split('T')[0];
+
+    setCredentialsMap((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] || {
+          accountEmail: '',
+          accountPassword: '',
+          accountProfileOrPin: '',
+          accountLoginNotes: '',
+          subscriptionDurationDays: 30,
+          subscriptionExpiryDate: '',
+        }),
+        subscriptionDurationDays: days,
+        subscriptionExpiryDate: expDate,
+      },
+    }));
+  };
+
+  const handleCredentialFieldChange = (
+    orderId: string,
+    field: 'accountEmail' | 'accountPassword' | 'accountProfileOrPin' | 'accountLoginNotes' | 'subscriptionExpiryDate',
+    val: string
+  ) => {
+    setCredentialsMap((prev) => ({
+      ...prev,
+      [orderId]: {
+        ...(prev[orderId] || {
+          accountEmail: '',
+          accountPassword: '',
+          accountProfileOrPin: '',
+          accountLoginNotes: '',
+          subscriptionDurationDays: 30,
+          subscriptionExpiryDate: '',
+        }),
+        [field]: val,
+      },
+    }));
+  };
+
+  const formatDispatchMessage = (order: Order, creds: {
+    accountEmail: string;
+    accountPassword: string;
+    accountProfileOrPin: string;
+    accountLoginNotes: string;
+    subscriptionDurationDays: number;
+    subscriptionExpiryDate: string;
+  }) => {
+    const storeOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://yttoolsstore.pk';
+    const trackUrl = `${storeOrigin}/track-order?id=${encodeURIComponent(order.id)}`;
+    const itemsText = order.items.map((i) => i.title).join(', ');
+
+    let msg = `Assalam o Alaikum *${order.customerName}*! 🌟\n\n`;
+    msg += `Aapka *YT Tools Store* Order *#${order.id}* activate aur deliver kar diya gaya hai! 🎉\n\n`;
+    msg += `📦 *Item:* ${itemsText}\n`;
+    if (creds.accountEmail) msg += `📧 *Email / Login ID:* ${creds.accountEmail}\n`;
+    if (creds.accountPassword) msg += `🔑 *Password:* ${creds.accountPassword}\n`;
+    if (creds.accountProfileOrPin) msg += `📺 *Profile / Screen / PIN:* ${creds.accountProfileOrPin}\n`;
+    if (creds.subscriptionExpiryDate) msg += `⏳ *Validity / Expiry:* ${creds.subscriptionExpiryDate}\n\n`;
+
+    msg += `📋 *Direct 1-Click Copy & Status Link:*\n👉 ${trackUrl}\n\n`;
+
+    if (creds.accountLoginNotes) {
+      msg += `⚠️ *Login Guidelines:*\n${creds.accountLoginNotes}\n\n`;
+    }
+
+    msg += `Kisi bhi masle ya help ke liye isi WhatsApp par direct rabta karein.\nThank you for choosing *YT Tools Store*! ⭐`;
+
+    return msg;
+  };
+
+  const formatRenewalMessage = (order: Order) => {
+    const storeOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://yttoolsstore.pk';
+    const itemsText = order.items.map((i) => i.title).join(', ');
+    const expiryDate = order.subscriptionExpiryDate || 'soon';
+    const trackUrl = `${storeOrigin}/track-order?id=${encodeURIComponent(order.id)}`;
+
+    let msg = `Assalam o Alaikum *${order.customerName}*! 😊\n\n`;
+    msg += `YT Tools Store se rabta kiya ja raha hai. Umeed hai aapka *${itemsText}* ka experience zabardast raha hoga!\n\n`;
+    msg += `⚠️ *Renewal Reminder:* Aapka subscription *${expiryDate}* ko expire hone wala hai.\n\n`;
+    msg += `Agar aap apni access uninterrupted continue rakhna chahte hain to special repeat renewal discount ke sath renew karwa sakte hain.\n\n`;
+    msg += `👉 *Check Details / Direct Status:* ${trackUrl}\n\n`;
+    msg += `Renewal ke liye isi number par direct reply karein. Shukriya! ⭐`;
+
+    return msg;
+  };
+
+  const handleSaveCredentials = async (orderId: string, openWhatsApp: boolean = false) => {
+    const currentCreds = credentialsMap[orderId];
+    if (!currentCreds) return;
+
+    setSavingCredsId(orderId);
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountEmail: currentCreds.accountEmail.trim(),
+          accountPassword: currentCreds.accountPassword.trim(),
+          accountProfileOrPin: currentCreds.accountProfileOrPin.trim(),
+          accountLoginNotes: currentCreds.accountLoginNotes.trim(),
+          subscriptionDurationDays: currentCreds.subscriptionDurationDays,
+          subscriptionExpiryDate: currentCreds.subscriptionExpiryDate,
+          credentialsDelivered: true,
+          ...(openWhatsApp ? { status: 'completed' } : {}),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.order) {
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...data.order } : o)));
+        setSavedCredsSuccessId(orderId);
+        setTimeout(() => setSavedCredsSuccessId(null), 3000);
+
+        if (openWhatsApp) {
+          const order = orders.find((o) => o.id === orderId);
+          if (order) {
+            const msg = formatDispatchMessage(order, currentCreds);
+            const cleanPhone = order.customerWhatsApp.replace(/[^0-9]/g, '');
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+          }
+        }
+      } else {
+        alert(data.error || 'Failed to save credentials.');
+      }
+    } catch {
+      alert('Error updating credentials.');
+    } finally {
+      setSavingCredsId(null);
+    }
+  };
+
+  const handleCopyDispatchText = (order: Order) => {
+    const currentCreds = credentialsMap[order.id];
+    if (!currentCreds) return;
+    const msg = formatDispatchMessage(order, currentCreds);
+    navigator.clipboard.writeText(msg);
+    setCopiedDispatchId(order.id);
+    setTimeout(() => setCopiedDispatchId(null), 2500);
+  };
+
+  const handleSendRenewalReminder = (order: Order) => {
+    const msg = formatRenewalMessage(order);
+    const cleanPhone = order.customerWhatsApp.replace(/[^0-9]/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  const handleMarkAsRenewed = async (orderId: string, extendDays: number = 30) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    const currentExpiry = order.subscriptionExpiryDate ? new Date(order.subscriptionExpiryDate) : new Date();
+    const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+    baseDate.setDate(baseDate.getDate() + extendDays);
+    const newExpiryStr = baseDate.toISOString().split('T')[0];
+
+    try {
+      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          renewalStatus: 'renewed',
+          subscriptionExpiryDate: newExpiryStr,
+          subscriptionDurationDays: extendDays,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.order) {
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, ...data.order } : o)));
+        alert(`✓ Order #${orderId} marked as Renewed! Extended till ${newExpiryStr}.`);
+      } else {
+        alert(data.error || 'Failed to update renewal status.');
+      }
+    } catch {
+      alert('Failed to update renewal status.');
+    }
+  };
+
   // Compute list of unique months available from orders + past 12 months
   const availableMonths = useMemo(() => {
     const map = new Map<string, string>();
@@ -406,6 +702,27 @@ export default function AdminOrdersPage() {
     return 'Selected Period';
   }, [filterPeriod, currentMonthLabel, lastMonthLabel, customYearMonth, availableMonths]);
 
+  const renewalStats = useMemo(() => {
+    let expiringSoonCount = 0;
+    let expiredCount = 0;
+    const nowTime = Date.now();
+
+    orders.forEach((o) => {
+      if (o.subscriptionExpiryDate && o.renewalStatus !== 'renewed') {
+        const diffDays = Math.ceil(
+          (new Date(o.subscriptionExpiryDate).getTime() - nowTime) / (1000 * 60 * 60 * 24)
+        );
+        if (diffDays < 0) {
+          expiredCount++;
+        } else if (diffDays <= 7) {
+          expiringSoonCount++;
+        }
+      }
+    });
+
+    return { expiringSoonCount, expiredCount };
+  }, [orders]);
+
   const filtered = useMemo(() => {
     const nowDate = new Date();
     const curYear = nowDate.getFullYear();
@@ -433,7 +750,30 @@ export default function AdminOrdersPage() {
         o.transactionId.toLowerCase().includes(s) ||
         o.items.some((i) => i.title.toLowerCase().includes(s));
 
-      const matchStatus = statusFilter === 'All' || o.status === statusFilter;
+      let matchStatus = true;
+      if (statusFilter === 'All') {
+        matchStatus = true;
+      } else if (statusFilter === 'expiring_soon') {
+        if (!o.subscriptionExpiryDate || o.renewalStatus === 'renewed') {
+          matchStatus = false;
+        } else {
+          const diffDays = Math.ceil(
+            (new Date(o.subscriptionExpiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          );
+          matchStatus = diffDays >= 0 && diffDays <= 7;
+        }
+      } else if (statusFilter === 'expired') {
+        if (!o.subscriptionExpiryDate || o.renewalStatus === 'renewed') {
+          matchStatus = false;
+        } else {
+          const diffDays = Math.ceil(
+            (new Date(o.subscriptionExpiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          );
+          matchStatus = diffDays < 0;
+        }
+      } else {
+        matchStatus = o.status === statusFilter;
+      }
 
       let matchTime = true;
       if (filterPeriod === 'this_month') {
@@ -644,19 +984,85 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {['All', 'pending', 'processing', 'completed', 'cancelled'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold capitalize transition cursor-pointer shrink-0 ${
-                statusFilter === st
-                  ? 'bg-[#660000] text-white shadow-sm'
-                  : 'bg-[#0C0C0E] text-zinc-400 hover:text-white border border-[#222228]'
-              }`}
-            >
-              {st}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setStatusFilter('All')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              statusFilter === 'All'
+                ? 'bg-[#660000] text-white shadow-sm'
+                : 'bg-[#0C0C0E] text-zinc-400 hover:text-white border border-[#222228]'
+            }`}
+          >
+            All ({orders.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('pending')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              statusFilter === 'pending'
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'bg-[#0C0C0E] text-amber-400 hover:text-white border border-[#222228]'
+            }`}
+          >
+            Pending
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('processing')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              statusFilter === 'processing'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-[#0C0C0E] text-blue-400 hover:text-white border border-[#222228]'
+            }`}
+          >
+            Processing
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('completed')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              statusFilter === 'completed'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'bg-[#0C0C0E] text-emerald-400 hover:text-white border border-[#222228]'
+            }`}
+          >
+            Completed
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('expiring_soon')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              statusFilter === 'expiring_soon'
+                ? 'bg-amber-500 text-black font-black shadow-md'
+                : 'bg-[#18150a] text-amber-400 hover:text-amber-300 border border-amber-500/30'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Expiring Soon ({renewalStats.expiringSoonCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('expired')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              statusFilter === 'expired'
+                ? 'bg-red-600 text-white font-black shadow-md'
+                : 'bg-[#1a0a0a] text-red-400 hover:text-red-300 border border-red-500/30'
+            }`}
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>Expired / Due ({renewalStats.expiredCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('cancelled')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+              statusFilter === 'cancelled'
+                ? 'bg-zinc-800 text-white shadow-sm'
+                : 'bg-[#0C0C0E] text-zinc-500 hover:text-white border border-[#222228]'
+            }`}
+          >
+            Cancelled
+          </button>
         </div>
       </div>
 
@@ -690,6 +1096,13 @@ export default function AdminOrdersPage() {
         <div className="space-y-4">
           {filtered.map((order) => {
             const isUpdating = updatingId === order.id;
+            const nowTime = Date.now();
+            const diffDays = order.subscriptionExpiryDate
+              ? Math.ceil(
+                  (new Date(order.subscriptionExpiryDate).getTime() - nowTime) /
+                    (1000 * 60 * 60 * 24)
+                )
+              : null;
 
             return (
               <div
@@ -856,6 +1269,300 @@ export default function AdminOrdersPage() {
                   {order.channelOrDeliveryNote && (
                     <div className="mt-2.5 pt-2 border-t border-[#1C1C24] text-[11px] text-zinc-400">
                       <strong className="text-zinc-300">Customer Note:</strong> {order.channelOrDeliveryNote}
+                    </div>
+                  )}
+                </div>
+
+                {/* Renewal Alert Banner (Expiring Soon or Expired) */}
+                {diffDays !== null && order.renewalStatus !== 'renewed' && (
+                  <>
+                    {diffDays <= 7 && diffDays >= 0 && (
+                      <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-xs text-amber-300 font-bold">
+                          <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                          <span>
+                            Subscription expiring in {diffDays} {diffDays === 1 ? 'day' : 'days'} ({order.subscriptionExpiryDate})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSendRenewalReminder(order)}
+                            className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
+                          >
+                            <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                            <span>Send WhatsApp Renewal Reminder</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMarkAsRenewed(order.id, 30)}
+                            className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition cursor-pointer"
+                          >
+                            <span>Mark Renewed (+30d)</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {diffDays < 0 && (
+                      <div className="p-3.5 rounded-2xl bg-red-950/30 border border-red-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-xs text-red-300 font-bold">
+                          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                          <span>
+                            Subscription expired {Math.abs(diffDays)} {Math.abs(diffDays) === 1 ? 'day' : 'days'} ago ({order.subscriptionExpiryDate})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSendRenewalReminder(order)}
+                            className="px-3 py-1.5 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition cursor-pointer active:scale-95"
+                          >
+                            <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                            <span>Send WhatsApp Renewal Offer</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMarkAsRenewed(order.id, 30)}
+                            className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition cursor-pointer"
+                          >
+                            <span>Mark Renewed (+30d)</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* ================= ⚡ QUICK DISPATCH & CREDENTIALS ACCORDION ================= */}
+                <div className="rounded-2xl bg-[#09090F] border border-[#222230] p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                        <KeyRound className="w-4 h-4 stroke-[2.5]" />
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-black text-white">Tool Credentials &amp; Expiry</span>
+                          {order.credentialsDelivered ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              ✓ Credentials Dispatched
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                              Pending Credentials
+                            </span>
+                          )}
+                          {order.subscriptionExpiryDate && (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${
+                                diffDays !== null && diffDays < 0
+                                  ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                                  : diffDays !== null && diffDays <= 7
+                                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                  : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              }`}
+                            >
+                              Expiry: {order.subscriptionExpiryDate}
+                            </span>
+                          )}
+                          {order.renewalStatus === 'renewed' && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                              ✓ Renewed
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 mt-0.5 font-medium">
+                          {order.accountEmail ? (
+                            <span className="font-mono text-zinc-300">
+                              ID: {order.accountEmail} {order.accountProfileOrPin ? `• ${order.accountProfileOrPin}` : ''}
+                            </span>
+                          ) : (
+                            'Add tool login email/password & dispatch via WhatsApp with 1-click.'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandedDispatchId(expandedDispatchId === order.id ? null : order.id)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
+                        expandedDispatchId === order.id
+                          ? 'bg-zinc-800 text-white border border-zinc-700'
+                          : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                      }`}
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>{expandedDispatchId === order.id ? 'Hide Dispatch Box' : '⚡ Quick Dispatch & Credentials'}</span>
+                      {expandedDispatchId === order.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* Expanded Drawer */}
+                  {expandedDispatchId === order.id && (
+                    <div className="pt-3 border-t border-[#1C1C28] space-y-4 animate-in fade-in">
+                      {/* Template Presets Bar */}
+                      <div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 mb-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Quick Smart Templates (Auto-fills guidelines &amp; expiry):</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {PRESET_TEMPLATES.map((tmpl) => (
+                            <button
+                              key={tmpl.id}
+                              type="button"
+                              onClick={() => applyPresetTemplate(order.id, tmpl)}
+                              className="px-2.5 py-1 rounded-lg bg-[#161622] hover:bg-[#222234] text-zinc-200 hover:text-white border border-[#2B2B3E] text-[11px] font-bold transition cursor-pointer"
+                            >
+                              {tmpl.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Inputs Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                        {/* Email / Username */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-400 uppercase mb-1">
+                            Account Email / Login ID
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. user@gmail.com"
+                            value={credentialsMap[order.id]?.accountEmail || ''}
+                            onChange={(e) => handleCredentialFieldChange(order.id, 'accountEmail', e.target.value)}
+                            className="w-full px-3 py-2 bg-black border border-[#2B2B3E] rounded-xl text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-400 uppercase mb-1">
+                            Account Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showPasswordMap[order.id] ? 'text' : 'password'}
+                              placeholder="e.g. Pass#9876"
+                              value={credentialsMap[order.id]?.accountPassword || ''}
+                              onChange={(e) => handleCredentialFieldChange(order.id, 'accountPassword', e.target.value)}
+                              className="w-full px-3 py-2 pr-9 bg-black border border-[#2B2B3E] rounded-xl text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPasswordMap({ ...showPasswordMap, [order.id]: !showPasswordMap[order.id] })}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                            >
+                              {showPasswordMap[order.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Profile / Screen / PIN */}
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-400 uppercase mb-1">
+                            Profile / Screen / PIN (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Profile 2 (PIN: 1234)"
+                            value={credentialsMap[order.id]?.accountProfileOrPin || ''}
+                            onChange={(e) => handleCredentialFieldChange(order.id, 'accountProfileOrPin', e.target.value)}
+                            className="w-full px-3 py-2 bg-black border border-[#2B2B3E] rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Duration & Expiry Row */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-400 uppercase mb-1">
+                            Subscription Validity / Duration
+                          </label>
+                          <select
+                            value={credentialsMap[order.id]?.subscriptionDurationDays || 30}
+                            onChange={(e) => handleDurationChange(order.id, Number(e.target.value))}
+                            className="w-full px-3 py-2 bg-black border border-[#2B2B3E] rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
+                          >
+                            <option value={30}>30 Days (1 Month)</option>
+                            <option value={60}>60 Days (2 Months)</option>
+                            <option value={90}>90 Days (3 Months)</option>
+                            <option value={180}>180 Days (6 Months)</option>
+                            <option value={365}>365 Days (1 Year / Lifetime)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-zinc-400 uppercase mb-1">
+                            Expiry Date (YYYY-MM-DD)
+                          </label>
+                          <input
+                            type="date"
+                            value={credentialsMap[order.id]?.subscriptionExpiryDate || ''}
+                            onChange={(e) => handleCredentialFieldChange(order.id, 'subscriptionExpiryDate', e.target.value)}
+                            className="w-full px-3 py-2 bg-black border border-[#2B2B3E] rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Login Guidelines Textarea */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-zinc-400 uppercase mb-1">
+                          Customer Login Guidelines (Included in WhatsApp &amp; Track Page)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={credentialsMap[order.id]?.accountLoginNotes || ''}
+                          onChange={(e) => handleCredentialFieldChange(order.id, 'accountLoginNotes', e.target.value)}
+                          placeholder="e.g. 1 device only, do not change password..."
+                          className="w-full px-3 py-2 bg-black border border-[#2B2B3E] rounded-xl text-white text-xs focus:outline-none focus:border-emerald-500 leading-relaxed font-sans"
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={savingCredsId === order.id}
+                            onClick={() => handleSaveCredentials(order.id, true)}
+                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#25D366] to-[#128C7E] hover:opacity-90 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-emerald-600/25 transition cursor-pointer active:scale-95 disabled:opacity-50"
+                          >
+                            <WhatsAppIcon className="w-4 h-4 fill-current" />
+                            <span>⚡ Save &amp; 1-Click WhatsApp Dispatch</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={savingCredsId === order.id}
+                            onClick={() => handleSaveCredentials(order.id, false)}
+                            className="px-3.5 py-2.5 rounded-xl bg-[#161622] hover:bg-[#202030] text-zinc-200 hover:text-white border border-[#2B2B3E] text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                            <span>{savingCredsId === order.id ? 'Saving...' : 'Save Credentials Only'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCopyDispatchText(order)}
+                            className="px-3 py-2.5 rounded-xl bg-[#161622] hover:bg-[#202030] text-zinc-400 hover:text-white border border-[#2B2B3E] text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                            title="Copy message to clipboard"
+                          >
+                            {copiedDispatchId === order.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedDispatchId === order.id ? 'Copied!' : 'Copy Text'}</span>
+                          </button>
+                        </div>
+
+                        {savedCredsSuccessId === order.id && (
+                          <span className="text-xs font-bold text-emerald-400 flex items-center gap-1 animate-in fade-in">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Saved to Database &amp; Customer Track Page!</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
