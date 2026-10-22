@@ -1530,15 +1530,32 @@ export default function AdminOrdersPage() {
                         <div className="font-mono font-bold text-white text-xs">
                           Rs {order.totalPKR.toLocaleString()}
                         </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase bg-zinc-800 text-zinc-300 border border-zinc-700">
-                            {order.paymentMethod}
-                          </span>
-                          <span className="font-mono text-[10px] text-zinc-400 truncate max-w-[100px]">
-                            {order.transactionId ||
-                              (order.paymentStatus === 'unpaid' ? 'Awaiting TID' : 'N/A')}
-                          </span>
-                        </div>
+                        {order.isSplitPayment ? (
+                          <div className="space-y-0.5 mt-0.5">
+                            <div className="flex items-center gap-1 text-[10px] font-mono">
+                              <span className="text-blue-400 font-bold">Adv:</span>
+                              <span className="text-zinc-300 truncate max-w-[110px]" title={order.advanceTID || 'Pending'}>
+                                {order.advanceTID || (order.advancePaidPKR ? 'Paid' : 'Awaiting')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] font-mono">
+                              <span className="text-purple-400 font-bold">Bal:</span>
+                              <span className="text-zinc-300 truncate max-w-[110px]" title={order.balanceTID || 'On Delivery'}>
+                                {order.balanceTID || (order.balancePaidPKR ? 'Paid' : 'On Delivery')}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase bg-zinc-800 text-zinc-300 border border-zinc-700">
+                              {order.paymentMethod}
+                            </span>
+                            <span className="font-mono text-[10px] text-zinc-400 truncate max-w-[100px]">
+                              {order.transactionId ||
+                                (order.paymentStatus === 'unpaid' ? 'Awaiting TID' : 'N/A')}
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Receipt Screenshot Thumbnail */}
@@ -1546,7 +1563,48 @@ export default function AdminOrdersPage() {
                         className="py-3.5 px-4 text-center whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {order.paymentProofUrl ? (
+                        {order.isSplitPayment ? (
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            {order.advanceProofUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewImage(order.advanceProofUrl!)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-950/40 hover:bg-blue-900/60 border border-blue-500/40 text-blue-300 text-[10px] font-bold cursor-pointer transition shadow-sm"
+                                title="Click to view full Advance Screenshot"
+                              >
+                                <img src={order.advanceProofUrl} alt="Adv Proof" className="w-3.5 h-3.5 rounded object-cover" />
+                                <span>Adv</span>
+                              </button>
+                            )}
+
+                            {order.balanceProofUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewImage(order.balanceProofUrl!)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 text-[10px] font-bold cursor-pointer transition shadow-sm"
+                                title="Click to view full Delivery Balance Screenshot"
+                              >
+                                <img src={order.balanceProofUrl} alt="Bal Proof" className="w-3.5 h-3.5 rounded object-cover" />
+                                <span>Bal</span>
+                              </button>
+                            )}
+
+                            {!order.advanceProofUrl && !order.balanceProofUrl && order.paymentProofUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewImage(order.paymentProofUrl!)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold cursor-pointer"
+                              >
+                                <img src={order.paymentProofUrl} alt="Proof" className="w-3.5 h-3.5 rounded object-cover" />
+                                <span>Proof</span>
+                              </button>
+                            )}
+
+                            {!order.advanceProofUrl && !order.balanceProofUrl && !order.paymentProofUrl && (
+                              <span className="text-zinc-600 text-[11px] italic">No receipt</span>
+                            )}
+                          </div>
+                        ) : order.paymentProofUrl ? (
                           <div
                             onClick={() => setPreviewImage(order.paymentProofUrl!)}
                             className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold cursor-pointer group/thumb"
@@ -1874,14 +1932,31 @@ export default function AdminOrdersPage() {
                       <span className="text-zinc-400">Method:</span>
                       <span className="font-extrabold text-white uppercase">{order.paymentMethod}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-zinc-400">Transaction ID (TID):</span>
-                      <span className="font-mono font-bold text-emerald-400">
-                        {order.transactionId || (order.paymentStatus === 'unpaid' ? 'Awaiting Payment' : 'N/A')}
-                      </span>
-                    </div>
+                    {order.isSplitPayment ? (
+                      <>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-blue-400 font-bold">1. Adv TID:</span>
+                          <span className="font-mono font-bold text-white truncate max-w-[130px]">
+                            {order.advanceTID || (order.advancePaidPKR ? 'Paid' : 'Awaiting')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-purple-400 font-bold">2. Bal TID:</span>
+                          <span className="font-mono font-bold text-white truncate max-w-[130px]">
+                            {order.balanceTID || (order.balancePaidPKR ? 'Paid' : 'On Delivery')}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-zinc-400">Transaction ID (TID):</span>
+                        <span className="font-mono font-bold text-emerald-400">
+                          {order.transactionId || (order.paymentStatus === 'unpaid' ? 'Awaiting Payment' : 'N/A')}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between pt-1 border-t border-[#1C1C24]">
-                      <span className="text-zinc-400">Total Paid:</span>
+                      <span className="text-zinc-400">Total Deal:</span>
                       <span className="font-black text-white text-sm">
                         Rs {order.totalPKR.toLocaleString()}
                       </span>
@@ -1894,7 +1969,68 @@ export default function AdminOrdersPage() {
                       <span className="text-[10px] text-zinc-500 uppercase font-bold block mb-1">
                         Receipt Proof Screenshot
                       </span>
-                      {order.paymentProofUrl ? (
+                      {order.isSplitPayment ? (
+                        <div className="space-y-2">
+                          {order.advanceProofUrl && (
+                            <div className="flex items-center gap-2">
+                              <div
+                                onClick={() => setPreviewImage(order.advanceProofUrl!)}
+                                className="relative w-9 h-9 rounded-lg overflow-hidden border border-blue-500/40 bg-zinc-900 cursor-pointer group shrink-0"
+                              >
+                                <img src={order.advanceProofUrl} alt="Advance proof" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                              </div>
+                              <div className="text-[11px]">
+                                <span className="text-blue-400 font-bold block">1. Advance Proof</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImage(order.advanceProofUrl!)}
+                                  className="text-zinc-400 hover:text-white inline-flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                                >
+                                  <span>Inspect Image</span>
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {order.balanceProofUrl && (
+                            <div className="flex items-center gap-2">
+                              <div
+                                onClick={() => setPreviewImage(order.balanceProofUrl!)}
+                                className="relative w-9 h-9 rounded-lg overflow-hidden border border-purple-500/40 bg-zinc-900 cursor-pointer group shrink-0"
+                              >
+                                <img src={order.balanceProofUrl} alt="Balance proof" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                              </div>
+                              <div className="text-[11px]">
+                                <span className="text-purple-400 font-bold block">2. Balance Proof</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImage(order.balanceProofUrl!)}
+                                  className="text-zinc-400 hover:text-white inline-flex items-center gap-1 text-[10px] font-semibold cursor-pointer"
+                                >
+                                  <span>Inspect Image</span>
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          {!order.advanceProofUrl && !order.balanceProofUrl && (
+                            <div className="py-2 text-[11px] text-zinc-500 italic">
+                              {order.paymentProofUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImage(order.paymentProofUrl!)}
+                                  className="text-emerald-400 hover:underline inline-flex items-center gap-1 font-bold cursor-pointer"
+                                >
+                                  <span>View Attached Proof</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </button>
+                              ) : (
+                                'No screenshot attached yet'
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : order.paymentProofUrl ? (
                         <div className="flex items-center gap-2.5">
                           <div
                             onClick={() => setPreviewImage(order.paymentProofUrl!)}
