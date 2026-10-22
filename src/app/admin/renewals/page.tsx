@@ -307,15 +307,18 @@ export default function AdminRenewalsPage() {
   // Filtered orders
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      // Search matching
+      // Search matching (never crashes on null/undefined properties)
       const s = search.toLowerCase().trim();
+      const cleanSearch = s.replace(/^#/, '');
       if (s) {
-        const matchesId = order.id.toLowerCase().includes(s);
-        const matchesName = (order.customerName || '').toLowerCase().includes(s);
-        const matchesEmail = (order.customerEmail || '').toLowerCase().includes(s);
-        const matchesPhone = (order.customerWhatsApp || '').toLowerCase().includes(s);
-        const matchesItems = (order.items || []).some((item) =>
-          item.title.toLowerCase().includes(s)
+        const idStr = String(order.id || '').toLowerCase();
+        const cleanIdStr = idStr.replace(/^#/, '');
+        const matchesId = idStr.includes(s) || cleanIdStr.includes(cleanSearch);
+        const matchesName = String(order.customerName || '').toLowerCase().includes(s);
+        const matchesEmail = String(order.customerEmail || '').toLowerCase().includes(s);
+        const matchesPhone = String(order.customerWhatsApp || '').toLowerCase().includes(s);
+        const matchesItems = Array.isArray(order.items) && order.items.some((item) =>
+          String(item?.title || '').toLowerCase().includes(s)
         );
         if (!matchesId && !matchesName && !matchesEmail && !matchesPhone && !matchesItems) {
           return false;

@@ -761,17 +761,59 @@ export default function AdminOrdersPage() {
       targetCustomMonth = parseInt(mStr, 10) - 1;
     }
 
-    return orders.filter((o) => {
-      const s = search.toLowerCase();
-      const matchSearch =
-        !s ||
-        o.id.toLowerCase().includes(s) ||
-        o.customerName.toLowerCase().includes(s) ||
-        o.customerWhatsApp.toLowerCase().includes(s) ||
-        (o.customerEmail && o.customerEmail.toLowerCase().includes(s)) ||
-        o.transactionId.toLowerCase().includes(s) ||
-        o.items.some((i) => i.title.toLowerCase().includes(s));
+    const s = search.toLowerCase().trim();
+    const cleanSearch = s.replace(/^#/, '');
 
+    return orders.filter((o) => {
+      // 1. Safe Search Match (never crashes on undefined/null fields)
+      let matchSearch = true;
+      if (s) {
+        const idStr = String(o.id || '').toLowerCase();
+        const cleanIdStr = idStr.replace(/^#/, '');
+        const nameStr = String(o.customerName || '').toLowerCase();
+        const phoneStr = String(o.customerWhatsApp || '').toLowerCase();
+        const emailStr = String(o.customerEmail || '').toLowerCase();
+        const tidStr = String(o.transactionId || '').toLowerCase();
+        const notesStr = String(o.adminNotes || o.channelOrDeliveryNote || '').toLowerCase();
+        const itemsStr = Array.isArray(o.items)
+          ? o.items.map((i) => String(i?.title || '')).join(' ').toLowerCase()
+          : '';
+
+        matchSearch =
+          idStr.includes(s) ||
+          cleanIdStr.includes(cleanSearch) ||
+          nameStr.includes(s) ||
+          phoneStr.includes(s) ||
+          emailStr.includes(s) ||
+          tidStr.includes(s) ||
+          notesStr.includes(s) ||
+          itemsStr.includes(s);
+
+        if (!matchSearch) return false;
+
+        // When actively searching, search across all time, respecting only specific status tabs if selected
+        if (statusFilter !== 'All') {
+          if (statusFilter === 'expiring_soon') {
+            if (!o.subscriptionExpiryDate || o.renewalStatus === 'renewed') return false;
+            const diffDays = Math.ceil(
+              (new Date(o.subscriptionExpiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+            );
+            return diffDays >= 0 && diffDays <= 7;
+          } else if (statusFilter === 'expired') {
+            if (!o.subscriptionExpiryDate || o.renewalStatus === 'renewed') return false;
+            const diffDays = Math.ceil(
+              (new Date(o.subscriptionExpiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+            );
+            return diffDays < 0;
+          } else {
+            return o.status === statusFilter;
+          }
+        }
+
+        return true;
+      }
+
+      // 2. Status Match (when search is empty)
       let matchStatus = true;
       if (statusFilter === 'All') {
         matchStatus = true;
@@ -797,6 +839,7 @@ export default function AdminOrdersPage() {
         matchStatus = o.status === statusFilter;
       }
 
+      // 3. Time Match (when search is empty)
       let matchTime = true;
       if (filterPeriod === 'this_month') {
         if (!o.createdAt) matchTime = false;
@@ -818,7 +861,7 @@ export default function AdminOrdersPage() {
         }
       }
 
-      return matchSearch && matchStatus && matchTime;
+      return matchStatus && matchTime;
     });
   }, [orders, search, statusFilter, filterPeriod, customYearMonth, lastMonthDate]);
 
@@ -980,18 +1023,38 @@ export default function AdminOrdersPage() {
 
       {/* Active Time & Results Pill */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-[#08080A] border border-[#1C1C24] text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="text-zinc-400">Viewing Period:</span>
-          <strong className="text-white font-bold">{activePeriodName}</strong>
-          {filterPeriod !== 'lifetime' && (
-            <button
-              type="button"
-              onClick={() => setFilterPeriod('lifetime')}
-              className="text-[11px] text-[#FF5500] hover:underline ml-2 cursor-pointer"
-            >
-              (Reset to Lifetime)
-            </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {search.trim() ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-amber-400 font-bold">Search Results:</span>
+              <span className="text-white font-mono bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
+                &quot;{search.trim()}&quot;
+              </span>
+              <span className="text-zinc-400 text-[11px]">(all-time records)</span>
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="text-[11px] text-[#FF5500] hover:underline ml-2 cursor-pointer font-bold"
+              >
+                (Clear Search)
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span className="text-zinc-400">Viewing Period:</span>
+              <strong className="text-white font-bold">{activePeriodName}</strong>
+              {filterPeriod !== 'lifetime' && (
+                <button
+                  type="button"
+                  onClick={() => setFilterPeriod('lifetime')}
+                  className="text-[11px] text-[#FF5500] hover:underline ml-2 cursor-pointer"
+                >
+                  (Reset to Lifetime)
+                </button>
+              )}
+            </>
           )}
         </div>
         <div className="flex items-center gap-3 text-zinc-400 font-mono text-[11px]">
@@ -1009,9 +1072,19 @@ export default function AdminOrdersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by Order ID (#2505), Customer name, WhatsApp, TID..."
-            className="w-full pl-10 pr-4 py-2.5 bg-black border border-[#222228] focus:border-[#660000] rounded-xl text-white text-xs placeholder-zinc-500 focus:outline-none"
+            placeholder="Search by Order ID (#2505), Customer name, WhatsApp, TID, Tool..."
+            className="w-full pl-10 pr-9 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs placeholder-zinc-500 focus:outline-none transition-colors"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
@@ -1106,13 +1179,33 @@ export default function AdminOrdersPage() {
             <ShoppingBag className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-bold text-white">No orders found</h3>
-          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-            {filterPeriod !== 'lifetime'
+          <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+            {search.trim()
+              ? `No orders matching "${search.trim()}" found across your store.`
+              : filterPeriod !== 'lifetime'
               ? `No orders found for ${activePeriodName} matching the selected status.`
               : 'Try adjusting your search query or status filter.'}
           </p>
-          {filterPeriod !== 'lifetime' && (
-            <div className="pt-2">
+          <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
+            {search.trim() && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="px-4 py-2 rounded-xl bg-[#FF5500] hover:bg-[#E04B00] text-white text-xs font-bold transition cursor-pointer shadow-md shadow-orange-500/20"
+              >
+                Clear Search
+              </button>
+            )}
+            {statusFilter !== 'All' && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter('All')}
+                className="px-4 py-2 rounded-xl bg-[#161622] hover:bg-[#20202c] text-white text-xs font-bold border border-[#2a2a38] transition cursor-pointer"
+              >
+                Show All Statuses
+              </button>
+            )}
+            {filterPeriod !== 'lifetime' && !search.trim() && (
               <button
                 type="button"
                 onClick={() => setFilterPeriod('lifetime')}
@@ -1120,8 +1213,8 @@ export default function AdminOrdersPage() {
               >
                 Show All-Time Orders
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">

@@ -360,7 +360,7 @@ export const db = {
     const data = await getData();
     
     let id = orderData.id ? String(orderData.id).trim() : '';
-    if (!id) {
+    if (!id || id === '-' || id === '#-' || id === '#' || !/[a-zA-Z0-9]/.test(id)) {
       // Sequential order number (e.g. starting at 2504 -> #2504, #2505...)
       const currentNum = typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
         ? data.settings.nextOrderNumber
@@ -425,7 +425,12 @@ export const db = {
     };
 
     if (updates.id && updates.id.trim()) {
-      const formattedId = updates.id.trim().startsWith('#') ? updates.id.trim() : `#${updates.id.trim()}`;
+      let formattedId = updates.id.trim();
+      if (!/[a-zA-Z0-9]/.test(formattedId)) {
+        formattedId = `#${data.settings.nextOrderNumber || 2504}`;
+      } else if (!formattedId.startsWith('#')) {
+        formattedId = `#${formattedId}`;
+      }
       data.orders[index].id = formattedId;
     }
 
