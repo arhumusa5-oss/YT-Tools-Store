@@ -210,6 +210,31 @@ export default function DirectPaymentInvoicePage() {
     }
   };
 
+  const isSplit = Boolean(order?.isSplitPayment);
+  const totalAmountPKR = order ? Number(order.totalPKR) || 0 : 0;
+  const advanceAmountPKR = order ? (Number(order.advanceAmountPKR) || Math.round(totalAmountPKR / 2)) : 0;
+  const balanceAmountPKR = order ? (Number(order.balanceAmountPKR) || Math.max(0, totalAmountPKR - advanceAmountPKR)) : 0;
+  const advancePaidPKR = order ? (Number(order.advancePaidPKR) || 0) : 0;
+  const balancePaidPKR = order ? (Number(order.balancePaidPKR) || 0) : 0;
+
+  // Split stages: 'stage1_advance' | 'stage2_balance' | 'completed'
+  let splitStage: 'stage1_advance' | 'stage2_balance' | 'completed' = 'stage1_advance';
+  if (isSplit) {
+    if (order?.splitPaymentStatus === 'fully_paid' || (advancePaidPKR > 0 && balancePaidPKR > 0)) {
+      splitStage = 'completed';
+    } else if (order?.splitPaymentStatus === 'advance_paid' || order?.splitPaymentStatus === 'pending_balance' || advancePaidPKR > 0) {
+      splitStage = 'stage2_balance';
+    } else {
+      splitStage = 'stage1_advance';
+    }
+  }
+
+  const activeDuePKR = !isSplit
+    ? totalAmountPKR
+    : splitStage === 'stage1_advance'
+    ? advanceAmountPKR
+    : balanceAmountPKR;
+
   const handleConfirmPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!order) return;
@@ -228,16 +253,45 @@ export default function DirectPaymentInvoicePage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(order.id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let bodyData: any = {};
+      if (!isSplit) {
+        bodyData = {
           paymentMethod,
           transactionId: transactionId.trim(),
           paymentProofUrl: paymentProofUrl.trim(),
           paymentStatus: 'paid',
           status: order.status === 'completed' ? 'completed' : 'pending',
-        }),
+        };
+      } else if (splitStage === 'stage1_advance') {
+        bodyData = {
+          advancePaymentMethod: paymentMethod,
+          advanceTID: transactionId.trim(),
+          advanceProofUrl: paymentProofUrl.trim(),
+          advancePaidPKR: advanceAmountPKR,
+          splitPaymentStatus: 'advance_paid',
+          paymentStatus: 'unpaid',
+          status: 'processing',
+          transactionId: `Adv: ${transactionId.trim()}`,
+          paymentProofUrl: paymentProofUrl.trim(),
+        };
+      } else if (splitStage === 'stage2_balance') {
+        bodyData = {
+          balancePaymentMethod: paymentMethod,
+          balanceTID: transactionId.trim(),
+          balanceProofUrl: paymentProofUrl.trim(),
+          balancePaidPKR: balanceAmountPKR,
+          splitPaymentStatus: 'fully_paid',
+          paymentStatus: 'paid',
+          status: 'completed',
+          transactionId: `${order.advanceTID || ''} | Bal: ${transactionId.trim()}`,
+          paymentProofUrl: paymentProofUrl.trim(),
+        };
+      }
+
+      const res = await fetch(`/api/orders/${encodeURIComponent(order.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyData),
       });
 
       const data = await res.json();
@@ -245,9 +299,12 @@ export default function DirectPaymentInvoicePage() {
         throw new Error(data.error || 'Failed to submit payment proof.');
       }
 
-      // Update local order so isAlreadyPaid becomes true and directly renders the in-page receipt
+      // Update local order so state updates seamlessly
       setOrder(data.order);
       setOrderSuccess(null);
+      // Reset input fields in case user transitions to next stage
+      setTransactionId('');
+      setPaymentProofUrl('');
     } catch (err: unknown) {
       setFormError((err as Error).message || 'Something went wrong. Please try again.');
     } finally {
@@ -255,7 +312,9 @@ export default function DirectPaymentInvoicePage() {
     }
   };
 
-  const isAlreadyPaid = Boolean(order?.paymentStatus === 'paid' || (order?.transactionId && order?.paymentProofUrl));
+  const isAlreadyPaid = !isSplit
+    ? Boolean(order?.paymentStatus === 'paid' || (order?.transactionId && order?.paymentProofUrl))
+    : splitStage === 'completed';
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
@@ -354,8 +413,24 @@ export default function DirectPaymentInvoicePage() {
                   </a>
                 </div>
               )}
+              {isSplit && (
+                <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/30 text-xs space-y-1.5 text-left">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Total Deal Value:</span>
+                    <span className="font-mono font-bold text-white">Rs {totalAmountPKR.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-emerald-400 font-bold">✓ Advance Paid:</span>
+                    <span className="font-mono text-emerald-400 font-bold">Rs {advanceAmountPKR.toLocaleString()} ({order.advanceTID || 'Verified'})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-emerald-400 font-bold">✓ Delivery Balance Paid:</span>
+                    <span className="font-mono text-emerald-400 font-bold">Rs {balanceAmountPKR.toLocaleString()} ({order.balanceTID || 'Verified'})</span>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between pt-2 border-t border-[#d1c7c7] dark:border-white/10">
-                <span className="font-bold text-[#111827] dark:text-zinc-200">Amount Paid:</span>
+                <span className="font-bold text-[#111827] dark:text-zinc-200">Total Amount Paid:</span>
                 <span className="font-black text-[#660000] dark:text-[#ff6b6b] text-base">
                   {formatPrice(order.totalPKR, order.totalUSD)}
                 </span>
@@ -398,16 +473,110 @@ export default function DirectPaymentInvoicePage() {
             <div className="text-center pb-5 border-b border-[#f0ebeb] dark:border-white/10">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] text-[10px] font-black uppercase tracking-wider mb-2 border border-[#660000]/20">
                 <Receipt className="w-3.5 h-3.5" />
-                <span>Official Store Payment Invoice</span>
+                <span>
+                  {isSplit
+                    ? splitStage === 'stage1_advance'
+                      ? 'Step 1 of 2: Advance Payment Due'
+                      : 'Step 2 of 2: Delivery Balance Due'
+                    : 'Official Store Payment Invoice'}
+                </span>
               </div>
               <h1 className="text-2xl font-black text-[#0a0a0a] dark:text-white tracking-tight">
-                Complete Your Payment
+                {isSplit
+                  ? splitStage === 'stage1_advance'
+                    ? `Pay Advance: Rs ${advanceAmountPKR.toLocaleString()}`
+                    : `Pay Delivery Balance: Rs ${balanceAmountPKR.toLocaleString()}`
+                  : 'Complete Your Payment'}
               </h1>
               <p className="text-xs text-[#111827] dark:text-zinc-300 mt-1 font-medium">
                 Order <strong className="font-mono text-[#660000] dark:text-[#ff6b6b]">{order.id}</strong> issued for{' '}
                 <strong className="text-[#0a0a0a] dark:text-white">{order.customerName}</strong>
               </p>
             </div>
+
+            {/* Split / Milestone Payment Progress Banner */}
+            {isSplit && (
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-[#181824] to-purple-950/40 border border-purple-500/30 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-300">
+                    <Receipt className="w-4 h-4 text-purple-400" />
+                    <span>Split / Milestone Payment Tracker</span>
+                  </div>
+                  <span className="font-mono font-bold text-white text-xs">
+                    Total Deal: Rs {totalAmountPKR.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* 2 Step Cards */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {/* Stage 1: Advance */}
+                  <div
+                    className={`p-2.5 rounded-xl border transition ${
+                      splitStage === 'stage1_advance'
+                        ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/30'
+                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[11px]">Step 1: Advance</span>
+                      {splitStage === 'stage1_advance' ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 uppercase">
+                          Due Now
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">
+                          Paid ✓
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-base font-black font-mono text-white mt-1">
+                      Rs {advanceAmountPKR.toLocaleString()}
+                    </div>
+                    {order.advanceTID && (
+                      <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">
+                        TID: {order.advanceTID}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stage 2: Balance on Delivery */}
+                  <div
+                    className={`p-2.5 rounded-xl border transition ${
+                      splitStage === 'completed'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        : splitStage === 'stage2_balance'
+                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-200 ring-1 ring-purple-500/40'
+                        : 'bg-zinc-900/60 border-zinc-800 text-zinc-500'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[11px]">Step 2: Balance</span>
+                      {splitStage === 'completed' ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 uppercase">
+                          Paid ✓
+                        </span>
+                      ) : splitStage === 'stage2_balance' ? (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/30 text-purple-200 uppercase">
+                          Pay Now
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-zinc-800 text-zinc-400 uppercase">
+                          On Delivery
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-base font-black font-mono text-white mt-1">
+                      Rs {balanceAmountPKR.toLocaleString()}
+                    </div>
+                    {order.balanceTID && (
+                      <div className="text-[10px] text-zinc-400 font-mono mt-0.5 truncate">
+                        TID: {order.balanceTID}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Itemized Order Breakdown */}
             <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 space-y-3">
@@ -430,10 +599,42 @@ export default function DirectPaymentInvoicePage() {
                 ))}
               </div>
 
+              {isSplit && (
+                <div className="pt-2.5 border-t border-[#d1c7c7] dark:border-white/10 text-xs space-y-1">
+                  <div className="flex justify-between text-zinc-400">
+                    <span>Total Deal Amount:</span>
+                    <span className="font-mono font-bold text-white">Rs {totalAmountPKR.toLocaleString()}</span>
+                  </div>
+                  {splitStage === 'stage1_advance' ? (
+                    <div className="flex justify-between text-amber-400 font-bold">
+                      <span>Step 1 Advance Due:</span>
+                      <span className="font-mono">Rs {advanceAmountPKR.toLocaleString()}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-emerald-400 font-bold">
+                        <span>✓ Step 1 Advance Paid:</span>
+                        <span className="font-mono">Rs {advanceAmountPKR.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-purple-300 font-bold">
+                        <span>Step 2 Balance Due:</span>
+                        <span className="font-mono">Rs {balanceAmountPKR.toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="pt-3 border-t border-[#d1c7c7] dark:border-white/10 flex items-center justify-between">
-                <span className="text-xs font-black uppercase text-[#0a0a0a] dark:text-white">Total Amount Due:</span>
+                <span className="text-xs font-black uppercase text-[#0a0a0a] dark:text-white">
+                  {isSplit
+                    ? splitStage === 'stage1_advance'
+                      ? 'Advance Amount Due Now:'
+                      : 'Final Balance Due Now:'
+                    : 'Total Amount Due:'}
+                </span>
                 <span className="text-xl font-black text-[#660000] dark:text-[#ff6b6b]">
-                  {formatPrice(order.totalPKR, order.totalUSD)}
+                  Rs {activeDuePKR.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -695,7 +896,13 @@ export default function DirectPaymentInvoicePage() {
                   ) : (
                     <>
                       <Zap className="w-4 h-4 fill-current text-amber-300" />
-                      <span>Confirm Payment &amp; Submit Order</span>
+                      <span>
+                        {isSplit
+                          ? splitStage === 'stage1_advance'
+                            ? `Submit Advance Payment (Rs ${advanceAmountPKR.toLocaleString()}) →`
+                            : `Submit Final Balance Payment (Rs ${balanceAmountPKR.toLocaleString()}) →`
+                          : 'Confirm Payment & Submit Order'}
+                      </span>
                     </>
                   )}
                 </button>

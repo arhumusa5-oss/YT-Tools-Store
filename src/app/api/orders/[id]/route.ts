@@ -57,6 +57,18 @@ export async function PUT(
       renewalNotes,
       lastRenewalEmailSentAt,
       lastRenewalEmailType,
+      isSplitPayment,
+      advanceAmountPKR,
+      balanceAmountPKR,
+      advancePaidPKR,
+      balancePaidPKR,
+      advanceTID,
+      advanceProofUrl,
+      advancePaymentMethod,
+      balanceTID,
+      balanceProofUrl,
+      balancePaymentMethod,
+      splitPaymentStatus,
     } = body;
 
     const updates: Record<string, unknown> = {};
@@ -132,6 +144,20 @@ export async function PUT(
     if (lastRenewalEmailType !== undefined) {
       updates.lastRenewalEmailType = String(lastRenewalEmailType).trim();
     }
+
+    // Split / Partial Payment fields
+    if (isSplitPayment !== undefined) updates.isSplitPayment = Boolean(isSplitPayment);
+    if (advanceAmountPKR !== undefined) updates.advanceAmountPKR = Math.max(0, Number(advanceAmountPKR) || 0);
+    if (balanceAmountPKR !== undefined) updates.balanceAmountPKR = Math.max(0, Number(balanceAmountPKR) || 0);
+    if (advancePaidPKR !== undefined) updates.advancePaidPKR = Math.max(0, Number(advancePaidPKR) || 0);
+    if (balancePaidPKR !== undefined) updates.balancePaidPKR = Math.max(0, Number(balancePaidPKR) || 0);
+    if (advanceTID !== undefined) updates.advanceTID = String(advanceTID).trim();
+    if (advanceProofUrl !== undefined) updates.advanceProofUrl = String(advanceProofUrl).trim();
+    if (advancePaymentMethod !== undefined) updates.advancePaymentMethod = String(advancePaymentMethod).trim();
+    if (balanceTID !== undefined) updates.balanceTID = String(balanceTID).trim();
+    if (balanceProofUrl !== undefined) updates.balanceProofUrl = String(balanceProofUrl).trim();
+    if (balancePaymentMethod !== undefined) updates.balancePaymentMethod = String(balancePaymentMethod).trim();
+    if (splitPaymentStatus !== undefined) updates.splitPaymentStatus = splitPaymentStatus;
 
     const updated = await db.updateOrder(id, updates);
     if (!updated) {

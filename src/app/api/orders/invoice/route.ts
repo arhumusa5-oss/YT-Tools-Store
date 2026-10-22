@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
       note,
       orderId,
       status,
+      isSplitPayment,
+      advanceAmountPKR,
+      balanceAmountPKR,
     } = body;
 
     if (!customerName || !customerWhatsApp || !items || items.length === 0) {
@@ -66,6 +69,16 @@ export async function POST(req: NextRequest) {
       isDirectInvoice: true,
       paymentStatus: 'unpaid',
       adminNotes: note ? `Invoice Note: ${note}` : undefined,
+      isSplitPayment: Boolean(isSplitPayment),
+      advanceAmountPKR: isSplitPayment
+        ? Math.max(0, Number(advanceAmountPKR) || Math.round(calculatedPKR / 2))
+        : undefined,
+      balanceAmountPKR: isSplitPayment
+        ? Math.max(0, calculatedPKR - (Number(advanceAmountPKR) || Math.round(calculatedPKR / 2)))
+        : undefined,
+      advancePaidPKR: 0,
+      balancePaidPKR: 0,
+      splitPaymentStatus: isSplitPayment ? 'pending_advance' : undefined,
     });
 
     const host = req.headers.get('host') || 'localhost:3000';

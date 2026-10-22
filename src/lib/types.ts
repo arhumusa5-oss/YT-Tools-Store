@@ -65,6 +65,20 @@ export interface Order {
   renewalNotes?: string;
   lastRenewalEmailSentAt?: string; // ISO date string when renewal reminder email was sent
   lastRenewalEmailType?: 'renewal' | 'checkin' | 'yt_journey' | 'restock' | string;
+
+  // Dynamic Split / Partial Payment (Advance + Delivery Balance)
+  isSplitPayment?: boolean;
+  advanceAmountPKR?: number;
+  balanceAmountPKR?: number;
+  advancePaidPKR?: number;
+  balancePaidPKR?: number;
+  advanceTID?: string;
+  advanceProofUrl?: string;
+  advancePaymentMethod?: string;
+  balanceTID?: string;
+  balanceProofUrl?: string;
+  balancePaymentMethod?: string;
+  splitPaymentStatus?: 'pending_advance' | 'advance_paid' | 'pending_balance' | 'fully_paid';
 }
 
 export interface Review {

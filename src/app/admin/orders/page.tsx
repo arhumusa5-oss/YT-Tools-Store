@@ -102,6 +102,10 @@ export default function AdminOrdersPage() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [invoiceError, setInvoiceError] = useState('');
 
+  // Split / Partial Payment State for Invoices
+  const [isSplitInvoice, setIsSplitInvoice] = useState(false);
+  const [advanceAmountPKR, setAdvanceAmountPKR] = useState<number | ''>('');
+
   // Copy Invoice Link State & Helper
   const [copiedInvoiceId, setCopiedInvoiceId] = useState<string | null>(null);
 
@@ -245,6 +249,47 @@ export default function AdminOrdersPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const handleMarkAdvancePaid = async (order: Order) => {
+    try {
+      const adv = order.advanceAmountPKR || Math.round(order.totalPKR / 2);
+      const res = await fetch(`/api/orders/${encodeURIComponent(order.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          advancePaidPKR: adv,
+          advanceTID: order.advanceTID || 'Manual / Offline Paid',
+          splitPaymentStatus: 'advance_paid',
+          status: 'processing',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) fetchOrders(true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleMarkBalancePaid = async (order: Order) => {
+    try {
+      const bal = order.balanceAmountPKR || Math.max(0, order.totalPKR - (order.advancePaidPKR || 0));
+      const res = await fetch(`/api/orders/${encodeURIComponent(order.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          balancePaidPKR: bal,
+          balanceTID: order.balanceTID || 'Manual / Offline Paid',
+          splitPaymentStatus: 'fully_paid',
+          paymentStatus: 'paid',
+          status: 'completed',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) fetchOrders(true);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const openCreateModal = () => {
     setIsCreateModalOpen(true);
     setGeneratedLink('');
@@ -256,6 +301,8 @@ export default function AdminOrdersPage() {
     setInvoiceCustomerEmail('');
     setInvoiceNotes('');
     setInvoiceStatus('pending');
+    setIsSplitInvoice(false);
+    setAdvanceAmountPKR('');
     fetchProductsAndSettings();
 
     // Default with first available product or empty
@@ -360,6 +407,13 @@ export default function AdminOrdersPage() {
           totalPKR: invoiceTotalPKR,
           note: invoiceNotes.trim(),
           status: invoiceStatus,
+          isSplitPayment: isSplitInvoice,
+          advanceAmountPKR: isSplitInvoice
+            ? Math.max(1, Number(advanceAmountPKR) || Math.round(invoiceTotalPKR / 2))
+            : undefined,
+          balanceAmountPKR: isSplitInvoice
+            ? Math.max(0, invoiceTotalPKR - (Number(advanceAmountPKR) || Math.round(invoiceTotalPKR / 2)))
+            : undefined,
         }),
       });
 
@@ -1345,6 +1399,27 @@ export default function AdminOrdersPage() {
                               Invoice
                             </span>
                           )}
+                          {order.isSplitPayment && (
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+                                order.splitPaymentStatus === 'fully_paid'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : order.splitPaymentStatus === 'advance_paid' ||
+                                    (order.advancePaidPKR || 0) > 0
+                                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                  : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                              }`}
+                            >
+                              {order.splitPaymentStatus === 'fully_paid'
+                                ? 'Split: 100% Paid'
+                                : order.splitPaymentStatus === 'advance_paid' ||
+                                  (order.advancePaidPKR || 0) > 0
+                                ? `Adv Paid: Rs ${(order.advancePaidPKR || 0).toLocaleString()}`
+                                : `Adv Due: Rs ${(
+                                    order.advanceAmountPKR || Math.round(order.totalPKR / 2)
+                                  ).toLocaleString()}`}
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-zinc-500 mt-0.5">
                           {new Date(order.createdAt).toLocaleDateString([], {
@@ -2016,6 +2091,28 @@ export default function AdminOrdersPage() {
                       Direct Invoice
                     </span>
                   )}
+                  {selectedOrderForDrawer.isSplitPayment && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        selectedOrderForDrawer.splitPaymentStatus === 'fully_paid'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          : selectedOrderForDrawer.splitPaymentStatus === 'advance_paid' ||
+                            (selectedOrderForDrawer.advancePaidPKR || 0) > 0
+                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                      }`}
+                    >
+                      {selectedOrderForDrawer.splitPaymentStatus === 'fully_paid'
+                        ? 'Split: 100% Paid'
+                        : selectedOrderForDrawer.splitPaymentStatus === 'advance_paid' ||
+                          (selectedOrderForDrawer.advancePaidPKR || 0) > 0
+                        ? `Adv Paid: Rs ${(selectedOrderForDrawer.advancePaidPKR || 0).toLocaleString()}`
+                        : `Adv Due: Rs ${(
+                            selectedOrderForDrawer.advanceAmountPKR ||
+                            Math.round(selectedOrderForDrawer.totalPKR / 2)
+                          ).toLocaleString()}`}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -2092,6 +2189,172 @@ export default function AdminOrdersPage() {
 
               {/* Drawer Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+                {/* Split Payment Management Card */}
+                {selectedOrderForDrawer.isSplitPayment && (
+                  <div className="p-4 rounded-xl bg-purple-950/20 border border-purple-500/30 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[10px] text-purple-300 uppercase font-black tracking-wider flex items-center gap-1.5">
+                        <Receipt className="w-3.5 h-3.5" />
+                        <span>Split Payment (2-Stage Milestone)</span>
+                      </span>
+                      <span className="font-mono font-bold text-white text-xs">
+                        Total Deal: Rs {selectedOrderForDrawer.totalPKR.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                      {/* Step 1: Advance */}
+                      <div
+                        className={`p-3 rounded-xl border ${
+                          selectedOrderForDrawer.advancePaidPKR &&
+                          selectedOrderForDrawer.advancePaidPKR > 0
+                            ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
+                            : 'bg-amber-950/30 border-amber-500/30 text-amber-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold">1. Advance</span>
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                              selectedOrderForDrawer.advancePaidPKR &&
+                              selectedOrderForDrawer.advancePaidPKR > 0
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : 'bg-amber-500/20 text-amber-300'
+                            }`}
+                          >
+                            {selectedOrderForDrawer.advancePaidPKR &&
+                            selectedOrderForDrawer.advancePaidPKR > 0
+                              ? 'Paid ✓'
+                              : 'Awaiting'}
+                          </span>
+                        </div>
+                        <div className="font-mono text-sm font-black text-white mt-1">
+                          Rs {(
+                            selectedOrderForDrawer.advanceAmountPKR ||
+                            Math.round(selectedOrderForDrawer.totalPKR / 2)
+                          ).toLocaleString()}
+                        </div>
+                        {selectedOrderForDrawer.advanceTID && (
+                          <div className="text-[10px] font-mono text-zinc-300 mt-0.5 truncate">
+                            TID: {selectedOrderForDrawer.advanceTID}
+                          </div>
+                        )}
+                        {selectedOrderForDrawer.advanceProofUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage(selectedOrderForDrawer.advanceProofUrl!)}
+                            className="text-[10px] text-blue-400 hover:underline inline-flex items-center gap-1 font-bold mt-1 cursor-pointer"
+                          >
+                            <span>Inspect Advance Proof</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </button>
+                        ) : !(
+                            selectedOrderForDrawer.advancePaidPKR &&
+                            selectedOrderForDrawer.advancePaidPKR > 0
+                          ) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkAdvancePaid(selectedOrderForDrawer)}
+                            className="mt-2 w-full py-1 px-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-black font-black text-[10px] transition cursor-pointer"
+                          >
+                            Mark Advance as Paid
+                          </button>
+                        ) : null}
+                      </div>
+
+                      {/* Step 2: Remaining Balance on Delivery */}
+                      <div
+                        className={`p-3 rounded-xl border ${
+                          selectedOrderForDrawer.balancePaidPKR &&
+                          selectedOrderForDrawer.balancePaidPKR > 0
+                            ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300'
+                            : 'bg-purple-950/30 border-purple-500/30 text-purple-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold">2. Balance</span>
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${
+                              selectedOrderForDrawer.balancePaidPKR &&
+                              selectedOrderForDrawer.balancePaidPKR > 0
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : 'bg-purple-500/20 text-purple-300'
+                            }`}
+                          >
+                            {selectedOrderForDrawer.balancePaidPKR &&
+                            selectedOrderForDrawer.balancePaidPKR > 0
+                              ? 'Paid ✓'
+                              : 'On Delivery'}
+                          </span>
+                        </div>
+                        <div className="font-mono text-sm font-black text-white mt-1">
+                          Rs {(
+                            selectedOrderForDrawer.balanceAmountPKR ||
+                            Math.round(selectedOrderForDrawer.totalPKR / 2)
+                          ).toLocaleString()}
+                        </div>
+                        {selectedOrderForDrawer.balanceTID && (
+                          <div className="text-[10px] font-mono text-zinc-300 mt-0.5 truncate">
+                            TID: {selectedOrderForDrawer.balanceTID}
+                          </div>
+                        )}
+                        {selectedOrderForDrawer.balanceProofUrl ? (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewImage(selectedOrderForDrawer.balanceProofUrl!)}
+                            className="text-[10px] text-blue-400 hover:underline inline-flex items-center gap-1 font-bold mt-1 cursor-pointer"
+                          >
+                            <span>Inspect Balance Proof</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </button>
+                        ) : !(
+                            selectedOrderForDrawer.balancePaidPKR &&
+                            selectedOrderForDrawer.balancePaidPKR > 0
+                          ) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkBalancePaid(selectedOrderForDrawer)}
+                            className="mt-2 w-full py-1 px-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] transition cursor-pointer"
+                          >
+                            Mark Balance as Paid
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Quick WhatsApp Reminder for Balance when Tool is Ready */}
+                    {!(
+                      selectedOrderForDrawer.balancePaidPKR &&
+                      selectedOrderForDrawer.balancePaidPKR > 0
+                    ) && (
+                      <div className="pt-1">
+                        <a
+                          href={`https://wa.me/${selectedOrderForDrawer.customerWhatsApp.replace(
+                            /[^0-9]/g,
+                            ''
+                          )}?text=${encodeURIComponent(
+                            `Assalam o Alaikum ${selectedOrderForDrawer.customerName}! Your tool for Order #${selectedOrderForDrawer.id} is ready! 🎉\n\n💰 Total Deal: Rs ${selectedOrderForDrawer.totalPKR.toLocaleString()}\n✅ Advance Paid: Rs ${(
+                              selectedOrderForDrawer.advanceAmountPKR ||
+                              Math.round(selectedOrderForDrawer.totalPKR / 2)
+                            ).toLocaleString()}\n🔴 Remaining Balance Due: Rs ${(
+                              selectedOrderForDrawer.balanceAmountPKR ||
+                              Math.round(selectedOrderForDrawer.totalPKR / 2)
+                            ).toLocaleString()}\n\n👉 Pay Remaining Balance Here: ${getInvoiceUrl(
+                              selectedOrderForDrawer.id
+                            )}\n\nPlease submit your remaining balance on the same link to get instant credentials delivery. Thank you!`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2 px-3 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
+                        >
+                          <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-white" />
+                          <span>Send &quot;Tool Ready - Pay Balance&quot; on WhatsApp</span>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* 1. Customer Dossier */}
                 <div className="p-4 rounded-xl bg-black/60 border border-[#1A1A24] space-y-2.5">
                   <span className="text-[10px] text-zinc-500 uppercase font-black tracking-wider block">
@@ -2417,7 +2680,9 @@ export default function AdminOrdersPage() {
                 <div className="pt-2">
                   <a
                     href={`https://wa.me/${(generatedOrder?.customerWhatsApp || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                      `Assalam o Alaikum ${generatedOrder?.customerName}! Here is your official payment link for your order #${generatedOrder?.id} (${generatedOrder?.items.map((i) => i.title).join(', ')}):\n\n👉 ${generatedLink}\n\nPlease click the link to select your preferred payment method (EasyPaisa, JazzCash, Bank, Binance) and upload your payment receipt screenshot. Your tool access will be activated immediately upon submission. Thank you!`
+                      generatedOrder?.isSplitPayment
+                        ? `Assalam o Alaikum ${generatedOrder?.customerName}! Here is your official payment invoice for Order #${generatedOrder?.id} (${generatedOrder?.items.map((i) => i.title).join(', ')}):\n\n💰 Total Deal Amount: Rs ${generatedOrder?.totalPKR.toLocaleString()}\n🟡 Step 1 (Advance Due Now): Rs ${(generatedOrder?.advanceAmountPKR || Math.round(generatedOrder?.totalPKR / 2)).toLocaleString()}\n⏳ Step 2 (Remaining on Delivery): Rs ${(generatedOrder?.balanceAmountPKR || Math.round(generatedOrder?.totalPKR / 2)).toLocaleString()}\n\n👉 Pay Advance Here: ${generatedLink}\n\nPlease click the link to select your payment method (EasyPaisa, JazzCash, Bank, Binance) and upload your advance payment screenshot. We will start preparing your tool immediately. Thank you!`
+                        : `Assalam o Alaikum ${generatedOrder?.customerName}! Here is your official payment link for your order #${generatedOrder?.id} (${generatedOrder?.items.map((i) => i.title).join(', ')}):\n\n👉 ${generatedLink}\n\nPlease click the link to select your preferred payment method (EasyPaisa, JazzCash, Bank, Binance) and upload your payment receipt screenshot. Your tool access will be activated immediately upon submission. Thank you!`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -2595,6 +2860,87 @@ export default function AdminOrdersPage() {
                       Rs {invoiceTotalPKR.toLocaleString()}
                     </span>
                   </div>
+                </div>
+
+                {/* Split / Partial Payment Toggle Card */}
+                <div className="p-3.5 rounded-2xl bg-purple-950/20 border border-purple-500/30 space-y-3">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isSplitInvoice}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setIsSplitInvoice(checked);
+                        if (checked && !advanceAmountPKR) {
+                          setAdvanceAmountPKR(Math.round(invoiceTotalPKR / 2));
+                        }
+                      }}
+                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-black border-zinc-700 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <span>Enable Split / Partial Payment (Advance + Delivery Balance)</span>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                        2-Stage
+                      </span>
+                    </span>
+                  </label>
+
+                  {isSplitInvoice && (
+                    <div className="pt-2 border-t border-purple-500/20 space-y-2.5 animate-in fade-in">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="text-xs font-bold text-zinc-300">
+                          Advance Due Amount (PKR) <span className="text-amber-400">*</span>
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setAdvanceAmountPKR(Math.round(invoiceTotalPKR * 0.5))}
+                            className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold transition"
+                          >
+                            50% (Rs {Math.round(invoiceTotalPKR * 0.5).toLocaleString()})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAdvanceAmountPKR(Math.round(invoiceTotalPKR * 0.3))}
+                            className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold transition"
+                          >
+                            30% (Rs {Math.round(invoiceTotalPKR * 0.3).toLocaleString()})
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500">
+                          Rs
+                        </span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={invoiceTotalPKR}
+                          value={advanceAmountPKR}
+                          onChange={(e) =>
+                            setAdvanceAmountPKR(e.target.value === '' ? '' : Number(e.target.value))
+                          }
+                          placeholder={String(Math.round(invoiceTotalPKR / 2))}
+                          className="w-full pl-9 pr-3 py-2 rounded-xl bg-black border border-purple-500/40 text-xs font-mono font-bold text-amber-300 focus:outline-none focus:border-purple-400"
+                        />
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-black/60 border border-zinc-800 text-[11px] flex items-center justify-between">
+                        <span className="text-zinc-400 font-medium">Remaining on Delivery:</span>
+                        <span className="font-mono font-bold text-purple-300">
+                          Rs {Math.max(
+                            0,
+                            invoiceTotalPKR -
+                              (Number(advanceAmountPKR) || Math.round(invoiceTotalPKR / 2))
+                          ).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 leading-relaxed">
+                        ✓ Customer will see <strong>Step 1: Pay Advance (Rs {(Number(advanceAmountPKR) || Math.round(invoiceTotalPKR / 2)).toLocaleString()})</strong>. Once advance is submitted, the <strong>SAME single link</strong> will prompt for the remaining balance on delivery.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Optional Note */}
