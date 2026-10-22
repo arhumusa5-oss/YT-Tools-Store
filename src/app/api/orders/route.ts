@@ -57,6 +57,18 @@ export async function POST(request: Request) {
       subscriptionExpiryDate: body.subscriptionExpiryDate ? String(body.subscriptionExpiryDate).trim() : undefined,
       renewalStatus: body.renewalStatus || undefined,
       renewalNotes: body.renewalNotes ? String(body.renewalNotes).trim() : undefined,
+      isSplitPayment: body.isSplitPayment ? true : false,
+      advanceAmountPKR: body.advanceAmountPKR !== undefined ? Number(body.advanceAmountPKR) : undefined,
+      balanceAmountPKR: body.balanceAmountPKR !== undefined ? Number(body.balanceAmountPKR) : undefined,
+      advancePaidPKR: body.advancePaidPKR !== undefined ? Number(body.advancePaidPKR) : undefined,
+      balancePaidPKR: body.balancePaidPKR !== undefined ? Number(body.balancePaidPKR) : undefined,
+      advanceTID: body.advanceTID ? String(body.advanceTID).trim() : undefined,
+      balanceTID: body.balanceTID ? String(body.balanceTID).trim() : undefined,
+      advanceProofUrl: body.advanceProofUrl ? String(body.advanceProofUrl).trim() : undefined,
+      balanceProofUrl: body.balanceProofUrl ? String(body.balanceProofUrl).trim() : undefined,
+      advancePaymentMethod: body.advancePaymentMethod ? String(body.advancePaymentMethod).trim() : undefined,
+      balancePaymentMethod: body.balancePaymentMethod ? String(body.balancePaymentMethod).trim() : undefined,
+      splitPaymentStatus: body.splitPaymentStatus || undefined,
     });
 
     // Send instant email notification to store owner in background ONLY if not a manual admin entry

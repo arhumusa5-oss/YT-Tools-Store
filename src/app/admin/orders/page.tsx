@@ -166,6 +166,16 @@ export default function AdminOrdersPage() {
   const [savingModalOrder, setSavingModalOrder] = useState(false);
   const [modalError, setModalError] = useState('');
 
+  // Split / Partial Payment State for Manual / Edit Modal
+  const [modalIsSplitPayment, setModalIsSplitPayment] = useState(false);
+  const [modalAdvanceAmountPKR, setModalAdvanceAmountPKR] = useState<number | ''>('');
+  const [modalBalanceAmountPKR, setModalBalanceAmountPKR] = useState<number | ''>('');
+  const [modalAdvancePaidPKR, setModalAdvancePaidPKR] = useState<number | ''>('');
+  const [modalBalancePaidPKR, setModalBalancePaidPKR] = useState<number | ''>('');
+  const [modalAdvanceTID, setModalAdvanceTID] = useState('');
+  const [modalBalanceTID, setModalBalanceTID] = useState('');
+  const [modalSplitPaymentStatus, setModalSplitPaymentStatus] = useState<Order['splitPaymentStatus']>('advance_paid');
+
   const fetchOrders = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
@@ -453,6 +463,14 @@ export default function AdminOrdersPage() {
     setModalVendorPaymentStatus('paid');
     setModalExpiryDate('');
     setModalNotes('');
+    setModalIsSplitPayment(false);
+    setModalAdvanceAmountPKR('');
+    setModalBalanceAmountPKR('');
+    setModalAdvancePaidPKR('');
+    setModalBalancePaidPKR('');
+    setModalAdvanceTID('');
+    setModalBalanceTID('');
+    setModalSplitPaymentStatus('advance_paid');
 
     if (products.length > 0) {
       setModalItems([
@@ -506,6 +524,14 @@ export default function AdminOrdersPage() {
     setModalVendorPaymentStatus(order.vendorPaymentStatus || 'paid');
     setModalExpiryDate(order.subscriptionExpiryDate || '');
     setModalNotes(order.adminNotes || order.channelOrDeliveryNote || '');
+    setModalIsSplitPayment(Boolean(order.isSplitPayment));
+    setModalAdvanceAmountPKR(order.advanceAmountPKR ?? '');
+    setModalBalanceAmountPKR(order.balanceAmountPKR ?? '');
+    setModalAdvancePaidPKR(order.advancePaidPKR ?? '');
+    setModalBalancePaidPKR(order.balancePaidPKR ?? '');
+    setModalAdvanceTID(order.advanceTID ?? '');
+    setModalBalanceTID(order.balanceTID ?? '');
+    setModalSplitPaymentStatus(order.splitPaymentStatus || (order.isSplitPayment ? 'advance_paid' : undefined));
     setIsOrderModalOpen(true);
   };
 
@@ -577,6 +603,11 @@ export default function AdminOrdersPage() {
       const numCost = modalCostPKR !== '' ? Number(modalCostPKR) : undefined;
       const numProfit = numCost !== undefined ? modalTotalPKR - numCost : undefined;
 
+      const advAmt = modalIsSplitPayment ? (Number(modalAdvanceAmountPKR) || Math.round(modalTotalPKR / 2)) : undefined;
+      const balAmt = modalIsSplitPayment && advAmt !== undefined ? Math.max(0, modalTotalPKR - advAmt) : undefined;
+      const advPaid = modalIsSplitPayment ? (Number(modalAdvancePaidPKR) || 0) : undefined;
+      const balPaid = modalIsSplitPayment ? (Number(modalBalancePaidPKR) || 0) : undefined;
+
       if (editingOrder) {
         // Update existing order
         const res = await fetch(`/api/orders/${encodeURIComponent(editingOrder.id)}`, {
@@ -601,6 +632,14 @@ export default function AdminOrdersPage() {
             vendorPaymentStatus: modalVendorPaymentStatus,
             subscriptionExpiryDate: modalExpiryDate.trim() || undefined,
             adminNotes: modalNotes.trim() || undefined,
+            isSplitPayment: modalIsSplitPayment,
+            advanceAmountPKR: advAmt,
+            balanceAmountPKR: balAmt,
+            advancePaidPKR: advPaid,
+            balancePaidPKR: balPaid,
+            advanceTID: modalIsSplitPayment ? (modalAdvanceTID.trim() || 'Direct/Manual') : undefined,
+            balanceTID: modalIsSplitPayment ? (modalBalanceTID.trim() || undefined) : undefined,
+            splitPaymentStatus: modalIsSplitPayment ? modalSplitPaymentStatus : undefined,
           }),
         });
 
@@ -636,6 +675,14 @@ export default function AdminOrdersPage() {
             subscriptionExpiryDate: modalExpiryDate.trim() || undefined,
             adminNotes: modalNotes.trim() || undefined,
             isManualOrder: true,
+            isSplitPayment: modalIsSplitPayment,
+            advanceAmountPKR: advAmt,
+            balanceAmountPKR: balAmt,
+            advancePaidPKR: advPaid,
+            balancePaidPKR: balPaid,
+            advanceTID: modalIsSplitPayment ? (modalAdvanceTID.trim() || 'Direct/Manual') : undefined,
+            balanceTID: modalIsSplitPayment ? (modalBalanceTID.trim() || undefined) : undefined,
+            splitPaymentStatus: modalIsSplitPayment ? modalSplitPaymentStatus : undefined,
           }),
         });
 
@@ -3268,6 +3315,165 @@ export default function AdminOrdersPage() {
                     Rs {modalTotalPKR.toLocaleString()}
                   </span>
                 </div>
+              </div>
+
+              {/* Split / Partial Payment (Advance + Delivery Balance) */}
+              <div className="p-4 rounded-2xl bg-purple-950/25 border border-purple-500/35 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={modalIsSplitPayment}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setModalIsSplitPayment(checked);
+                        if (checked && !modalAdvanceAmountPKR) {
+                          const half = Math.round(modalTotalPKR / 2);
+                          setModalAdvanceAmountPKR(half);
+                          setModalAdvancePaidPKR(half);
+                        }
+                      }}
+                      className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-black border-zinc-700 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-white flex items-center gap-2">
+                      <span>Enable Split / Partial Payment (Advance + Delivery Balance)</span>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                        2-Stage Milestone
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                {modalIsSplitPayment && (
+                  <div className="pt-3 border-t border-purple-500/20 space-y-3 text-xs animate-in fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-bold text-zinc-300">
+                            Advance Due Amount (PKR) <span className="text-amber-400">*</span>
+                          </label>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = Math.round(modalTotalPKR * 0.5);
+                                setModalAdvanceAmountPKR(val);
+                                setModalAdvancePaidPKR(val);
+                              }}
+                              className="px-1.5 py-0.5 rounded bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 text-[10px] font-bold border border-purple-500/30"
+                            >
+                              50%
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = Math.round(modalTotalPKR * 0.3);
+                                setModalAdvanceAmountPKR(val);
+                                setModalAdvancePaidPKR(val);
+                              }}
+                              className="px-1.5 py-0.5 rounded bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 text-[10px] font-bold border border-purple-500/30"
+                            >
+                              30%
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="number"
+                          value={modalAdvanceAmountPKR}
+                          onChange={(e) => {
+                            const val = e.target.value === '' ? '' : Number(e.target.value);
+                            setModalAdvanceAmountPKR(val);
+                          }}
+                          placeholder="e.g. 5000"
+                          className="w-full px-3 py-2 rounded-xl bg-black border border-purple-500/40 text-xs font-mono font-bold text-white focus:outline-none focus:border-purple-400"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-zinc-300 mb-1">
+                          Remaining Balance on Delivery (Auto-Calc)
+                        </label>
+                        <div className="px-3 py-2 rounded-xl bg-black/60 border border-purple-500/30 text-xs font-mono font-bold text-purple-300">
+                          Rs{' '}
+                          {Math.max(
+                            0,
+                            modalTotalPKR - (Number(modalAdvanceAmountPKR) || 0)
+                          ).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          Advance Paid Amount (PKR)
+                        </label>
+                        <input
+                          type="number"
+                          value={modalAdvancePaidPKR}
+                          onChange={(e) => setModalAdvancePaidPKR(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="Advance collected so far"
+                          className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          Advance Transaction ID (TID)
+                        </label>
+                        <input
+                          type="text"
+                          value={modalAdvanceTID}
+                          onChange={(e) => setModalAdvanceTID(e.target.value)}
+                          placeholder="e.g. EP-998822 or Cash"
+                          className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          Balance Paid Amount (PKR)
+                        </label>
+                        <input
+                          type="number"
+                          value={modalBalancePaidPKR}
+                          onChange={(e) => setModalBalancePaidPKR(e.target.value === '' ? '' : Number(e.target.value))}
+                          placeholder="Balance collected at delivery"
+                          className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-zinc-400 mb-1">
+                          Balance Transaction ID (TID)
+                        </label>
+                        <input
+                          type="text"
+                          value={modalBalanceTID}
+                          onChange={(e) => setModalBalanceTID(e.target.value)}
+                          placeholder="e.g. JC-771144"
+                          className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-zinc-300 mb-1">
+                        Split Milestone Current Stage
+                      </label>
+                      <select
+                        value={modalSplitPaymentStatus || 'advance_paid'}
+                        onChange={(e) => setModalSplitPaymentStatus(e.target.value as any)}
+                        className="w-full px-3 py-2 rounded-xl bg-black border border-purple-500/40 text-xs text-white font-bold focus:outline-none"
+                      >
+                        <option value="advance_pending">⏳ Step 1: Advance Pending (Customer owes advance)</option>
+                        <option value="advance_paid">✅ Step 1 Paid: Advance Received — Awaiting Delivery</option>
+                        <option value="balance_pending">🚚 Step 2: Tool Ready — Balance Pending from Customer</option>
+                        <option value="fully_paid">🎉 100% Fully Paid (Advance + Balance both received)</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Vendor & Accounting Details */}
