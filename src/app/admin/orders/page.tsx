@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Order, Product } from '@/lib/types';
 import {
   ShoppingBag,
@@ -26,15 +26,41 @@ import {
   Receipt,
   Trash2,
   Layers,
+  Calendar,
+  CalendarDays,
+  Sparkles,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import BundleLinkModal from '@/components/admin/BundleLinkModal';
+
+type FilterPeriod = 'lifetime' | 'this_month' | 'last_month' | 'custom_month';
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  // Time Period Filter State
+  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('lifetime');
+  const now = new Date();
+  const defaultYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [customYearMonth, setCustomYearMonth] = useState<string>(defaultYearMonth);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [adminNotesMap, setAdminNotesMap] = useState<Record<string, string>>({});
@@ -338,19 +364,107 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const filtered = orders.filter((o) => {
-    const s = search.toLowerCase();
-    const matchSearch =
-      o.id.toLowerCase().includes(s) ||
-      o.customerName.toLowerCase().includes(s) ||
-      o.customerWhatsApp.toLowerCase().includes(s) ||
-      (o.customerEmail && o.customerEmail.toLowerCase().includes(s)) ||
-      o.transactionId.toLowerCase().includes(s) ||
-      o.items.some((i) => i.title.toLowerCase().includes(s));
+  // Compute list of unique months available from orders + past 12 months
+  const availableMonths = useMemo(() => {
+    const map = new Map<string, string>();
+    const current = new Date();
 
-    const matchStatus = statusFilter === 'All' || o.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(current.getFullYear(), current.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+      map.set(key, label);
+    }
+
+    orders.forEach((o) => {
+      if (o.createdAt) {
+        const d = new Date(o.createdAt);
+        if (!isNaN(d.getTime())) {
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const label = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+          map.set(key, label);
+        }
+      }
+    });
+
+    return Array.from(map.entries()).map(([key, label]) => ({ key, label }));
+  }, [orders]);
+
+  const currentMonthDate = new Date();
+  const currentMonthLabel = `${MONTH_NAMES[currentMonthDate.getMonth()]} ${currentMonthDate.getFullYear()}`;
+  const lastMonthDate = new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() - 1, 1);
+  const lastMonthLabel = `${MONTH_NAMES[lastMonthDate.getMonth()]} ${lastMonthDate.getFullYear()}`;
+
+  const activePeriodName = useMemo(() => {
+    if (filterPeriod === 'lifetime') return 'All Time (Lifetime)';
+    if (filterPeriod === 'this_month') return currentMonthLabel;
+    if (filterPeriod === 'last_month') return lastMonthLabel;
+    if (filterPeriod === 'custom_month') {
+      const found = availableMonths.find((m) => m.key === customYearMonth);
+      return found ? found.label : customYearMonth;
+    }
+    return 'Selected Period';
+  }, [filterPeriod, currentMonthLabel, lastMonthLabel, customYearMonth, availableMonths]);
+
+  const filtered = useMemo(() => {
+    const nowDate = new Date();
+    const curYear = nowDate.getFullYear();
+    const curMonth = nowDate.getMonth();
+
+    const lastYear = lastMonthDate.getFullYear();
+    const lastMonth = lastMonthDate.getMonth();
+
+    let targetCustomYear = 0;
+    let targetCustomMonth = 0;
+    if (filterPeriod === 'custom_month' && customYearMonth) {
+      const [yStr, mStr] = customYearMonth.split('-');
+      targetCustomYear = parseInt(yStr, 10);
+      targetCustomMonth = parseInt(mStr, 10) - 1;
+    }
+
+    return orders.filter((o) => {
+      const s = search.toLowerCase();
+      const matchSearch =
+        !s ||
+        o.id.toLowerCase().includes(s) ||
+        o.customerName.toLowerCase().includes(s) ||
+        o.customerWhatsApp.toLowerCase().includes(s) ||
+        (o.customerEmail && o.customerEmail.toLowerCase().includes(s)) ||
+        o.transactionId.toLowerCase().includes(s) ||
+        o.items.some((i) => i.title.toLowerCase().includes(s));
+
+      const matchStatus = statusFilter === 'All' || o.status === statusFilter;
+
+      let matchTime = true;
+      if (filterPeriod === 'this_month') {
+        if (!o.createdAt) matchTime = false;
+        else {
+          const d = new Date(o.createdAt);
+          matchTime = d.getFullYear() === curYear && d.getMonth() === curMonth;
+        }
+      } else if (filterPeriod === 'last_month') {
+        if (!o.createdAt) matchTime = false;
+        else {
+          const d = new Date(o.createdAt);
+          matchTime = d.getFullYear() === lastYear && d.getMonth() === lastMonth;
+        }
+      } else if (filterPeriod === 'custom_month') {
+        if (!o.createdAt) matchTime = false;
+        else {
+          const d = new Date(o.createdAt);
+          matchTime = d.getFullYear() === targetCustomYear && d.getMonth() === targetCustomMonth;
+        }
+      }
+
+      return matchSearch && matchStatus && matchTime;
+    });
+  }, [orders, search, statusFilter, filterPeriod, customYearMonth, lastMonthDate]);
+
+  const filteredTotalVolume = useMemo(() => {
+    return filtered
+      .filter((o) => o.status === 'completed' || o.status === 'processing')
+      .reduce((sum, o) => sum + o.totalPKR, 0);
+  }, [filtered]);
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
@@ -405,6 +519,117 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
+      {/* ================= TIME RANGE FILTER BAR ================= */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2 text-xs font-bold text-white">
+            <Calendar className="w-4 h-4 text-[#FF5500]" />
+            <span>Orders Time Period Filter</span>
+          </div>
+          <p className="text-[11px] text-zinc-400">
+            Filter orders by Lifetime, current month, or select any specific month.
+          </p>
+        </div>
+
+        {/* Time Tabs */}
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Lifetime */}
+          <button
+            type="button"
+            onClick={() => setFilterPeriod('lifetime')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              filterPeriod === 'lifetime'
+                ? 'bg-[#FF5500] text-white shadow-md shadow-orange-500/25'
+                : 'bg-[#161620] hover:bg-[#20202c] text-zinc-300 border border-[#2b2b3a]'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Lifetime</span>
+          </button>
+
+          {/* This Month */}
+          <button
+            type="button"
+            onClick={() => setFilterPeriod('this_month')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              filterPeriod === 'this_month'
+                ? 'bg-[#FF5500] text-white shadow-md shadow-orange-500/25'
+                : 'bg-[#161620] hover:bg-[#20202c] text-zinc-300 border border-[#2b2b3a]'
+            }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            <span>This Month</span>
+          </button>
+
+          {/* Last Month */}
+          <button
+            type="button"
+            onClick={() => setFilterPeriod('last_month')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+              filterPeriod === 'last_month'
+                ? 'bg-[#FF5500] text-white shadow-md shadow-orange-500/25'
+                : 'bg-[#161620] hover:bg-[#20202c] text-zinc-300 border border-[#2b2b3a]'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            <span>Last Month</span>
+          </button>
+
+          {/* Specific Month Select Dropdown */}
+          <div className="relative">
+            <select
+              value={filterPeriod === 'custom_month' ? customYearMonth : ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setCustomYearMonth(e.target.value);
+                  setFilterPeriod('custom_month');
+                }
+              }}
+              className={`px-3 py-2 pr-8 rounded-xl text-xs font-bold transition cursor-pointer appearance-none ${
+                filterPeriod === 'custom_month'
+                  ? 'bg-[#FF5500] text-white border border-[#FF5500] shadow-md shadow-orange-500/25'
+                  : 'bg-[#161620] hover:bg-[#20202c] text-zinc-300 border border-[#2b2b3a]'
+              }`}
+            >
+              <option value="" disabled className="bg-[#101018] text-zinc-400">
+                📅 Specific Month...
+              </option>
+              {availableMonths.map((m) => (
+                <option key={m.key} value={m.key} className="bg-[#101018] text-white">
+                  {m.label}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-current opacity-70 text-[10px]">
+              ▼
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Time & Results Pill */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-[#08080A] border border-[#1C1C24] text-xs">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+          <span className="text-zinc-400">Viewing Period:</span>
+          <strong className="text-white font-bold">{activePeriodName}</strong>
+          {filterPeriod !== 'lifetime' && (
+            <button
+              type="button"
+              onClick={() => setFilterPeriod('lifetime')}
+              className="text-[11px] text-[#FF5500] hover:underline ml-2 cursor-pointer"
+            >
+              (Reset to Lifetime)
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-3 text-zinc-400 font-mono text-[11px]">
+          <span>Found: <strong className="text-white">{filtered.length}</strong> {filtered.length === 1 ? 'order' : 'orders'}</span>
+          <span>&bull;</span>
+          <span>Filtered Volume: <strong className="text-emerald-400">Rs {filteredTotalVolume.toLocaleString()}</strong></span>
+        </div>
+      </div>
+
       {/* Filter and Search */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -439,14 +664,27 @@ export default function AdminOrdersPage() {
       {loading ? (
         <div className="py-24 text-center text-xs text-zinc-500">Loading orders...</div>
       ) : filtered.length === 0 ? (
-        <div className="py-20 text-center bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6">
-          <div className="w-12 h-12 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto mb-3">
+        <div className="py-20 text-center bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-3">
+          <div className="w-12 h-12 rounded-xl bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto mb-2">
             <ShoppingBag className="w-6 h-6" />
           </div>
           <h3 className="text-sm font-bold text-white">No orders found</h3>
-          <p className="mt-1 text-xs text-zinc-500">
-            Try adjusting your search query or status filter.
+          <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+            {filterPeriod !== 'lifetime'
+              ? `No orders found for ${activePeriodName} matching the selected status.`
+              : 'Try adjusting your search query or status filter.'}
           </p>
+          {filterPeriod !== 'lifetime' && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setFilterPeriod('lifetime')}
+                className="px-4 py-2 rounded-xl bg-[#161622] hover:bg-[#20202c] text-white text-xs font-bold border border-[#2a2a38] transition cursor-pointer"
+              >
+                Show All-Time Orders
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
