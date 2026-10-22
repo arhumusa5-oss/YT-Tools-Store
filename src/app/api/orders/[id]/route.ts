@@ -39,6 +39,11 @@ export async function PUT(
       paymentProofUrl,
       paymentMethod,
       paymentStatus,
+      costPKR,
+      profitPKR,
+      vendorName,
+      vendorPaymentStatus,
+      vendorNotes,
     } = body;
 
     const updates: Record<string, unknown> = {};
@@ -52,6 +57,26 @@ export async function PUT(
     if (paymentProofUrl !== undefined) updates.paymentProofUrl = paymentProofUrl.trim();
     if (paymentMethod !== undefined) updates.paymentMethod = paymentMethod;
     if (paymentStatus !== undefined) updates.paymentStatus = paymentStatus;
+
+    // Financial & Vendor Accounting fields
+    if (costPKR !== undefined) {
+      const numCost = Math.max(0, Number(costPKR) || 0);
+      updates.costPKR = numCost;
+      const orderTotal = body.totalPKR !== undefined ? Number(body.totalPKR) : existingOrder.totalPKR;
+      updates.profitPKR = orderTotal - numCost;
+    }
+    if (profitPKR !== undefined && costPKR === undefined) {
+      updates.profitPKR = Number(profitPKR);
+    }
+    if (vendorName !== undefined) {
+      updates.vendorName = String(vendorName).trim();
+    }
+    if (vendorPaymentStatus !== undefined) {
+      updates.vendorPaymentStatus = vendorPaymentStatus === 'paid' ? 'paid' : 'unpaid';
+    }
+    if (vendorNotes !== undefined) {
+      updates.vendorNotes = String(vendorNotes).trim();
+    }
 
     const updated = await db.updateOrder(id, updates);
     if (!updated) {

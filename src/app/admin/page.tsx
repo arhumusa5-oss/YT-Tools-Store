@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Sparkles,
+  Wallet,
 } from 'lucide-react';
 
 type FilterPeriod = 'lifetime' | 'this_month' | 'last_month' | 'custom_month';
@@ -173,6 +174,40 @@ export default function AdminDashboardPage() {
       .reduce((sum, o) => sum + o.totalPKR, 0);
   }, [filteredOrders]);
 
+  const totalCostPKR = useMemo(() => {
+    return filteredOrders.reduce((sum, o) => sum + (o.costPKR || 0), 0);
+  }, [filteredOrders]);
+
+  const netProfitPKR = useMemo(() => {
+    return totalRevenuePKR - totalCostPKR;
+  }, [totalRevenuePKR, totalCostPKR]);
+
+  const profitMarginPercent = useMemo(() => {
+    if (totalRevenuePKR <= 0) return 0;
+    return Math.round((netProfitPKR / totalRevenuePKR) * 100);
+  }, [netProfitPKR, totalRevenuePKR]);
+
+  const vendorStats = useMemo(() => {
+    let unpaidTotal = 0;
+    let paidTotal = 0;
+    let unpaidCount = 0;
+    let paidCount = 0;
+
+    filteredOrders.forEach((o) => {
+      const cost = o.costPKR || 0;
+      const status = o.vendorPaymentStatus || 'unpaid';
+      if (status === 'unpaid') {
+        unpaidTotal += cost;
+        if (cost > 0 || o.vendorName) unpaidCount++;
+      } else {
+        paidTotal += cost;
+        if (cost > 0 || o.vendorName) paidCount++;
+      }
+    });
+
+    return { unpaidTotal, paidTotal, unpaidCount, paidCount };
+  }, [filteredOrders]);
+
   const pendingOrders = useMemo(() => {
     return filteredOrders.filter((o) => o.status === 'pending');
   }, [filteredOrders]);
@@ -318,21 +353,29 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Active Filter Status Pill */}
-      <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-[#08080A] border border-[#1C1C24] text-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-2.5 rounded-xl bg-[#08080A] border border-[#1C1C24] text-xs gap-2">
         <span className="text-zinc-400 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span>Active Period:</span>
-          <strong className="text-white">{activePeriodName}</strong>
+          <strong className="text-white font-bold">{activePeriodName}</strong>
         </span>
-        <span className="text-zinc-400 font-mono text-[11px]">
-          {filteredOrders.length} {filteredOrders.length === 1 ? 'Order' : 'Orders'} &bull; Rs {totalRevenuePKR.toLocaleString()} Sales
-        </span>
+        <div className="flex flex-wrap items-center gap-2.5 text-zinc-400 font-mono text-[11px]">
+          <span>{filteredOrders.length} {filteredOrders.length === 1 ? 'Order' : 'Orders'}</span>
+          <span>&bull;</span>
+          <span className="text-emerald-400 font-bold">Rs {totalRevenuePKR.toLocaleString()} Sales</span>
+          <span>&bull;</span>
+          <span className="text-amber-400 font-bold">Rs {totalCostPKR.toLocaleString()} Cost</span>
+          <span>&bull;</span>
+          <span className={netProfitPKR >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"}>
+            Rs {netProfitPKR.toLocaleString()} Net Profit
+          </span>
+        </div>
       </div>
 
-      {/* ================= KPI STATS CARDS ================= */}
+      {/* ================= PRIMARY FINANCIAL KPI CARDS ================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Sales (Revenue) */}
-        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-zinc-700">
+        {/* 1. Total Sales */}
+        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-emerald-500/40 shadow-lg">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Sales</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
@@ -345,69 +388,161 @@ export default function AdminDashboardPage() {
             </span>
             <p className="text-[11px] text-zinc-500 mt-1 truncate">
               {filterPeriod === 'lifetime'
-                ? 'All-time processed volume'
-                : `Processed volume in ${activePeriodName}`}
+                ? 'All-time gross sales volume'
+                : `Gross sales in ${activePeriodName}`}
             </p>
           </div>
         </div>
 
-        {/* Total Orders */}
-        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-zinc-700">
+        {/* 2. Total Product Cost */}
+        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-amber-500/40 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Total Orders</span>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-              <ShoppingBag className="w-5 h-5" />
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Product / Stock Cost</span>
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+              <DollarSign className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-3">
-            <span className="text-2xl font-black text-white">{filteredOrders.length}</span>
+            <span className="text-2xl font-black text-amber-400">
+              Rs {totalCostPKR.toLocaleString()}
+            </span>
             <p className="text-[11px] text-zinc-500 mt-1 truncate">
               {filterPeriod === 'lifetime'
-                ? 'All-time customer orders'
-                : `Orders placed in ${activePeriodName}`}
+                ? 'Supplier/stock expenses (lifetime)'
+                : `Supplier costs in ${activePeriodName}`}
             </p>
+          </div>
+        </div>
+
+        {/* 3. Net Profit */}
+        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-emerald-500/50 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Net Profit</span>
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+              <Sparkles className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-black ${netProfitPKR >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                Rs {netProfitPKR.toLocaleString()}
+              </span>
+              {totalRevenuePKR > 0 && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                    profitMarginPercent >= 0
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'bg-red-500/20 text-red-300'
+                  }`}
+                >
+                  {profitMarginPercent}% margin
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-1 truncate">
+              Gross sales minus supplier costs
+            </p>
+          </div>
+        </div>
+
+        {/* 4. Vendor Cost / Payables */}
+        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-purple-500/40 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Vendor Cost / Payables</span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
+              <Wallet className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-purple-400">
+                Rs {vendorStats.unpaidTotal.toLocaleString()}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
+                Unpaid
+              </span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[11px]">
+              <span className="text-zinc-500">
+                Paid: <strong className="text-zinc-300">Rs {vendorStats.paidTotal.toLocaleString()}</strong>
+              </span>
+              <Link
+                href="/admin/finances"
+                className="text-purple-400 hover:text-purple-300 font-semibold underline text-[11px]"
+              >
+                Manage &rarr;
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= SECONDARY OPERATIONS ROW ================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Orders */}
+        <div className="p-4 rounded-xl bg-[#0C0C0E]/80 border border-[#222228] flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Total Orders</span>
+            <div className="text-xl font-black text-white mt-0.5">{filteredOrders.length}</div>
+            <p className="text-[10px] text-zinc-500 truncate">In {activePeriodName}</p>
+          </div>
+          <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+            <ShoppingBag className="w-4 h-4" />
           </div>
         </div>
 
         {/* Pending Orders */}
-        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-zinc-700">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Pending Orders</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-              <Clock className="w-5 h-5" />
+        <div className="p-4 rounded-xl bg-[#0C0C0E]/80 border border-[#222228] flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Pending Orders</span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xl font-black text-amber-400">{pendingOrders.length}</span>
+              {pendingOrders.length > 0 && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                  Action Required
+                </span>
+              )}
             </div>
+            <p className="text-[10px] text-zinc-500 truncate">Awaiting verification</p>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-400">{pendingOrders.length}</span>
-            {pendingOrders.length > 0 && (
-              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold animate-pulse">
-                Needs Review
-              </span>
-            )}
+          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
+            <Clock className="w-4 h-4" />
           </div>
-          <p className="text-[11px] text-zinc-500 mt-1 truncate">
-            {filterPeriod === 'lifetime'
-              ? 'Awaiting verification / dispatch'
-              : `Pending in ${activePeriodName}`}
-          </p>
         </div>
 
-        {/* Active Products */}
-        <div className="p-5 rounded-2xl bg-[#0C0C0E] border border-[#222228] relative overflow-hidden transition hover:border-zinc-700">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Catalog Products</span>
-            <div className="p-2 rounded-xl bg-[#FF5500]/10 text-[#FF5500]">
-              <Package className="w-5 h-5" />
-            </div>
+        {/* Catalog Products */}
+        <div className="p-4 rounded-xl bg-[#0C0C0E]/80 border border-[#222228] flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Catalog Stock</span>
+            <div className="text-xl font-black text-white mt-0.5">{products.length} Products</div>
+            <p className="text-[10px] text-zinc-500 truncate">
+              {inStockProducts.length} in stock &bull; {soldOutProducts.length} sold out
+            </p>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-white">{products.length}</span>
-            <span className="text-xs text-zinc-400">
-              ({inStockProducts.length} In Stock, {soldOutProducts.length} Sold Out)
-            </span>
+          <div className="p-2.5 rounded-xl bg-[#FF5500]/10 text-[#FF5500]">
+            <Package className="w-4 h-4" />
           </div>
-          <p className="text-[11px] text-zinc-500 mt-1">Digital tools listed in store</p>
         </div>
+
+        {/* Finances Hub Link Card */}
+        <Link
+          href="/admin/finances"
+          className="p-4 rounded-xl bg-gradient-to-r from-purple-950/30 to-[#121218] border border-purple-900/40 hover:border-purple-500/50 transition flex items-center justify-between group cursor-pointer"
+        >
+          <div>
+            <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1">
+              <Wallet className="w-3 h-3" />
+              <span>Finances & Profit Hub</span>
+            </span>
+            <div className="text-xs font-bold text-white mt-1 group-hover:text-purple-300 transition">
+              Manage Costs & Vendors &rarr;
+            </div>
+            <p className="text-[10px] text-zinc-400 mt-0.5">Input costs, vendors & payouts</p>
+          </div>
+          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300 group-hover:translate-x-1 transition-transform">
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </Link>
       </div>
 
       {/* ================= RECENT CUSTOMER ORDERS TABLE ================= */}
@@ -437,10 +572,18 @@ export default function AdminDashboardPage() {
             )}
 
             <Link
+              href="/admin/finances"
+              className="text-xs font-bold text-purple-400 hover:underline flex items-center gap-1"
+            >
+              <span>Edit Costs in Finances</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+
+            <Link
               href="/admin/orders"
               className="text-xs font-bold text-[#FF5500] hover:underline flex items-center gap-1"
             >
-              <span>Manage in Orders Tab</span>
+              <span>Orders Tab</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -473,7 +616,9 @@ export default function AdminDashboardPage() {
                   <th className="py-3 px-4">Customer</th>
                   <th className="py-3 px-4">WhatsApp</th>
                   <th className="py-3 px-4">Items</th>
-                  <th className="py-3 px-4">Total</th>
+                  <th className="py-3 px-4">Sale (PKR)</th>
+                  <th className="py-3 px-4">Cost</th>
+                  <th className="py-3 px-4">Profit</th>
                   <th className="py-3 px-4">Payment</th>
                   <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4 rounded-r-xl">Status</th>
@@ -482,19 +627,41 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-[#1C1C22]">
                 {filteredOrders.slice(0, 10).map((o) => {
                   const d = o.createdAt ? new Date(o.createdAt) : null;
-                  const formattedDate = d && !isNaN(d.getTime())
-                    ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : 'N/A';
+                  const formattedDate =
+                    d && !isNaN(d.getTime())
+                      ? d.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : 'N/A';
+
+                  const hasCost = o.costPKR !== undefined && o.costPKR > 0;
+                  const profit = hasCost ? (o.profitPKR ?? (o.totalPKR - (o.costPKR || 0))) : null;
 
                   return (
                     <tr key={o.id} className="hover:bg-[#141418] transition">
                       <td className="py-3 px-4 font-mono font-bold text-white">{o.id}</td>
                       <td className="py-3 px-4 font-medium text-white">{o.customerName}</td>
                       <td className="py-3 px-4 text-emerald-400 font-mono">{o.customerWhatsApp}</td>
-                      <td className="py-3 px-4 text-zinc-400 max-w-[180px] truncate">
+                      <td className="py-3 px-4 text-zinc-400 max-w-[160px] truncate">
                         {o.items.map((i) => `${i.title} (x${i.quantity})`).join(', ')}
                       </td>
-                      <td className="py-3 px-4 font-bold text-white">Rs {o.totalPKR.toLocaleString()}</td>
+                      <td className="py-3 px-4 font-bold text-white">
+                        Rs {o.totalPKR.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-amber-400">
+                        {hasCost ? `Rs ${o.costPKR!.toLocaleString()}` : <span className="text-zinc-600">-</span>}
+                      </td>
+                      <td className="py-3 px-4 font-bold">
+                        {profit !== null ? (
+                          <span className={profit >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                            Rs {profit.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-600">-</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 uppercase text-zinc-400 font-semibold">{o.paymentMethod}</td>
                       <td className="py-3 px-4 text-zinc-400 text-[11px] whitespace-nowrap">{formattedDate}</td>
                       <td className="py-3 px-4">
@@ -522,7 +689,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Shortcuts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-[#08080A] border border-[#222228] space-y-2">
           <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
             <Package className="w-4 h-4 text-[#FF5500]" />
@@ -535,7 +702,7 @@ export default function AdminDashboardPage() {
             href="/admin/products"
             className="inline-block text-xs font-bold text-[#FF5500] hover:underline pt-1"
           >
-            Go to Products →
+            Go to Products &rarr;
           </Link>
         </div>
 
@@ -551,7 +718,23 @@ export default function AdminDashboardPage() {
             href="/admin/orders"
             className="inline-block text-xs font-bold text-blue-400 hover:underline pt-1"
           >
-            Review Orders →
+            Review Orders &rarr;
+          </Link>
+        </div>
+
+        <div className="p-4 rounded-xl bg-[#08080A] border border-[#222228] space-y-2">
+          <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+            <Wallet className="w-4 h-4 text-purple-400" />
+            <span>Finances & Profit</span>
+          </h4>
+          <p className="text-[11px] text-zinc-400">
+            Input cost per order, track auto net profit, assign vendor names, and manage vendor payables.
+          </p>
+          <Link
+            href="/admin/finances"
+            className="inline-block text-xs font-bold text-purple-400 hover:underline pt-1"
+          >
+            Open Finances Tab &rarr;
           </Link>
         </div>
 
@@ -567,7 +750,7 @@ export default function AdminDashboardPage() {
             href="/admin/settings"
             className="inline-block text-xs font-bold text-emerald-400 hover:underline pt-1"
           >
-            Settings & Accounts →
+            Settings & Accounts &rarr;
           </Link>
         </div>
       </div>

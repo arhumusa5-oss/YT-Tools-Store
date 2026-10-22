@@ -50,6 +50,13 @@ export interface Order {
   isDirectInvoice?: boolean;
   paymentStatus?: 'unpaid' | 'paid';
   createdAt: string;
+
+  // Order Financial Accounting Fields
+  costPKR?: number; // Cost of goods / supplier cost
+  profitPKR?: number; // Net profit (totalPKR - costPKR)
+  vendorName?: string; // Supplier / Vendor name
+  vendorPaymentStatus?: 'paid' | 'unpaid'; // Whether admin paid the vendor
+  vendorNotes?: string;
 }
 
 export interface Review {
