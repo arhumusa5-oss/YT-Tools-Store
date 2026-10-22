@@ -66,13 +66,29 @@ interface DatabaseSchema {
 }
 
 // Check if running with Cloud Database (e.g. on Vercel)
-const DATABASE_URL =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.STORAGE_URL ||
-  process.env.STORAGE_DATABASE_URL ||
-  process.env.STORAGE_POSTGRES_URL ||
-  process.env.NEON_DATABASE_URL;
+function findDatabaseUrl(): string | undefined {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  if (process.env.STORAGE_URL) return process.env.STORAGE_URL;
+  if (process.env.STORAGE_DATABASE_URL) return process.env.STORAGE_DATABASE_URL;
+  if (process.env.STORAGE_POSTGRES_URL) return process.env.STORAGE_POSTGRES_URL;
+  if (process.env.NEON_DATABASE_URL) return process.env.NEON_DATABASE_URL;
+  if (process.env.NEON2_DATABASE_URL) return process.env.NEON2_DATABASE_URL;
+  if (process.env.NEON2_URL) return process.env.NEON2_URL;
+
+  // Search dynamically for any postgres connection string injected by Vercel / Neon
+  for (const [key, value] of Object.entries(process.env)) {
+    if (
+      typeof value === 'string' &&
+      (value.startsWith('postgres://') || value.startsWith('postgresql://'))
+    ) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+const DATABASE_URL = findDatabaseUrl();
 let sql: NeonQueryFunction<false, false> | null = null;
 let cloudTableInitialized = false;
 
