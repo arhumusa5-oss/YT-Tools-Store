@@ -604,14 +604,17 @@ export async function sendCustomerOrderStatusNotification(
   }
 }
 
+export type ReminderTemplateType = 'renewal' | 'checkin' | 'yt_journey' | 'restock';
+
 export interface RenewalReminderPayload {
   orderId: string;
   customerName?: string;
   customerEmail: string;
   productTitle: string;
-  expiryDate: string; // YYYY-MM-DD
+  expiryDate?: string; // YYYY-MM-DD
   daysRemaining?: number;
   renewalNotes?: string;
+  templateType?: ReminderTemplateType;
 }
 
 export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) {
@@ -634,49 +637,243 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
     const trackingUrl = `${appUrl}/track-order?id=${encodeURIComponent(payload.orderId)}`;
 
     const supportPhoneRaw = (settings.whatsappNumber || '+92 3702260919').replace(/\D/g, '');
-    const renewalWhatsAppMsg = encodeURIComponent(
-      `Hello YT Tools Store, I would like to renew my subscription for "${payload.productTitle}" (Order #${payload.orderId}). Please guide me with payment details.`
-    );
-    const renewWhatsAppUrl = `https://wa.me/${supportPhoneRaw}?text=${renewalWhatsAppMsg}`;
+    const templateType = payload.templateType || 'renewal';
 
-    // Format expiry date
-    let expiryFormatted = payload.expiryDate;
-    try {
-      expiryFormatted = new Date(payload.expiryDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      // keep raw string
+    // Format expiry date if present
+    let expiryFormatted = payload.expiryDate || '';
+    if (payload.expiryDate) {
+      try {
+        expiryFormatted = new Date(payload.expiryDate).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        });
+      } catch {
+        // keep raw string
+      }
     }
 
-    // Urgency text and badge styling
-    const nowTime = new Date().setHours(0, 0, 0, 0);
-    const expTime = new Date(payload.expiryDate).setHours(0, 0, 0, 0);
-    const days =
-      payload.daysRemaining !== undefined
-        ? payload.daysRemaining
-        : Math.ceil((expTime - nowTime) / (1000 * 60 * 60 * 24));
+    // Common variables
+    const customerName = payload.customerName || 'Valued Creator';
+    let subject = '';
+    let topSubtitle = 'Official Automated Customer Notification';
+    let cardHtml = '';
+    let bodyIntroHtml = '';
+    let whatsappActionUrl = '';
+    let whatsappButtonText = '💬 Chat with Us on WhatsApp →';
+    let valueBoxHtml = '';
 
-    let urgencyHeadline = `Subscription Expiring in ${days} Day${days === 1 ? '' : 's'}`;
-    let urgencyBadgeBg = '#fef3c7';
-    let urgencyBadgeColor = '#92400e';
-    let urgencyBadgeBorder = '#fde68a';
-
-    if (days < 0) {
-      urgencyHeadline = `Subscription Expired (${Math.abs(days)} days ago)`;
-      urgencyBadgeBg = '#fee2e2';
-      urgencyBadgeColor = '#991b1b';
-      urgencyBadgeBorder = '#fca5a5';
-    } else if (days === 0) {
-      urgencyHeadline = 'Subscription Expires Today!';
-      urgencyBadgeBg = '#fee2e2';
-      urgencyBadgeColor = '#b91c1c';
-      urgencyBadgeBorder = '#fca5a5';
+    // Calculate urgency for renewal
+    let days = 0;
+    if (payload.expiryDate) {
+      const nowTime = new Date().setHours(0, 0, 0, 0);
+      const expTime = new Date(payload.expiryDate).setHours(0, 0, 0, 0);
+      days =
+        payload.daysRemaining !== undefined
+          ? payload.daysRemaining
+          : Math.ceil((expTime - nowTime) / (1000 * 60 * 60 * 24));
     }
 
-    const subject = `⏰ [Action Required] Renewal Notice for ${payload.productTitle} (Order #${payload.orderId}) - YT Tools Store`;
+    if (templateType === 'checkin') {
+      // ================= TEMPLATE 2: FRIENDLY HAAL CHAAL & SATISFACTION =================
+      subject = `👋 Friendly Check-in: How is everything going with your ${payload.productTitle}? - YT Tools Store`;
+      topSubtitle = 'Official Customer Care & Experience Follow-Up';
+      whatsappButtonText = '💬 Reply on WhatsApp & Share Feedback →';
+      const waMsg = encodeURIComponent(
+        `Hello YT Tools Store! Replying to your check-in about my order #${payload.orderId} (${payload.productTitle}). Everything is going...`
+      );
+      whatsappActionUrl = `https://wa.me/${supportPhoneRaw}?text=${waMsg}`;
+
+      cardHtml = `
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 18px 20px; text-align: center; margin-bottom: 24px;">
+          <span style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #0369a1; margin-bottom: 4px;">
+            🤝 VIP Customer Care &amp; Satisfaction Check-in
+          </span>
+          <div style="font-size: 19px; font-weight: 900; color: #0c4a6e; margin-bottom: 6px;">
+            How is your experience so far?
+          </div>
+          <div style="font-size: 13px; color: #475569;">
+            Tool: <strong style="color: #0f172a;">${payload.productTitle}</strong> &bull; Order ID: <strong style="color: #0f172a;">#${payload.orderId}</strong>
+          </div>
+        </div>
+      `;
+
+      bodyIntroHtml = `
+        <p style="font-size: 15px; margin: 0 0 16px 0;">
+          Dear <strong>${customerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 18px 0;">
+          We hope you are doing great! We wanted to take a quick moment to check in with you and see how your experience with <strong>${payload.productTitle}</strong> has been so far.
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 18px 0;">
+          At <strong>YT Tools Store</strong>, our relationship does not end once an order is delivered. We want to make 100% sure that:
+        </p>
+        <ul style="margin: 0 0 20px 0; padding-left: 20px; font-size: 13px; color: #334155; line-height: 1.7;">
+          <li>✓ All your login credentials and features are operating seamlessly without any hitch.</li>
+          <li>✓ You don't have any pending questions about device limits or guidelines.</li>
+          <li>✓ You are getting maximum productivity out of your purchase.</li>
+        </ul>
+        <p style="font-size: 13px; color: #475569; margin: 0 0 20px 0;">
+          If you ever face any technical issue, need a quick guideline, or want recommendations for other digital tools, we are always here to help you.
+        </p>
+      `;
+
+      valueBoxHtml = `
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; font-size: 12px; color: #475569; line-height: 1.6;">
+          <strong>Dedicated Support Promise:</strong><br/>
+          Whenever you need quick assistance or device guidance, our support team is available on WhatsApp daily. Just drop us a text anytime!
+        </div>
+      `;
+    } else if (templateType === 'yt_journey') {
+      // ================= TEMPLATE 3: YOUTUBE AUTOMATION & CREATOR JOURNEY =================
+      subject = `🚀 How is your YouTube Automation & Creator Journey going? - YT Tools Store`;
+      topSubtitle = 'Creator Scaling & Channel Growth Support';
+      whatsappButtonText = '🚀 Discuss YouTube Growth on WhatsApp →';
+      const waMsg = encodeURIComponent(
+        `Hello YT Tools Store! I wanted to discuss scaling my YouTube automation journey & creator tools (Order #${payload.orderId} - ${payload.productTitle})...`
+      );
+      whatsappActionUrl = `https://wa.me/${supportPhoneRaw}?text=${waMsg}`;
+
+      cardHtml = `
+        <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 18px 20px; text-align: center; margin-bottom: 24px;">
+          <span style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #c2410c; margin-bottom: 4px;">
+            🎬 YouTube Automation &amp; Creator Milestone
+          </span>
+          <div style="font-size: 19px; font-weight: 900; color: #7c2d12; margin-bottom: 6px;">
+            Scaling Your Channel &amp; Content Production
+          </div>
+          <div style="font-size: 13px; color: #78350f;">
+            Active Tool: <strong style="color: #451a03;">${payload.productTitle}</strong> &bull; Order ID: <strong style="color: #451a03;">#${payload.orderId}</strong>
+          </div>
+        </div>
+      `;
+
+      bodyIntroHtml = `
+        <p style="font-size: 15px; margin: 0 0 16px 0;">
+          Dear <strong>${customerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 18px 0;">
+          We noticed you recently upgraded your creative workflow with <strong>${payload.productTitle}</strong>. We love watching creators, editors, and automation channel owners scale, so we wanted to reach out and ask: <strong>How is your YouTube Automation &amp; Content Creation journey progressing?</strong>
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 18px 0;">
+          Whether you are running faceless automation channels, producing viral Shorts/Reels, or managing client media, consistency and the right digital stack are what unlock real growth:
+        </p>
+        <div style="background: #fdf2f8; border-left: 4px solid #db2777; border-radius: 6px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: #831843; line-height: 1.6;">
+          <strong>Creator Checklist:</strong><br/>
+          &bull; <strong>Editing Speed:</strong> Are you able to batch and render videos faster with your pro editing tools?<br/>
+          &bull; <strong>High-CTR Thumbnails:</strong> Are your visuals capturing 8%+ click-through rates?<br/>
+          &bull; <strong>Monetization Goals:</strong> Are you scaling towards 1,000 Subscribers &amp; 4,000 Watch Hours?
+        </div>
+        <p style="font-size: 13px; color: #475569; margin: 0 0 20px 0;">
+          If you ever hit a roadblock in video production, need recommendations on companion tools (like combining CapCut Pro with Canva Pro for rapid Short-form creation), or want exclusive creator bundle rates, let us know!
+        </p>
+      `;
+
+      valueBoxHtml = `
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; font-size: 12px; color: #475569; line-height: 1.6;">
+          <strong>Creator Tip:</strong><br/>
+          The highest-earning YouTube automation channels batch their video creation: script 5 videos in one sitting, edit them in CapCut Pro, and schedule uploads consistently every week.
+        </div>
+      `;
+    } else if (templateType === 'restock') {
+      // ================= TEMPLATE 4: VIP RESTOCK & FRESH BATCH ALERT =================
+      subject = `📦 [VIP Restock Alert] Fresh Batch & Exclusive Volume Discounts - YT Tools Store`;
+      topSubtitle = 'Priority VIP Restock Notification';
+      whatsappButtonText = '📦 Claim VIP Restock on WhatsApp →';
+      const waMsg = encodeURIComponent(
+        `Hello YT Tools Store! I saw the VIP restock alert for ${payload.productTitle} (Order #${payload.orderId}). What volume discounts are available today?`
+      );
+      whatsappActionUrl = `https://wa.me/${supportPhoneRaw}?text=${waMsg}`;
+
+      cardHtml = `
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 18px 20px; text-align: center; margin-bottom: 24px;">
+          <span style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #047857; margin-bottom: 4px;">
+            ⚡ Fresh Premium Batch Available
+          </span>
+          <div style="font-size: 19px; font-weight: 900; color: #064e3b; margin-bottom: 6px;">
+            Exclusive VIP Restock Notification
+          </div>
+          <div style="font-size: 13px; color: #065f46;">
+            Registered Asset: <strong style="color: #022c22;">${payload.productTitle}</strong> &bull; Order ID: <strong style="color: #022c22;">#${payload.orderId}</strong>
+          </div>
+        </div>
+      `;
+
+      bodyIntroHtml = `
+        <p style="font-size: 15px; margin: 0 0 16px 0;">
+          Dear <strong>${customerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 18px 0;">
+          Because you previously purchased <strong>${payload.productTitle}</strong> from YT Tools Store, we wanted to give you priority access: <strong>a fresh, high-quality batch has just arrived in stock.</strong>
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 18px 0;">
+          Every item in this new shipment has been freshly verified with zero flags and instant delivery. If you are expanding your campaigns, managing multiple accounts, or looking to stock up on backup digital assets, we have reserved exclusive volume discounts for existing clients.
+        </p>
+      `;
+
+      valueBoxHtml = `
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; font-size: 12px; color: #475569; line-height: 1.6;">
+          <strong>Volume Advantage:</strong><br/>
+          Existing clients save up to 15% on bulk packages of 5+ units. Contact our team to generate a private bundle quote.
+        </div>
+      `;
+    } else {
+      // ================= TEMPLATE 1: SUBSCRIPTION RENEWAL (DEFAULT) =================
+      subject = `⏰ [Action Required] Renewal Notice for ${payload.productTitle} (Order #${payload.orderId}) - YT Tools Store`;
+      topSubtitle = 'Official Automated Subscription Notification';
+      whatsappButtonText = '💬 Renew Instantly via WhatsApp →';
+      const waMsg = encodeURIComponent(
+        `Hello YT Tools Store, I would like to renew my subscription for "${payload.productTitle}" (Order #${payload.orderId}). Please guide me with payment details.`
+      );
+      whatsappActionUrl = `https://wa.me/${supportPhoneRaw}?text=${waMsg}`;
+
+      let urgencyHeadline = `Subscription Expiring in ${days} Day${days === 1 ? '' : 's'}`;
+      let urgencyBadgeBg = '#fef3c7';
+      let urgencyBadgeColor = '#92400e';
+      let urgencyBadgeBorder = '#fde68a';
+
+      if (days < 0) {
+        urgencyHeadline = `Subscription Expired (${Math.abs(days)} days ago)`;
+        urgencyBadgeBg = '#fee2e2';
+        urgencyBadgeColor = '#991b1b';
+        urgencyBadgeBorder = '#fca5a5';
+      } else if (days === 0) {
+        urgencyHeadline = 'Subscription Expires Today!';
+        urgencyBadgeBg = '#fee2e2';
+        urgencyBadgeColor = '#b91c1c';
+        urgencyBadgeBorder = '#fca5a5';
+      }
+
+      cardHtml = `
+        <div style="background: ${urgencyBadgeBg}; border: 1px solid ${urgencyBadgeBorder}; border-radius: 12px; padding: 18px 20px; text-align: center; margin-bottom: 24px;">
+          <span style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: ${urgencyBadgeColor}; margin-bottom: 4px;">
+            Subscription Status Alert
+          </span>
+          <div style="font-size: 20px; font-weight: 900; color: ${urgencyBadgeColor}; margin-bottom: 6px;">
+            ${urgencyHeadline}
+          </div>
+          <div style="font-size: 13px; color: #4b5563;">
+            Renewal Due Date: <strong style="color: #111827;">${expiryFormatted || 'Due Soon'}</strong> &bull; Order ID: <strong style="color: #111827;">#${payload.orderId}</strong>
+          </div>
+        </div>
+      `;
+
+      bodyIntroHtml = `
+        <p style="font-size: 15px; margin: 0 0 16px 0;">
+          Dear <strong>${customerName}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 22px 0;">
+          This is a friendly reminder that your subscription access for <strong>${payload.productTitle}</strong> is scheduled to reach its renewal date soon. To ensure uninterrupted access and avoid service disconnection, please renew your access before the due date.
+        </p>
+      `;
+
+      valueBoxHtml = `
+        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px; font-size: 12px; color: #6b7280; line-height: 1.6;">
+          <strong>Why Renew in Advance?</strong><br/>
+          Renewing before expiry ensures your ongoing projects, profiles, and settings remain untouched without needing fresh credentials or re-login setups.
+        </div>
+      `;
+    }
 
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; color: #111827;">
@@ -686,31 +883,14 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
             <span style="color: #FF5500;">YT TOOLS</span> STORE
           </h1>
           <p style="color: #a1a1aa; font-size: 13px; margin: 0; font-weight: 500;">
-            Official Automated Subscription Notification
+            ${topSubtitle}
           </p>
         </div>
 
         <!-- Body Content -->
         <div style="padding: 28px 30px;">
-          <p style="font-size: 15px; margin: 0 0 16px 0;">
-            Dear <strong>${payload.customerName || 'Valued Customer'}</strong>,
-          </p>
-          <p style="font-size: 14px; line-height: 1.6; color: #374151; margin: 0 0 22px 0;">
-            This is a friendly reminder that your subscription access for <strong>${payload.productTitle}</strong> is scheduled to reach its renewal date soon. To ensure uninterrupted access and avoid service disconnection, please renew your access before the due date.
-          </p>
-
-          <!-- Expiry Alert Card -->
-          <div style="background: ${urgencyBadgeBg}; border: 1px solid ${urgencyBadgeBorder}; border-radius: 12px; padding: 18px 20px; text-align: center; margin-bottom: 24px;">
-            <span style="display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: ${urgencyBadgeColor}; margin-bottom: 4px;">
-              Subscription Status Alert
-            </span>
-            <div style="font-size: 20px; font-weight: 900; color: ${urgencyBadgeColor}; margin-bottom: 6px;">
-              ${urgencyHeadline}
-            </div>
-            <div style="font-size: 13px; color: #4b5563;">
-              Renewal Due Date: <strong style="color: #111827;">${expiryFormatted}</strong> &bull; Order ID: <strong style="color: #111827;">#${payload.orderId}</strong>
-            </div>
-          </div>
+          ${bodyIntroHtml}
+          ${cardHtml}
 
           <!-- Custom Admin Note (if any) -->
           ${
@@ -730,31 +910,28 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
 
           <!-- Action Buttons -->
           <div style="text-align: center; margin: 26px 0 22px 0;">
-            <a href="${renewWhatsAppUrl}" style="background: #25D366; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 30px; font-weight: bold; font-size: 15px; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
-              💬 Renew Instantly via WhatsApp →
+            <a href="${whatsappActionUrl}" style="background: #25D366; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 30px; font-weight: bold; font-size: 15px; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);">
+              ${whatsappButtonText}
             </a>
             <br />
             <a href="${trackingUrl}" style="color: #FF5500; font-size: 13px; text-decoration: underline; font-weight: 600; display: inline-block;">
-              View Order Details & Status Online
+              View Order Details &amp; Status Online
             </a>
           </div>
 
-          <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px; font-size: 12px; color: #6b7280; line-height: 1.6;">
-            <strong>Why Renew in Advance?</strong><br/>
-            Renewing before expiry ensures your ongoing projects, profiles, and settings remain untouched without needing fresh credentials or re-login setups.
-          </div>
+          ${valueBoxHtml}
         </div>
 
         <!-- Footer / Automated Disclaimer -->
         <div style="background: #f9fafb; border-top: 1px solid #f3f4f6; padding: 20px 24px; text-align: center; font-size: 11px; color: #6b7280; line-height: 1.6;">
           <p style="margin: 0 0 8px 0; font-weight: 700; color: #374151;">
-            🔒 YT TOOLS STORE &bull; Premium Digital Tools & Creative Subscriptions
+            🔒 YT TOOLS STORE &bull; Premium Digital Tools &amp; Creative Subscriptions
           </p>
           <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 11px;">
-            <em>This is an automated notification from YT Tools Store.</em> You are receiving this because an active digital subscription order (#${payload.orderId}) is registered to this email address (${payload.customerEmail}).
+            <em>This is an automated notification from YT Tools Store.</em> You are receiving this because an active digital tool order (#${payload.orderId}) is registered to this email address (${payload.customerEmail}).
           </p>
           <p style="margin: 0; color: #9ca3af;">
-            If you have already renewed this tool, please disregard this notice. For instant support, reply directly to this email or reach us on WhatsApp at ${settings.whatsappNumber || '+92 3702260919'}.
+            For instant assistance, reply directly to this email or reach us on WhatsApp at ${settings.whatsappNumber || '+92 3702260919'}.
           </p>
         </div>
       </div>
@@ -776,8 +953,8 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
         }),
       });
       if (res.ok) {
-        console.log(`[EmailAlert] Renewal reminder email sent via Resend to ${payload.customerEmail}`);
-        return { success: true, provider: 'resend' };
+        console.log(`[EmailAlert] ${templateType} email sent via Resend to ${payload.customerEmail}`);
+        return { success: true, provider: 'resend', templateType };
       }
     }
 
@@ -793,19 +970,20 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
         subject,
         html,
       });
-      console.log(`[EmailAlert] Renewal reminder sent via Gmail SMTP to ${payload.customerEmail} (id: ${info.messageId})`);
-      return { success: true, provider: 'gmail_smtp', messageId: info.messageId };
+      console.log(`[EmailAlert] ${templateType} email sent via Gmail SMTP to ${payload.customerEmail} (id: ${info.messageId})`);
+      return { success: true, provider: 'gmail_smtp', messageId: info.messageId, templateType };
     }
 
     // Fallback if credentials not configured yet
-    console.info(`[EmailAlert] Renewal email simulated for ${payload.customerEmail} (Order #${payload.orderId})`);
+    console.info(`[EmailAlert] ${templateType} email simulated for ${payload.customerEmail} (Order #${payload.orderId})`);
     return {
       success: true,
       mocked: true,
-      message: 'Email credentials not configured; renewal email logged to console.',
+      templateType,
+      message: `${templateType} email logged to console (SMTP credentials pending).`,
     };
   } catch (err: unknown) {
-    console.error('Error sending renewal reminder email:', err);
+    console.error('Error sending reminder email:', err);
     return { success: false, error: String(err) };
   }
 }

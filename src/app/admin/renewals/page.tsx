@@ -38,6 +38,7 @@ export default function AdminRenewalsPage() {
   const [editableEmailMap, setEditableEmailMap] = useState<Record<string, string>>({});
   const [editableDateMap, setEditableDateMap] = useState<Record<string, string>>({});
   const [editableNotesMap, setEditableNotesMap] = useState<Record<string, string>>({});
+  const [templateTypeMap, setTemplateTypeMap] = useState<Record<string, 'renewal' | 'checkin' | 'yt_journey' | 'restock'>>({});
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
 
   // Action status
@@ -143,11 +144,12 @@ export default function AdminRenewalsPage() {
     }
   };
 
-  // Send 1-Click Renewal Email
+  // Send 1-Click Reminder Email
   const handleSendRenewalEmail = async (order: Order) => {
     const email = editableEmailMap[order.id]?.trim() || order.customerEmail?.trim();
     const expiry = editableDateMap[order.id]?.trim() || order.subscriptionExpiryDate?.trim();
     const notes = editableNotesMap[order.id]?.trim() || order.renewalNotes?.trim();
+    const selectedTemplate = templateTypeMap[order.id] || 'renewal';
 
     if (!email || !email.includes('@')) {
       showFeedback(order.id, 'error', 'Please enter a valid customer email first.');
@@ -155,8 +157,8 @@ export default function AdminRenewalsPage() {
       return;
     }
 
-    if (!expiry) {
-      showFeedback(order.id, 'error', 'Please pick an expiry date before sending reminder.');
+    if (!expiry && selectedTemplate === 'renewal') {
+      showFeedback(order.id, 'error', 'Please pick an expiry date before sending renewal reminder.');
       return;
     }
 
@@ -169,15 +171,16 @@ export default function AdminRenewalsPage() {
           orderId: order.id,
           customerEmail: email,
           customerName: order.customerName,
-          productTitle: order.items?.[0]?.title || 'Digital Subscription',
-          expiryDate: expiry,
+          productTitle: order.items?.[0]?.title || 'Digital Tool Subscription',
+          expiryDate: expiry || undefined,
           renewalNotes: notes,
+          templateType: selectedTemplate,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        showFeedback(order.id, 'success', data.message || 'Renewal email sent!');
+        showFeedback(order.id, 'success', data.message || 'Email sent successfully!');
         const nowIso = new Date().toISOString();
         setOrders((prev) =>
           prev.map((o) =>
@@ -185,6 +188,7 @@ export default function AdminRenewalsPage() {
               ? {
                   ...o,
                   lastRenewalEmailSentAt: nowIso,
+                  lastRenewalEmailType: selectedTemplate,
                   customerEmail: email,
                   subscriptionExpiryDate: expiry,
                   renewalNotes: notes,
@@ -193,7 +197,7 @@ export default function AdminRenewalsPage() {
           )
         );
       } else {
-        showFeedback(order.id, 'error', data.error || 'Failed to send renewal email.');
+        showFeedback(order.id, 'error', data.error || 'Failed to send email.');
       }
     } catch (err) {
       showFeedback(order.id, 'error', 'Network error while sending email.');
@@ -808,7 +812,7 @@ export default function AdminRenewalsPage() {
                     </div>
                   </div>
 
-                  {/* Column 3 (4 cols): 1-Click Renewal Email & Actions */}
+                  {/* Column 3 (4 cols): Smart Reminder Templates & Dispatch */}
                   <div className="lg:col-span-4 space-y-3">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
@@ -817,21 +821,115 @@ export default function AdminRenewalsPage() {
                       </span>
                       {order.lastRenewalEmailSentAt && (
                         <span className="text-[10px] text-emerald-400 font-mono">
-                          Last Sent: {new Date(order.lastRenewalEmailSentAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          Last: {new Date(order.lastRenewalEmailSentAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {order.lastRenewalEmailType && (
+                            <span className="opacity-75 ml-1">
+                              ({order.lastRenewalEmailType === 'yt_journey'
+                                ? 'YT Journey'
+                                : order.lastRenewalEmailType === 'checkin'
+                                ? 'Haal Chaal'
+                                : order.lastRenewalEmailType === 'restock'
+                                ? 'Restock'
+                                : 'Renewal'})
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
 
                     <div className="bg-[#14141A] border border-[#202028] rounded-xl p-3.5 space-y-3">
-                      {/* Send Renewal Email Button */}
-                      <button
-                        onClick={() => handleSendRenewalEmail(order)}
-                        disabled={isSendingEmail || isSaving}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-[#FF5500] to-[#E04B00] hover:from-[#FF6611] hover:to-[#FF5500] text-white shadow-md shadow-[#FF5500]/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Send className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
-                        {isSendingEmail ? 'Sending Renewal Email...' : '📧 Send Renewal Email Now'}
-                      </button>
+                      {/* Reminder Template Selector */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                          <span>Select Email Template:</span>
+                          <span className="text-zinc-500 font-normal lowercase">click to switch</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            {
+                              id: 'renewal',
+                              label: '⏰ Expiry Notice',
+                              activeBg: 'bg-[#FF5500]/20 text-[#FF5500] border-[#FF5500]',
+                            },
+                            {
+                              id: 'checkin',
+                              label: '☕ Haal Chaal',
+                              activeBg: 'bg-blue-500/20 text-blue-400 border-blue-500',
+                            },
+                            {
+                              id: 'yt_journey',
+                              label: '🚀 YouTube Journey',
+                              activeBg: 'bg-amber-500/20 text-amber-300 border-amber-500',
+                            },
+                            {
+                              id: 'restock',
+                              label: '📦 VIP Restock',
+                              activeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500',
+                            },
+                          ].map((t) => {
+                            const isCurrent = (templateTypeMap[order.id] || 'renewal') === t.id;
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() =>
+                                  setTemplateTypeMap((prev) => ({
+                                    ...prev,
+                                    [order.id]: t.id as any,
+                                  }))
+                                }
+                                className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border transition text-left cursor-pointer truncate ${
+                                  isCurrent
+                                    ? t.activeBg
+                                    : 'bg-[#0E0E12] text-gray-400 border-[#262632] hover:text-white hover:border-gray-600'
+                                }`}
+                              >
+                                {t.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Subject preview */}
+                        <div className="text-[10px] text-zinc-400 bg-[#0A0A0E] px-2 py-1 rounded border border-[#1E1E26] truncate">
+                          <span className="text-zinc-500">Subject: </span>
+                          {(templateTypeMap[order.id] || 'renewal') === 'checkin'
+                            ? `👋 Friendly Check-in: How is everything going with your ${order.items?.[0]?.title || 'tool'}?`
+                            : (templateTypeMap[order.id] || 'renewal') === 'yt_journey'
+                            ? `🚀 How is your YouTube Automation & Creator Journey going?`
+                            : (templateTypeMap[order.id] || 'renewal') === 'restock'
+                            ? `📦 [VIP Restock Alert] Fresh Batch & Volume Discounts Available`
+                            : `⏰ Action Required: Renewal Notice for ${order.items?.[0]?.title || 'Tool'}`}
+                        </div>
+                      </div>
+
+                      {/* Send Reminder Email Button */}
+                      {(() => {
+                        const curTemplate = templateTypeMap[order.id] || 'renewal';
+                        let btnText = '⏰ Send Renewal Notice Email';
+                        let btnGradient = 'from-[#FF5500] to-[#E04B00] hover:from-[#FF6611] hover:to-[#FF5500] shadow-[#FF5500]/20';
+                        if (curTemplate === 'checkin') {
+                          btnText = '☕ Send Haal Chaal Check-in Email';
+                          btnGradient = 'from-[#0284c7] to-[#0369a1] hover:from-[#38bdf8] hover:to-[#0284c7] shadow-sky-500/20';
+                        } else if (curTemplate === 'yt_journey') {
+                          btnText = '🚀 Send YouTube Journey Email';
+                          btnGradient = 'from-[#ea580c] to-[#c2410c] hover:from-[#f97316] hover:to-[#ea580c] shadow-orange-500/20';
+                        } else if (curTemplate === 'restock') {
+                          btnText = '📦 Send VIP Restock Email';
+                          btnGradient = 'from-[#059669] to-[#047857] hover:from-[#10b981] hover:to-[#059669] shadow-emerald-500/20';
+                        }
+
+                        return (
+                          <button
+                            onClick={() => handleSendRenewalEmail(order)}
+                            disabled={isSendingEmail || isSaving}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r ${btnGradient} text-white shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            <Send className={`w-3.5 h-3.5 ${isSendingEmail ? 'animate-pulse' : ''}`} />
+                            {isSendingEmail ? 'Dispatching Email...' : btnText}
+                          </button>
+                        );
+                      })()}
 
                       {/* Mark Renewed (+30d) Button */}
                       <button
@@ -862,7 +960,7 @@ export default function AdminRenewalsPage() {
                       )}
 
                       <div className="text-[10px] text-gray-500 leading-relaxed border-t border-[#202028] pt-2">
-                        Emails contain official YT Tools Store branding, direct WhatsApp renewal CTA, and the automated notice disclaimer.
+                        Emails contain official YT Tools Store branding, direct WhatsApp reply CTA, and the automated notice disclaimer.
                       </div>
                     </div>
                   </div>

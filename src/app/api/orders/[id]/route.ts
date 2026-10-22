@@ -56,6 +56,7 @@ export async function PUT(
       renewalStatus,
       renewalNotes,
       lastRenewalEmailSentAt,
+      lastRenewalEmailType,
     } = body;
 
     const updates: Record<string, unknown> = {};
@@ -127,6 +128,9 @@ export async function PUT(
     }
     if (lastRenewalEmailSentAt !== undefined) {
       updates.lastRenewalEmailSentAt = String(lastRenewalEmailSentAt).trim();
+    }
+    if (lastRenewalEmailType !== undefined) {
+      updates.lastRenewalEmailType = String(lastRenewalEmailType).trim();
     }
 
     const updated = await db.updateOrder(id, updates);

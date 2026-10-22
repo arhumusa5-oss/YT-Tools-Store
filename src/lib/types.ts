@@ -64,6 +64,7 @@ export interface Order {
   renewalStatus?: 'active' | 'expiring_soon' | 'expired' | 'renewed';
   renewalNotes?: string;
   lastRenewalEmailSentAt?: string; // ISO date string when renewal reminder email was sent
+  lastRenewalEmailType?: 'renewal' | 'checkin' | 'yt_journey' | 'restock' | string;
 }
 
 export interface Review {
