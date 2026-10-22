@@ -15,6 +15,9 @@ import {
   Package,
   RefreshCw,
   Layers,
+  Check,
+  X,
+  Save,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
@@ -25,6 +28,53 @@ export default function AdminProductsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [bundleModalOpen, setBundleModalOpen] = useState(false);
+
+  // Quick Inline Price Editing
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [editPricePKR, setEditPricePKR] = useState<number>(0);
+  const [editOrigPricePKR, setEditOrigPricePKR] = useState<number>(0);
+  const [savingPriceId, setSavingPriceId] = useState<string | null>(null);
+
+  const startEditingPrice = (prod: Product) => {
+    setEditingPriceId(prod.id);
+    setEditPricePKR(prod.pricePKR);
+    setEditOrigPricePKR(prod.originalPricePKR || 0);
+  };
+
+  const handleSaveProductPrice = async (prodId: string) => {
+    try {
+      setSavingPriceId(prodId);
+      const res = await fetch(`/api/products/${prodId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pricePKR: Number(editPricePKR) || 0,
+          originalPricePKR: Number(editOrigPricePKR) || 0,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === prodId
+              ? {
+                  ...p,
+                  pricePKR: Number(editPricePKR) || 0,
+                  originalPricePKR: Number(editOrigPricePKR) || 0,
+                }
+              : p
+          )
+        );
+        setEditingPriceId(null);
+      } else {
+        alert(data.error || 'Failed to update price');
+      }
+    } catch (err) {
+      alert('Error updating price');
+    } finally {
+      setSavingPriceId(null);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -264,14 +314,70 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
 
-                    {/* Pricing */}
-                    <td className="py-3 px-4">
-                      <div className="font-extrabold text-white">
-                        Rs {prod.pricePKR.toLocaleString()}
-                      </div>
-                      {prod.originalPricePKR > prod.pricePKR && (
-                        <div className="text-[11px] text-zinc-500 line-through">
-                          Rs {prod.originalPricePKR.toLocaleString()}
+                    {/* Pricing with Quick Inline Edit */}
+                    <td className="py-3 px-4 min-w-[170px]">
+                      {editingPriceId === prod.id ? (
+                        <div className="space-y-1.5 bg-[#14141C] p-2 rounded-xl border border-[#FF5500]/40">
+                          <div>
+                            <label className="text-[10px] text-gray-400 block font-semibold">Sale Price (PKR):</label>
+                            <input
+                              type="number"
+                              value={editPricePKR}
+                              onChange={(e) => setEditPricePKR(Number(e.target.value))}
+                              className="w-full bg-black border border-gray-700 rounded px-2 py-1 text-xs text-white font-bold focus:outline-none focus:border-[#FF5500]"
+                              placeholder="Price"
+                              autoFocus
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-gray-400 block font-semibold">Original / Cut (PKR):</label>
+                            <input
+                              type="number"
+                              value={editOrigPricePKR}
+                              onChange={(e) => setEditOrigPricePKR(Number(e.target.value))}
+                              className="w-full bg-black border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-gray-500"
+                              placeholder="Original"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveProductPrice(prod.id)}
+                              disabled={savingPriceId === prod.id}
+                              className="flex-1 py-1 px-2 bg-[#FF5500] hover:bg-[#E04B00] text-white text-[10px] font-bold rounded flex items-center justify-center gap-1 transition cursor-pointer disabled:opacity-50"
+                            >
+                              <Save className="w-3 h-3" />
+                              <span>{savingPriceId === prod.id ? 'Saving...' : 'Save'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingPriceId(null)}
+                              className="py-1 px-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-[10px] font-bold rounded transition cursor-pointer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="group/price relative flex items-center justify-between">
+                          <div>
+                            <div className="font-extrabold text-white text-sm">
+                              Rs {prod.pricePKR.toLocaleString()}
+                            </div>
+                            {prod.originalPricePKR > prod.pricePKR && (
+                              <div className="text-[11px] text-zinc-500 line-through">
+                                Rs {prod.originalPricePKR.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => startEditingPrice(prod)}
+                            className="p-1 rounded bg-[#16161E] hover:bg-[#20202C] text-gray-400 hover:text-[#FF5500] border border-gray-700/60 opacity-70 group-hover/price:opacity-100 transition cursor-pointer ml-2"
+                            title="Quick Edit Product Price"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
                     </td>

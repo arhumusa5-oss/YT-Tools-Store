@@ -34,7 +34,14 @@ export async function PUT(
     const {
       status,
       adminNotes,
+      customerName,
       customerEmail,
+      customerWhatsApp,
+      createdAt,
+      items,
+      totalPKR,
+      totalUSD,
+      newOrderId,
       transactionId,
       paymentProofUrl,
       paymentMethod,
@@ -53,9 +60,31 @@ export async function PUT(
 
     const updates: Record<string, unknown> = {};
 
+    if (newOrderId !== undefined && String(newOrderId).trim()) {
+      updates.id = String(newOrderId).trim();
+    }
+    if (customerName !== undefined && String(customerName).trim()) {
+      updates.customerName = String(customerName).trim();
+    }
+    if (customerWhatsApp !== undefined && String(customerWhatsApp).trim()) {
+      updates.customerWhatsApp = String(customerWhatsApp).trim();
+    }
+    if (createdAt !== undefined && String(createdAt).trim()) {
+      updates.createdAt = String(createdAt).trim();
+    }
+    if (items !== undefined && Array.isArray(items)) {
+      updates.items = items;
+    }
+    if (totalPKR !== undefined) {
+      updates.totalPKR = Number(totalPKR) || 0;
+    }
+    if (totalUSD !== undefined) {
+      updates.totalUSD = Number(totalUSD) || 0;
+    }
+
     if (status !== undefined) updates.status = status;
     if (adminNotes !== undefined) updates.adminNotes = adminNotes;
-    if (customerEmail !== undefined && customerEmail.trim()) {
+    if (customerEmail !== undefined) {
       updates.customerEmail = customerEmail.trim();
     }
     if (transactionId !== undefined) updates.transactionId = transactionId.trim();

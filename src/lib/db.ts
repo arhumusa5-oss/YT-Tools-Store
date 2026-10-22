@@ -356,10 +356,10 @@ export const db = {
     return `#${currentNum}`;
   },
 
-  async createOrder(orderData: Omit<Order, 'id' | 'createdAt'> & { id?: string }): Promise<Order> {
+  async createOrder(orderData: Omit<Order, 'id' | 'createdAt'> & { id?: string; createdAt?: string }): Promise<Order> {
     const data = await getData();
     
-    let id = orderData.id;
+    let id = orderData.id ? String(orderData.id).trim() : '';
     if (!id) {
       // Sequential order number (e.g. starting at 2504 -> #2504, #2505...)
       const currentNum = typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
@@ -368,6 +368,9 @@ export const db = {
       id = `#${currentNum}`;
       data.settings.nextOrderNumber = currentNum + 1;
     } else {
+      if (!id.startsWith('#')) {
+        id = `#${id}`;
+      }
       const numMatch = id.match(/\d+/);
       if (numMatch) {
         const num = parseInt(numMatch[0], 10);
@@ -380,9 +383,10 @@ export const db = {
     const newOrder: Order = {
       ...orderData,
       id,
-      createdAt: new Date().toISOString(),
+      createdAt: orderData.createdAt || new Date().toISOString(),
     };
     data.orders.unshift(newOrder);
+    data.orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     await saveData(data);
     return newOrder;
   },
@@ -419,6 +423,16 @@ export const db = {
       ...data.orders[index],
       ...updates,
     };
+
+    if (updates.id && updates.id.trim()) {
+      const formattedId = updates.id.trim().startsWith('#') ? updates.id.trim() : `#${updates.id.trim()}`;
+      data.orders[index].id = formattedId;
+    }
+
+    if (updates.createdAt) {
+      data.orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
     await saveData(data);
     return data.orders[index];
   },

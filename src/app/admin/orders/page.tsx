@@ -30,6 +30,7 @@ import {
   Calendar,
   CalendarDays,
   Sparkles,
+  Edit,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import BundleLinkModal from '@/components/admin/BundleLinkModal';
@@ -95,6 +96,36 @@ export default function AdminOrdersPage() {
 
   // Expiry Date State per order
   const [expiryDateMap, setExpiryDateMap] = useState<Record<string, string>>({});
+
+  // Manual / Past Order & Order Edit Modal State
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [modalOrderId, setModalOrderId] = useState('');
+  const [modalOrderDate, setModalOrderDate] = useState('');
+  const [modalCustomerName, setModalCustomerName] = useState('');
+  const [modalCustomerWhatsApp, setModalCustomerWhatsApp] = useState('');
+  const [modalCustomerEmail, setModalCustomerEmail] = useState('');
+  const [modalOrderStatus, setModalOrderStatus] = useState<Order['status']>('completed');
+  const [modalPaymentStatus, setModalPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
+  const [modalPaymentMethod, setModalPaymentMethod] = useState<Order['paymentMethod']>('easypaisa');
+  const [modalTransactionId, setModalTransactionId] = useState('');
+  const [modalItems, setModalItems] = useState<
+    Array<{
+      productId: string;
+      title: string;
+      pricePKR: number;
+      priceUSD: number;
+      quantity: number;
+      image: string;
+    }>
+  >([]);
+  const [modalCostPKR, setModalCostPKR] = useState<number | ''>('');
+  const [modalVendorName, setModalVendorName] = useState('');
+  const [modalVendorPaymentStatus, setModalVendorPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
+  const [modalExpiryDate, setModalExpiryDate] = useState('');
+  const [modalNotes, setModalNotes] = useState('');
+  const [savingModalOrder, setSavingModalOrder] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   const fetchOrders = async (silent = false) => {
     try {
@@ -290,6 +321,228 @@ export default function AdminOrdersPage() {
       setInvoiceError((err as Error).message || 'Something went wrong.');
     } finally {
       setCreatingInvoice(false);
+    }
+  };
+
+  // ================= MANUAL / PAST ORDER & EDIT ORDER HANDLERS =================
+  const openCreateManualOrderModal = () => {
+    setEditingOrder(null);
+    setModalError('');
+    setModalOrderId(invoiceOrderId || '');
+    const nowLocal = new Date();
+    const offset = nowLocal.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(nowLocal.getTime() - offset).toISOString().slice(0, 16);
+    setModalOrderDate(localISOTime);
+    setModalCustomerName('');
+    setModalCustomerWhatsApp('');
+    setModalCustomerEmail('');
+    setModalOrderStatus('completed');
+    setModalPaymentStatus('paid');
+    setModalPaymentMethod('easypaisa');
+    setModalTransactionId('Direct/Manual');
+    setModalCostPKR('');
+    setModalVendorName('');
+    setModalVendorPaymentStatus('paid');
+    setModalExpiryDate('');
+    setModalNotes('');
+
+    if (products.length > 0) {
+      setModalItems([
+        {
+          productId: products[0].id,
+          title: products[0].title,
+          pricePKR: products[0].pricePKR,
+          priceUSD: products[0].priceUSD || 0,
+          quantity: 1,
+          image: products[0].images?.[0] || '/images/default-tool.png',
+        },
+      ]);
+    } else {
+      setModalItems([
+        {
+          productId: `custom-${Date.now()}`,
+          title: 'Custom Product / Service',
+          pricePKR: 1000,
+          priceUSD: 4,
+          quantity: 1,
+          image: '/images/default-tool.png',
+        },
+      ]);
+    }
+    setIsOrderModalOpen(true);
+  };
+
+  const openEditOrderModal = (order: Order) => {
+    setEditingOrder(order);
+    setModalError('');
+    setModalOrderId(order.id);
+    let dateStr = '';
+    try {
+      const d = new Date(order.createdAt);
+      const offset = d.getTimezoneOffset() * 60000;
+      dateStr = new Date(d.getTime() - offset).toISOString().slice(0, 16);
+    } catch {
+      dateStr = new Date().toISOString().slice(0, 16);
+    }
+    setModalOrderDate(dateStr);
+    setModalCustomerName(order.customerName || '');
+    setModalCustomerWhatsApp(order.customerWhatsApp || '');
+    setModalCustomerEmail(order.customerEmail || '');
+    setModalOrderStatus(order.status || 'completed');
+    setModalPaymentStatus(order.paymentStatus || 'paid');
+    setModalPaymentMethod(order.paymentMethod || 'easypaisa');
+    setModalTransactionId(order.transactionId || '');
+    setModalItems(order.items && order.items.length > 0 ? JSON.parse(JSON.stringify(order.items)) : []);
+    setModalCostPKR(order.costPKR !== undefined ? order.costPKR : '');
+    setModalVendorName(order.vendorName || '');
+    setModalVendorPaymentStatus(order.vendorPaymentStatus || 'paid');
+    setModalExpiryDate(order.subscriptionExpiryDate || '');
+    setModalNotes(order.adminNotes || order.channelOrDeliveryNote || '');
+    setIsOrderModalOpen(true);
+  };
+
+  const handleAddProductToModal = (product?: Product) => {
+    if (product) {
+      setModalItems((prev) => [
+        ...prev,
+        {
+          productId: product.id,
+          title: product.title,
+          pricePKR: product.pricePKR,
+          priceUSD: product.priceUSD || 0,
+          quantity: 1,
+          image: product.images?.[0] || '/images/default-tool.png',
+        },
+      ]);
+    } else {
+      setModalItems((prev) => [
+        ...prev,
+        {
+          productId: `custom-${Date.now()}`,
+          title: 'Custom Product / Service',
+          pricePKR: 500,
+          priceUSD: 2,
+          quantity: 1,
+          image: '/images/default-tool.png',
+        },
+      ]);
+    }
+  };
+
+  const handleModalItemChange = (index: number, field: string, value: any) => {
+    setModalItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleRemoveModalItem = (index: number) => {
+    setModalItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const modalTotalPKR = modalItems.reduce(
+    (sum, i) => sum + (Number(i.pricePKR) || 0) * (Number(i.quantity) || 1),
+    0
+  );
+
+  const handleSaveModalOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setModalError('');
+
+    if (!modalCustomerName.trim()) {
+      setModalError('Customer Name is required.');
+      return;
+    }
+    if (!modalCustomerWhatsApp.trim()) {
+      setModalError('Customer WhatsApp / Phone number is required.');
+      return;
+    }
+    if (modalItems.length === 0) {
+      setModalError('Please add at least one product or service.');
+      return;
+    }
+
+    setSavingModalOrder(true);
+    try {
+      const createdAtISO = modalOrderDate ? new Date(modalOrderDate).toISOString() : new Date().toISOString();
+      const numCost = modalCostPKR !== '' ? Number(modalCostPKR) : undefined;
+      const numProfit = numCost !== undefined ? modalTotalPKR - numCost : undefined;
+
+      if (editingOrder) {
+        // Update existing order
+        const res = await fetch(`/api/orders/${encodeURIComponent(editingOrder.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            newOrderId: modalOrderId.trim() || undefined,
+            createdAt: createdAtISO,
+            customerName: modalCustomerName.trim(),
+            customerWhatsApp: modalCustomerWhatsApp.trim(),
+            customerEmail: modalCustomerEmail.trim(),
+            status: modalOrderStatus,
+            paymentStatus: modalPaymentStatus,
+            paymentMethod: modalPaymentMethod,
+            transactionId: modalTransactionId.trim() || 'N/A',
+            items: modalItems,
+            totalPKR: modalTotalPKR,
+            totalUSD: modalItems.reduce((sum, i) => sum + (Number(i.priceUSD) || 0) * (Number(i.quantity) || 1), 0),
+            costPKR: numCost,
+            profitPKR: numProfit,
+            vendorName: modalVendorName.trim() || undefined,
+            vendorPaymentStatus: modalVendorPaymentStatus,
+            subscriptionExpiryDate: modalExpiryDate.trim() || undefined,
+            adminNotes: modalNotes.trim() || undefined,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          setIsOrderModalOpen(false);
+          await fetchOrders(false);
+        } else {
+          setModalError(data.error || 'Failed to update order');
+        }
+      } else {
+        // Create new manual/past order
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: modalOrderId.trim() || undefined,
+            createdAt: createdAtISO,
+            customerName: modalCustomerName.trim(),
+            customerWhatsApp: modalCustomerWhatsApp.trim(),
+            customerEmail: modalCustomerEmail.trim(),
+            status: modalOrderStatus,
+            paymentStatus: modalPaymentStatus,
+            paymentMethod: modalPaymentMethod,
+            transactionId: modalTransactionId.trim() || 'Direct/Manual',
+            items: modalItems,
+            totalPKR: modalTotalPKR,
+            totalUSD: modalItems.reduce((sum, i) => sum + (Number(i.priceUSD) || 0) * (Number(i.quantity) || 1), 0),
+            costPKR: numCost,
+            profitPKR: numProfit,
+            vendorName: modalVendorName.trim() || undefined,
+            vendorPaymentStatus: modalVendorPaymentStatus,
+            subscriptionExpiryDate: modalExpiryDate.trim() || undefined,
+            adminNotes: modalNotes.trim() || undefined,
+            isManualOrder: true,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          setIsOrderModalOpen(false);
+          await fetchOrders(false);
+        } else {
+          setModalError(data.error || 'Failed to record order');
+        }
+      }
+    } catch (err: unknown) {
+      setModalError((err as Error).message || 'Network error saving order');
+    } finally {
+      setSavingModalOrder(false);
     }
   };
 
@@ -599,7 +852,24 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center flex-wrap gap-2.5">
+          <button
+            onClick={openCreateManualOrderModal}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E04B00] hover:from-[#FF6611] hover:to-[#FF5500] text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-orange-500/25 transition active:scale-95 cursor-pointer"
+            title="Record past sales, custom offline deals, or manual orders with custom dates & discounted product prices"
+          >
+            <Plus className="w-4 h-4 stroke-[3]" />
+            <span>+ Add / Record Past Order</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-[#660000]/30 transition active:scale-95 cursor-pointer"
+          >
+            <Receipt className="w-4 h-4" />
+            <span>Create Payment Link</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setBundleModalOpen(true)}
@@ -608,14 +878,6 @@ export default function AdminOrdersPage() {
           >
             <Layers className="w-4 h-4" />
             <span>Create Bundle Link</span>
-          </button>
-
-          <button
-            onClick={openCreateModal}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 shadow-lg shadow-[#660000]/30 transition active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Create Payment Link</span>
           </button>
 
           <button
@@ -901,6 +1163,16 @@ export default function AdminOrdersPage() {
                       {new Date(order.createdAt).toLocaleDateString()} at{' '}
                       {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => openEditOrderModal(order)}
+                      className="px-2.5 py-1.5 rounded-xl bg-[#161622] hover:bg-[#20202e] border border-zinc-700 text-zinc-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                      title="Edit order details, custom date, or discounted product prices"
+                    >
+                      <Edit className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Edit</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => handleDeleteOrder(order.id, order.id)}
@@ -1482,6 +1754,376 @@ export default function AdminOrdersPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= RECORD PAST / MANUAL ORDER & EDIT ORDER MODAL ================= */}
+      {isOrderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl my-6 bg-[#0c0c14] border border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5 text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#FF5500] to-[#FF7733] text-white flex items-center justify-center shadow-lg shadow-orange-500/25">
+                  <Receipt className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-black text-white">
+                    {editingOrder ? `Edit Order Details (${editingOrder.id})` : 'Record Past or Custom Order'}
+                  </h2>
+                  <p className="text-[11px] text-zinc-400">
+                    {editingOrder
+                      ? 'Modify order date, customer details, or custom product prices for this order.'
+                      : 'Add previous sales, offline WhatsApp deals, or custom orders with past dates and discounted prices.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOrderModalOpen(false)}
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {modalError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveModalOrder} className="space-y-4">
+              {/* Order ID & Date Picker */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Order ID <span className="text-[10px] text-zinc-500 font-normal">(Leave empty for auto)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={modalOrderId}
+                    onChange={(e) => setModalOrderId(e.target.value)}
+                    placeholder="e.g. #2401 or past ID"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs font-mono font-bold text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Order Date &amp; Time <span className="text-amber-400 text-[10px] font-normal">(Pick any past date)</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={modalOrderDate}
+                    onChange={(e) => setModalOrderDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs font-mono text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Customer Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Usman Ali"
+                    value={modalCustomerName}
+                    onChange={(e) => setModalCustomerName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    WhatsApp / Phone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="03001234567"
+                    value={modalCustomerWhatsApp}
+                    onChange={(e) => setModalCustomerWhatsApp(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Email Address <span className="text-zinc-500">(Optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="usman@gmail.com"
+                    value={modalCustomerEmail}
+                    onChange={(e) => setModalCustomerEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              {/* Status & Payment Method */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Order Status
+                  </label>
+                  <select
+                    value={modalOrderStatus}
+                    onChange={(e) => setModalOrderStatus(e.target.value as Order['status'])}
+                    className="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                  >
+                    <option value="completed">Completed (Past / Delivered)</option>
+                    <option value="processing">Processing</option>
+                    <option value="pending">Pending</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Payment Status
+                  </label>
+                  <select
+                    value={modalPaymentStatus}
+                    onChange={(e) => setModalPaymentStatus(e.target.value as 'paid' | 'unpaid')}
+                    className="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                  >
+                    <option value="paid">Paid (Payment Received)</option>
+                    <option value="unpaid">Unpaid / Pending</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={modalPaymentMethod}
+                    onChange={(e) => setModalPaymentMethod(e.target.value as Order['paymentMethod'])}
+                    className="w-full px-3 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500] cursor-pointer"
+                  >
+                    <option value="easypaisa">EasyPaisa</option>
+                    <option value="jazzcash">JazzCash</option>
+                    <option value="bank">Bank Transfer</option>
+                    <option value="binance">Binance / Crypto</option>
+                    <option value="whatsapp">Cash / WhatsApp Direct</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Products & Services with Fully Editable Prices */}
+              <div className="space-y-2 pt-2 border-t border-zinc-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-zinc-200 uppercase tracking-wider block">
+                      Products in this Order (Editable Prices &amp; Quantities)
+                    </label>
+                    <span className="text-[11px] text-zinc-400">
+                      You can modify each product&apos;s unit price below (e.g. if you gave a special discount).
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {products.length > 0 && (
+                      <select
+                        onChange={(e) => {
+                          const p = products.find((prod) => prod.id === e.target.value);
+                          if (p) handleAddProductToModal(p);
+                          e.target.value = '';
+                        }}
+                        className="px-2.5 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-[11px] text-zinc-200 focus:outline-none cursor-pointer"
+                      >
+                        <option value="">+ Add Store Product...</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.title} (Standard: Rs {p.pricePKR})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleAddProductToModal()}
+                      className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+                    >
+                      + Custom Item
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                  {modalItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-black border border-zinc-800 flex flex-col sm:flex-row sm:items-center gap-2 text-xs"
+                    >
+                      <input
+                        type="text"
+                        value={item.title}
+                        onChange={(e) => handleModalItemChange(idx, 'title', e.target.value)}
+                        placeholder="Product Title"
+                        className="flex-[3] bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-[#FF5500]"
+                      />
+
+                      {/* Custom Unit Price */}
+                      <div className="flex items-center gap-1.5 flex-[2]">
+                        <span className="text-zinc-400 text-xs font-bold">Rs</span>
+                        <input
+                          type="number"
+                          value={item.pricePKR}
+                          onChange={(e) => handleModalItemChange(idx, 'pricePKR', Number(e.target.value))}
+                          placeholder="Price"
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs font-bold focus:outline-none focus:border-[#FF5500]"
+                          title="Custom Unit Price for this order"
+                        />
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="flex items-center gap-1 w-20">
+                        <span className="text-zinc-500 text-xs">x</span>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleModalItemChange(idx, 'quantity', Number(e.target.value))}
+                          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none text-center"
+                        />
+                      </div>
+
+                      {/* Subtotal */}
+                      <div className="min-w-[90px] text-right font-black text-amber-400 text-xs">
+                        Rs {((Number(item.pricePKR) || 0) * (Number(item.quantity) || 1)).toLocaleString()}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveModalItem(idx)}
+                        className="p-1.5 text-zinc-500 hover:text-red-400 transition cursor-pointer"
+                        title="Remove Item"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total Summary */}
+                <div className="p-3.5 rounded-xl bg-[#14141E] border border-zinc-800 flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-300">Total Calculated Order Value:</span>
+                  <span className="text-lg font-black text-emerald-400">
+                    Rs {modalTotalPKR.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Vendor & Accounting Details */}
+              <div className="p-3.5 rounded-2xl bg-[#09090D] border border-zinc-800 space-y-2.5">
+                <span className="text-[11px] font-bold uppercase text-zinc-400 tracking-wider block">
+                  Finances &amp; Profit Tracking (Optional)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      Supplier / Vendor Cost (PKR)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 500"
+                      value={modalCostPKR}
+                      onChange={(e) => setModalCostPKR(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      Net Profit (Auto-Calculated)
+                    </label>
+                    <div className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-black text-emerald-400">
+                      Rs{' '}
+                      {modalCostPKR !== ''
+                        ? (modalTotalPKR - Number(modalCostPKR)).toLocaleString()
+                        : modalTotalPKR.toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] text-zinc-400 mb-1">
+                      Vendor Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Vendor Bilal"
+                      value={modalVendorName}
+                      onChange={(e) => setModalVendorName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscription Expiry Date (Syncs with Renewals tab) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Subscription Expiry Date <span className="text-zinc-500">(For Renewals Tracker)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={modalExpiryDate}
+                    onChange={(e) => setModalExpiryDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Admin / Delivery Notes <span className="text-zinc-500">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Account credentials delivered via WhatsApp"
+                    value={modalNotes}
+                    onChange={(e) => setModalNotes(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="pt-3 border-t border-zinc-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsOrderModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={savingModalOrder}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E04B00] hover:from-[#FF6611] hover:to-[#FF5500] text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-orange-500/30 transition cursor-pointer disabled:opacity-50"
+                >
+                  {savingModalOrder ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>{editingOrder ? 'Update Order Details' : '💾 Save & Record Order'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

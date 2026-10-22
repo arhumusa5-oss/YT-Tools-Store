@@ -22,45 +22,68 @@ export async function POST(request: Request) {
       );
     }
 
+    const totalPKR = Number(body.totalPKR) || 0;
+    const costPKR = body.costPKR !== undefined ? Math.max(0, Number(body.costPKR) || 0) : undefined;
+    const profitPKR =
+      body.profitPKR !== undefined
+        ? Number(body.profitPKR)
+        : costPKR !== undefined
+        ? totalPKR - costPKR
+        : undefined;
+
     const newOrder = await db.createOrder({
-      customerName: body.customerName,
-      customerEmail: body.customerEmail || '',
-      customerWhatsApp: body.customerWhatsApp,
+      id: body.id ? String(body.id).trim() : undefined,
+      createdAt: body.createdAt ? String(body.createdAt).trim() : undefined,
+      customerName: String(body.customerName).trim(),
+      customerEmail: body.customerEmail ? String(body.customerEmail).trim() : '',
+      customerWhatsApp: String(body.customerWhatsApp).trim(),
       channelOrDeliveryNote: body.channelOrDeliveryNote || '',
       items: body.items,
-      totalPKR: Number(body.totalPKR) || 0,
+      totalPKR,
       totalUSD: Number(body.totalUSD) || 0,
       currency: body.currency === 'USD' ? 'USD' : 'PKR',
       paymentMethod: body.paymentMethod || 'easypaisa',
       transactionId: body.transactionId || 'N/A',
       paymentProofUrl: body.paymentProofUrl || '',
-      status: 'pending',
+      status: body.status || 'pending',
+      paymentStatus: body.paymentStatus || (body.status === 'completed' ? 'paid' : 'unpaid'),
       adminNotes: body.adminNotes || '',
+      costPKR,
+      profitPKR,
+      vendorName: body.vendorName ? String(body.vendorName).trim() : undefined,
+      vendorPaymentStatus: body.vendorPaymentStatus || undefined,
+      vendorNotes: body.vendorNotes ? String(body.vendorNotes).trim() : undefined,
+      subscriptionDurationDays: body.subscriptionDurationDays ? Number(body.subscriptionDurationDays) : undefined,
+      subscriptionExpiryDate: body.subscriptionExpiryDate ? String(body.subscriptionExpiryDate).trim() : undefined,
+      renewalStatus: body.renewalStatus || undefined,
+      renewalNotes: body.renewalNotes ? String(body.renewalNotes).trim() : undefined,
     });
 
-    // Send instant email notification to store owner in background
-    try {
-      sendEmailNotification({
-        type: 'order',
-        orderId: newOrder.id,
-        items: newOrder.items.map((i) => ({
-          title: i.title,
-          quantity: i.quantity,
-          pricePKR: i.pricePKR,
-          priceUSD: i.priceUSD,
-          image: i.image,
-        })),
-        totalPKR: newOrder.totalPKR,
-        customerName: newOrder.customerName,
-        customerWhatsApp: newOrder.customerWhatsApp,
-        customerEmail: newOrder.customerEmail,
-        paymentMethod: newOrder.paymentMethod,
-        transactionId: newOrder.transactionId,
-        paymentProofUrl: newOrder.paymentProofUrl,
-        notes: newOrder.channelOrDeliveryNote,
-      }).catch((err) => console.error('Order email error:', err));
-    } catch {
-      // ignore
+    // Send instant email notification to store owner in background ONLY if not a manual admin entry
+    if (!body.isManualOrder) {
+      try {
+        sendEmailNotification({
+          type: 'order',
+          orderId: newOrder.id,
+          items: newOrder.items.map((i) => ({
+            title: i.title,
+            quantity: i.quantity,
+            pricePKR: i.pricePKR,
+            priceUSD: i.priceUSD,
+            image: i.image,
+          })),
+          totalPKR: newOrder.totalPKR,
+          customerName: newOrder.customerName,
+          customerWhatsApp: newOrder.customerWhatsApp,
+          customerEmail: newOrder.customerEmail,
+          paymentMethod: newOrder.paymentMethod,
+          transactionId: newOrder.transactionId,
+          paymentProofUrl: newOrder.paymentProofUrl,
+          notes: newOrder.channelOrDeliveryNote,
+        }).catch((err) => console.error('Order email error:', err));
+      } catch {
+        // ignore
+      }
     }
 
     return NextResponse.json({ success: true, order: newOrder });
