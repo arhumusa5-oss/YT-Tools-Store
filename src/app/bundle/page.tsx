@@ -469,7 +469,7 @@ function BundleContent() {
 
 export default function BundlePage() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#fdfcfc] dark:bg-[#07070b] text-[#0a0a0a] dark:text-white transition-colors">
+    <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
       <Navbar />
       <Suspense
         fallback={

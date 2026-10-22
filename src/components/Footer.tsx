@@ -53,16 +53,6 @@ function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/signin" className="hover:text-[#660000] dark:hover:text-[#ff4d4d] transition">
-                  Sign In
-                </Link>
-              </li>
-              <li>
-                <Link href="/signup" className="hover:text-[#660000] dark:hover:text-[#ff4d4d] transition">
-                  Sign Up / Create Account
-                </Link>
-              </li>
-              <li>
                 <a
                   href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}?text=Assalam%20o%20Alaikum!%20I%20want%20to%20inquire%20about%20tools.`}
                   target="_blank"

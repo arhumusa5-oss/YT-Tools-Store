@@ -43,7 +43,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex flex-col bg-white dark:bg-black text-zinc-900 dark:text-white transition-colors duration-150">
+      <main className="min-h-screen flex flex-col bg-transparent text-zinc-900 dark:text-white transition-colors duration-150 relative z-10">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
           <div className="w-8 h-8 rounded-full border-2 border-[#FF5500] border-t-transparent animate-spin" />
@@ -55,7 +55,7 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <main className="min-h-screen flex flex-col bg-white dark:bg-black text-zinc-900 dark:text-white transition-colors duration-150">
+      <main className="min-h-screen flex flex-col bg-transparent text-zinc-900 dark:text-white transition-colors duration-150 relative z-10">
         <Navbar />
         <div className="flex-1 max-w-xl mx-auto text-center py-24 px-4">
           <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Product Not Found</h2>
@@ -87,7 +87,7 @@ export default function ProductDetailPage() {
   const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
 
   return (
-    <main className="min-h-screen flex flex-col bg-black text-white transition-colors duration-150">
+    <main className="min-h-screen flex flex-col bg-transparent text-zinc-900 dark:text-white transition-colors duration-150 relative z-10">
       <Navbar />
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -100,7 +100,7 @@ export default function ProductDetailPage() {
           <span className="text-zinc-200 truncate max-w-xs">{product.title}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-[#0A0A0D] border border-white/[0.08] rounded-3xl p-6 sm:p-10 shadow-2xl shadow-black transition-colors duration-150">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 bg-white dark:bg-[#0A0A0D] border border-[#d1c7c7] dark:border-white/[0.08] rounded-3xl p-6 sm:p-10 shadow-2xl transition-colors duration-150">
           {/* Images */}
           <div>
             <div className="relative aspect-video sm:aspect-square w-full rounded-2xl overflow-hidden bg-black border border-white/[0.08]">

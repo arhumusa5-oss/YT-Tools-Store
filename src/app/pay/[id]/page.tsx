@@ -258,7 +258,7 @@ export default function DirectPaymentInvoicePage() {
   const isAlreadyPaid = Boolean(order?.paymentStatus === 'paid' || (order?.transactionId && order?.paymentProofUrl));
 
   return (
-    <main className="min-h-screen flex flex-col bg-white dark:bg-[#07070b] text-[#0a0a0a] dark:text-white transition-colors">
+    <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
       <Navbar />
 
       <div className="flex-1 max-w-2xl mx-auto px-4 py-10 sm:py-16 w-full">

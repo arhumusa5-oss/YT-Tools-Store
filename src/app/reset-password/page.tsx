@@ -172,7 +172,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-[#faf8f8] dark:bg-[#060608] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-4 relative z-10">
       <Suspense
         fallback={
           <div className="w-8 h-8 rounded-full border-2 border-[#660000] border-t-transparent animate-spin" />

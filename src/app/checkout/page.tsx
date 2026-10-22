@@ -12,7 +12,7 @@ export default function CheckoutPage() {
   const { cart, openCheckoutWithItems, setIsCartOpen, cartTotalPKR, cartTotalUSD, formatPrice } = useCart();
 
   return (
-    <main className="min-h-screen flex flex-col bg-[#fdfcfc] dark:bg-[#07070b] text-[#0a0a0a] dark:text-white transition-colors">
+    <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
       <Navbar />
 
       <div className="flex-1 max-w-4xl mx-auto px-4 py-12 sm:py-20 w-full">
