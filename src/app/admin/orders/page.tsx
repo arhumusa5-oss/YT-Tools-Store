@@ -31,6 +31,10 @@ import {
   CalendarDays,
   Sparkles,
   Edit,
+  LayoutList,
+  LayoutGrid,
+  Eye,
+  SlidersHorizontal,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import BundleLinkModal from '@/components/admin/BundleLinkModal';
@@ -68,6 +72,10 @@ export default function AdminOrdersPage() {
   const [adminNotesMap, setAdminNotesMap] = useState<Record<string, string>>({});
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [bundleModalOpen, setBundleModalOpen] = useState(false);
+
+  // Modern SaaS Table View vs Cards View + Slide-Over Drawer
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState<Order | null>(null);
 
   // Direct Invoice / Payment Link Generator State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -216,6 +224,25 @@ export default function AdminOrdersPage() {
       clearInterval(interval);
       window.removeEventListener('focus', onFocus);
     };
+  }, []);
+
+  // Sync active drawer order whenever orders refresh
+  useEffect(() => {
+    if (selectedOrderForDrawer) {
+      const fresh = orders.find((o) => o.id === selectedOrderForDrawer.id);
+      if (fresh) setSelectedOrderForDrawer(fresh);
+    }
+  }, [orders, selectedOrderForDrawer]);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedOrderForDrawer(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const openCreateModal = () => {
@@ -1091,8 +1118,8 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Filter and Search */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Filter and Search Bar with View Switcher */}
+      <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
@@ -1114,86 +1141,118 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('All')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-              statusFilter === 'All'
-                ? 'bg-[#660000] text-white shadow-sm'
-                : 'bg-[#0C0C0E] text-zinc-400 hover:text-white border border-[#222228]'
-            }`}
-          >
-            All ({orders.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('pending')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-              statusFilter === 'pending'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'bg-[#0C0C0E] text-amber-400 hover:text-white border border-[#222228]'
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('processing')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-              statusFilter === 'processing'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-[#0C0C0E] text-blue-400 hover:text-white border border-[#222228]'
-            }`}
-          >
-            Processing
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('completed')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-              statusFilter === 'completed'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'bg-[#0C0C0E] text-emerald-400 hover:text-white border border-[#222228]'
-            }`}
-          >
-            Completed
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('expiring_soon')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
-              statusFilter === 'expiring_soon'
-                ? 'bg-amber-500 text-black font-black shadow-md'
-                : 'bg-[#18150a] text-amber-400 hover:text-amber-300 border border-amber-500/30'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Expiring Soon ({renewalStats.expiringSoonCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('expired')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
-              statusFilter === 'expired'
-                ? 'bg-red-600 text-white font-black shadow-md'
-                : 'bg-[#1a0a0a] text-red-400 hover:text-red-300 border border-red-500/30'
-            }`}
-          >
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>Expired / Due ({renewalStats.expiredCount})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('cancelled')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-              statusFilter === 'cancelled'
-                ? 'bg-zinc-800 text-white shadow-sm'
-                : 'bg-[#0C0C0E] text-zinc-500 hover:text-white border border-[#222228]'
-            }`}
-          >
-            Cancelled
-          </button>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+          <div className="flex gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('All')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                statusFilter === 'All'
+                  ? 'bg-[#660000] text-white shadow-sm'
+                  : 'bg-[#0C0C0E] text-zinc-400 hover:text-white border border-[#222228]'
+              }`}
+            >
+              All ({orders.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('pending')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                statusFilter === 'pending'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-[#0C0C0E] text-amber-400 hover:text-white border border-[#222228]'
+              }`}
+            >
+              Pending
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('processing')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                statusFilter === 'processing'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-[#0C0C0E] text-blue-400 hover:text-white border border-[#222228]'
+              }`}
+            >
+              Processing
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('completed')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                statusFilter === 'completed'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-[#0C0C0E] text-emerald-400 hover:text-white border border-[#222228]'
+              }`}
+            >
+              Completed
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('expiring_soon')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                statusFilter === 'expiring_soon'
+                  ? 'bg-amber-500 text-black font-black shadow-md'
+                  : 'bg-[#18150a] text-amber-400 hover:text-amber-300 border border-amber-500/30'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Expiring Soon ({renewalStats.expiringSoonCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('expired')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                statusFilter === 'expired'
+                  ? 'bg-red-600 text-white font-black shadow-md'
+                  : 'bg-[#1a0a0a] text-red-400 hover:text-red-300 border border-red-500/30'
+              }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>Expired ({renewalStats.expiredCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('cancelled')}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                statusFilter === 'cancelled'
+                  ? 'bg-zinc-800 text-white shadow-sm'
+                  : 'bg-[#0C0C0E] text-zinc-500 hover:text-white border border-[#222228]'
+              }`}
+            >
+              Cancelled
+            </button>
+          </div>
+
+          {/* View Mode Toggle (Table View vs Cards View) */}
+          <div className="flex items-center gap-1 bg-[#0A0A0E] border border-[#22222E] p-1 rounded-xl shrink-0">
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-[#1E1E2A] text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              title="Table View (Sleek SaaS)"
+            >
+              <LayoutList className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                viewMode === 'cards'
+                  ? 'bg-[#1E1E2A] text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              title="Card View (Expanded)"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1243,7 +1302,256 @@ export default function AdminOrdersPage() {
             )}
           </div>
         </div>
+      ) : viewMode === 'table' ? (
+        /* ================= ULTRA-SLEEK MODERN SAAS ORDERS TABLE ================= */
+        <div className="bg-[#0C0C10] border border-[#1E1E28] rounded-2xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[#1E1E28] bg-[#08080C]/80 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                  <th className="py-3.5 px-4">Order ID & Date</th>
+                  <th className="py-3.5 px-4">Customer</th>
+                  <th className="py-3.5 px-4">Tool(s) Ordered</th>
+                  <th className="py-3.5 px-4">Payment & Amount</th>
+                  <th className="py-3.5 px-4 text-center">Receipt Proof</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1A1A24]">
+                {filtered.map((order) => {
+                  const nowTime = Date.now();
+                  const diffDays = order.subscriptionExpiryDate
+                    ? Math.ceil(
+                        (new Date(order.subscriptionExpiryDate).getTime() - nowTime) /
+                          (1000 * 60 * 60 * 24)
+                      )
+                    : null;
+
+                  return (
+                    <tr
+                      key={order.id}
+                      onClick={() => setSelectedOrderForDrawer(order)}
+                      className="hover:bg-[#14141E]/90 transition-colors group cursor-pointer"
+                    >
+                      {/* Order ID & Date */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-sm text-white group-hover:text-emerald-400 transition-colors">
+                            {order.id}
+                          </span>
+                          {order.isDirectInvoice && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                              Invoice
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 mt-0.5">
+                          {new Date(order.createdAt).toLocaleDateString([], {
+                            month: 'short',
+                            day: 'numeric',
+                          })}{' '}
+                          at{' '}
+                          {new Date(order.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </td>
+
+                      {/* Customer Info */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-white text-xs truncate max-w-[160px]">
+                          {order.customerName}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="font-mono text-zinc-400 text-[11px]">
+                            {order.customerWhatsApp}
+                          </span>
+                          <a
+                            href={`https://wa.me/${order.customerWhatsApp.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[#25D366] hover:opacity-80 p-0.5 transition"
+                            title="Chat on WhatsApp"
+                          >
+                            <WhatsAppIcon className="w-3 h-3 fill-current" />
+                          </a>
+                        </div>
+                      </td>
+
+                      {/* Items */}
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1 max-w-[220px]">
+                          {order.items.slice(0, 2).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-1 text-[11px] text-zinc-300 truncate"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 shrink-0" />
+                              <span className="truncate">{item.title}</span>
+                              <span className="text-zinc-500 shrink-0">(x{item.quantity})</span>
+                            </div>
+                          ))}
+                          {order.items.length > 2 && (
+                            <div className="text-[10px] text-zinc-500 font-semibold">
+                              +{order.items.length - 2} more item
+                              {order.items.length - 2 > 1 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Payment & Amount */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="font-mono font-bold text-white text-xs">
+                          Rs {order.totalPKR.toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold uppercase bg-zinc-800 text-zinc-300 border border-zinc-700">
+                            {order.paymentMethod}
+                          </span>
+                          <span className="font-mono text-[10px] text-zinc-400 truncate max-w-[100px]">
+                            {order.transactionId ||
+                              (order.paymentStatus === 'unpaid' ? 'Awaiting TID' : 'N/A')}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Receipt Screenshot Thumbnail */}
+                      <td
+                        className="py-3.5 px-4 text-center whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {order.paymentProofUrl ? (
+                          <div
+                            onClick={() => setPreviewImage(order.paymentProofUrl!)}
+                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold cursor-pointer group/thumb"
+                            title="Click to view full screenshot proof"
+                          >
+                            <img
+                              src={order.paymentProofUrl}
+                              alt="Proof"
+                              className="w-4 h-4 rounded object-cover"
+                            />
+                            <span>View Proof</span>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-600 text-[11px] italic">No receipt</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td
+                        className="py-3.5 px-4 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusBadge(
+                              order.status
+                            )}`}
+                          >
+                            {order.status}
+                          </span>
+                          {diffDays !== null &&
+                            order.renewalStatus !== 'renewed' &&
+                            diffDays <= 7 &&
+                            diffDays >= 0 && (
+                              <span
+                                className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                title={`Expiring in ${diffDays}d`}
+                              >
+                                ⏰ {diffDays}d left
+                              </span>
+                            )}
+                        </div>
+                      </td>
+
+                      {/* Quick Actions */}
+                      <td
+                        className="py-3.5 px-4 text-right whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Manage / Open Drawer Button */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrderForDrawer(order)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/30 text-emerald-300 hover:text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                            title="Open detailed order drawer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Manage</span>
+                          </button>
+
+                          {/* 1-Click Copy Invoice Link */}
+                          <button
+                            type="button"
+                            onClick={() => handleCopyInvoiceLink(order.id)}
+                            className={`p-1.5 rounded-lg border text-xs transition cursor-pointer ${
+                              copiedInvoiceId === order.id
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
+                            }`}
+                            title="Copy customer payment invoice link"
+                          >
+                            {copiedInvoiceId === order.id ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          {/* WhatsApp Chat Button */}
+                          <a
+                            href={`https://wa.me/${order.customerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                              `Assalam o Alaikum ${order.customerName}! Regarding your YT Tools Store Order #${order.id}:`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] transition"
+                            title="Chat on WhatsApp"
+                          >
+                            <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                          </a>
+
+                          {/* Edit Modal */}
+                          <button
+                            type="button"
+                            onClick={() => openEditOrderModal(order)}
+                            className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-amber-400 transition cursor-pointer"
+                            title="Edit order details"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(order.id, order.id)}
+                            disabled={deletingId === order.id}
+                            className="p-1.5 rounded-lg bg-red-950/30 hover:bg-red-900/50 border border-red-500/30 text-red-400 hover:text-white transition cursor-pointer"
+                            title="Delete order"
+                          >
+                            {deletingId === order.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* ================= CARDS VIEW ================= */
         <div className="space-y-4">
           {filtered.map((order) => {
             const isUpdating = updatingId === order.id;
@@ -1676,6 +1984,353 @@ export default function AdminOrdersPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ================= SLIDE-OVER ORDER MANAGEMENT DRAWER ================= */}
+      {selectedOrderForDrawer && (
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          {/* Backdrop */}
+          <div
+            onClick={() => setSelectedOrderForDrawer(null)}
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
+          />
+
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
+            <div className="w-screen max-w-xl bg-[#0B0B10] border-l border-[#20202E] shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-200">
+              {/* Drawer Header */}
+              <div className="p-4 sm:p-5 border-b border-[#1E1E28] bg-[#0E0E14] flex items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="font-mono text-lg font-black text-white">
+                    {selectedOrderForDrawer.id}
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusBadge(
+                      selectedOrderForDrawer.status
+                    )}`}
+                  >
+                    {selectedOrderForDrawer.status}
+                  </span>
+                  {selectedOrderForDrawer.isDirectInvoice && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Direct Invoice
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const ord = selectedOrderForDrawer;
+                      setSelectedOrderForDrawer(null);
+                      openEditOrderModal(ord);
+                    }}
+                    className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                    title="Edit Order"
+                  >
+                    <Edit className="w-4 h-4 text-amber-400" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrderForDrawer(null)}
+                    className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white transition cursor-pointer"
+                    title="Close Drawer (Esc)"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Top Action Bar */}
+              <div className="px-4 py-2.5 bg-[#09090D] border-b border-[#1A1A24] flex items-center gap-2 flex-wrap text-xs shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleCopyInvoiceLink(selectedOrderForDrawer.id)}
+                  className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition cursor-pointer text-xs ${
+                    copiedInvoiceId === selectedOrderForDrawer.id
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-purple-950/50 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 hover:text-white'
+                  }`}
+                >
+                  {copiedInvoiceId === selectedOrderForDrawer.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Copy Invoice Link</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href={getInvoiceUrl(selectedOrderForDrawer.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white font-medium flex items-center gap-1 transition"
+                  title="Open live invoice page in new tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Open Page</span>
+                </a>
+
+                <a
+                  href={`https://wa.me/${selectedOrderForDrawer.customerWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                    `Assalam o Alaikum ${selectedOrderForDrawer.customerName}! Regarding your YT Tools Store Order #${selectedOrderForDrawer.id}:`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold flex items-center gap-1.5 transition shadow-sm ml-auto"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5 fill-current text-white" />
+                  <span>Chat Customer</span>
+                </a>
+              </div>
+
+              {/* Drawer Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+                {/* 1. Customer Dossier */}
+                <div className="p-4 rounded-xl bg-black/60 border border-[#1A1A24] space-y-2.5">
+                  <span className="text-[10px] text-zinc-500 uppercase font-black tracking-wider block">
+                    Customer Information
+                  </span>
+                  <div className="flex items-center gap-2 font-bold text-white text-sm">
+                    <User className="w-4 h-4 text-emerald-400" />
+                    <span>{selectedOrderForDrawer.customerName}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-[#161622]">
+                    <span className="text-zinc-400 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-zinc-500" />
+                      <span className="font-mono">{selectedOrderForDrawer.customerWhatsApp}</span>
+                    </span>
+                    <a
+                      href={`https://wa.me/${selectedOrderForDrawer.customerWhatsApp.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#25D366] hover:underline font-bold text-[11px]"
+                    >
+                      Open WhatsApp →
+                    </a>
+                  </div>
+                  {selectedOrderForDrawer.customerEmail && (
+                    <div className="flex items-center gap-1.5 text-zinc-400 text-xs">
+                      <Mail className="w-3.5 h-3.5 text-zinc-500" />
+                      <span>{selectedOrderForDrawer.customerEmail}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Ordered Products */}
+                <div className="p-4 rounded-xl bg-black/60 border border-[#1A1A24] space-y-3">
+                  <span className="text-[10px] text-zinc-500 uppercase font-black tracking-wider block">
+                    Ordered Products ({selectedOrderForDrawer.items.length})
+                  </span>
+                  <div className="space-y-2">
+                    {selectedOrderForDrawer.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-[#14141E] last:border-0">
+                        <div className="text-zinc-200">
+                          <span className="font-semibold text-white">{item.title}</span>
+                          <span className="text-zinc-500 ml-1.5 font-mono">x{item.quantity}</span>
+                        </div>
+                        <span className="font-mono text-zinc-300 font-bold">
+                          Rs {(item.pricePKR * item.quantity).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 border-t border-[#1E1E28] flex items-center justify-between text-xs">
+                    <span className="text-zinc-400 font-bold">Total Order Value:</span>
+                    <span className="text-sm font-black text-emerald-400 font-mono">
+                      Rs {selectedOrderForDrawer.totalPKR.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {selectedOrderForDrawer.channelOrDeliveryNote && (
+                    <div className="p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-800 text-[11px] text-zinc-300">
+                      <strong className="text-zinc-400">Customer Note:</strong> {selectedOrderForDrawer.channelOrDeliveryNote}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Payment Verification & Receipt Proof */}
+                <div className="p-4 rounded-xl bg-black/60 border border-[#1A1A24] space-y-3">
+                  <span className="text-[10px] text-zinc-500 uppercase font-black tracking-wider block">
+                    Payment Verification
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">Payment Method</span>
+                      <span className="font-extrabold text-white uppercase">{selectedOrderForDrawer.paymentMethod}</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">Payment Status</span>
+                      <span className={`font-bold capitalize ${selectedOrderForDrawer.paymentStatus === 'paid' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {selectedOrderForDrawer.paymentStatus || 'Unpaid'}
+                      </span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-zinc-500 block text-[10px]">Transaction ID (TID)</span>
+                      <span className="font-mono font-bold text-white text-xs">
+                        {selectedOrderForDrawer.transactionId || 'Awaiting Payment Submission'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Screenshot proof */}
+                  <div>
+                    <span className="text-[10px] text-zinc-500 uppercase font-bold block mb-1.5">
+                      Receipt Screenshot
+                    </span>
+                    {selectedOrderForDrawer.paymentProofUrl ? (
+                      <div
+                        onClick={() => setPreviewImage(selectedOrderForDrawer.paymentProofUrl!)}
+                        className="relative rounded-xl overflow-hidden border border-emerald-500/30 bg-zinc-900 cursor-pointer group max-h-56 flex items-center justify-center"
+                      >
+                        <img
+                          src={selectedOrderForDrawer.paymentProofUrl}
+                          alt="Receipt proof"
+                          className="max-h-56 w-full object-contain group-hover:scale-105 transition-transform"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-1.5 text-xs font-bold text-white">
+                          <Maximize2 className="w-4 h-4" />
+                          <span>Click to Inspect Full Image</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center rounded-xl bg-zinc-900/40 border border-zinc-800 text-xs text-zinc-500 italic">
+                        No payment receipt screenshot attached yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Live Order Status, Expiry & Dispatch Notes */}
+                <div className="p-4 rounded-xl bg-black/60 border border-[#1A1A24] space-y-3.5">
+                  <span className="text-[10px] text-zinc-500 uppercase font-black tracking-wider block">
+                    Order Status & Tool Dispatch
+                  </span>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 block mb-1">Order Status:</label>
+                    <select
+                      value={selectedOrderForDrawer.status}
+                      disabled={updatingId === selectedOrderForDrawer.id}
+                      onChange={(e) => handleStatusChange(selectedOrderForDrawer.id, e.target.value as Order['status'])}
+                      className="w-full bg-[#161622] border border-[#2B2B3E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      <option value="pending">Pending (Awaiting Verification)</option>
+                      <option value="processing">Processing / Running (Activating Tool)</option>
+                      <option value="completed">Completed (Tool Delivered)</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-zinc-400">Subscription Expiry Date:</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + 30);
+                          const yyyy = d.getFullYear();
+                          const mm = String(d.getMonth() + 1).padStart(2, '0');
+                          const dd = String(d.getDate()).padStart(2, '0');
+                          setExpiryDateMap({
+                            ...expiryDateMap,
+                            [selectedOrderForDrawer.id]: `${yyyy}-${mm}-${dd}`,
+                          });
+                        }}
+                        className="text-[10px] text-emerald-400 hover:underline font-bold cursor-pointer"
+                      >
+                        + Set 30 Days from Today
+                      </button>
+                    </div>
+                    <input
+                      type="date"
+                      value={expiryDateMap[selectedOrderForDrawer.id] || ''}
+                      onChange={(e) =>
+                        setExpiryDateMap({
+                          ...expiryDateMap,
+                          [selectedOrderForDrawer.id]: e.target.value,
+                        })
+                      }
+                      className="w-full bg-[#161622] border border-[#2B2B3E] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-400 block mb-1">
+                      Dispatch / Credentials Notes:
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Login email, password, screen pin, or delivered download links..."
+                      value={adminNotesMap[selectedOrderForDrawer.id] || ''}
+                      onChange={(e) =>
+                        setAdminNotesMap({
+                          ...adminNotesMap,
+                          [selectedOrderForDrawer.id]: e.target.value,
+                        })
+                      }
+                      className="w-full bg-[#161622] border border-[#2B2B3E] rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSaveNotes(selectedOrderForDrawer.id)}
+                    disabled={updatingId === selectedOrderForDrawer.id}
+                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20 transition cursor-pointer"
+                  >
+                    {updatingId === selectedOrderForDrawer.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>Save Order Updates</span>
+                  </button>
+                </div>
+
+                {/* 5. Renewal Management (if set) */}
+                {selectedOrderForDrawer.subscriptionExpiryDate && (
+                  <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-400" />
+                        <span>Expiry: {selectedOrderForDrawer.subscriptionExpiryDate}</span>
+                      </span>
+                      <span className="text-[10px] text-zinc-400 uppercase font-mono">
+                        {selectedOrderForDrawer.renewalStatus || 'Active'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSendRenewalReminder(selectedOrderForDrawer)}
+                        className="flex-1 py-2 px-3 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                      >
+                        <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                        <span>Send Renewal Reminder</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAsRenewed(selectedOrderForDrawer.id, 30)}
+                        className="py-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold transition cursor-pointer shrink-0"
+                      >
+                        +30d
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -27,6 +27,8 @@ import {
   ArrowRight,
   Loader2,
   X,
+  LayoutList,
+  LayoutGrid,
 } from 'lucide-react';
 
 type FilterPeriod = 'lifetime' | 'this_month' | 'last_month' | 'custom_month';
@@ -52,6 +54,7 @@ export default function AdminFinancesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [vendorFilter, setVendorFilter] = useState<VendorFilter>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   // Time Period State
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('lifetime');
@@ -597,20 +600,52 @@ export default function AdminFinancesPage() {
           )}
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {(['all', 'unpaid', 'paid'] as VendorFilter[]).map((vf) => (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex gap-1.5 shrink-0">
+            {(['all', 'unpaid', 'paid'] as VendorFilter[]).map((vf) => (
+              <button
+                key={vf}
+                onClick={() => setVendorFilter(vf)}
+                className={`px-3 py-2 rounded-xl text-xs font-bold capitalize transition cursor-pointer shrink-0 ${
+                  vendorFilter === vf
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-[#0C0C0E] text-zinc-400 hover:text-white border border-[#222228]'
+                }`}
+              >
+                {vf === 'all' ? 'All Orders' : vf === 'unpaid' ? '⚠️ Unpaid to Vendor' : '✓ Paid to Vendor'}
+              </button>
+            ))}
+          </div>
+
+          {/* View Mode Switcher */}
+          <div className="flex items-center gap-1 bg-[#0A0A0E] border border-[#22222E] p-1 rounded-xl shrink-0">
             <button
-              key={vf}
-              onClick={() => setVendorFilter(vf)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold capitalize transition cursor-pointer shrink-0 ${
-                vendorFilter === vf
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-[#0C0C0E] text-zinc-400 hover:text-white border border-[#222228]'
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-[#1E1E2A] text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
               }`}
+              title="Table View (Sleek SaaS)"
             >
-              {vf === 'all' ? 'All Orders' : vf === 'unpaid' ? '⚠️ Unpaid to Vendor' : '✓ Paid to Vendor'}
+              <LayoutList className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Table</span>
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                viewMode === 'cards'
+                  ? 'bg-[#1E1E2A] text-white shadow-sm'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+              title="Cards View"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cards</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -668,6 +703,166 @@ export default function AdminFinancesPage() {
               </button>
             </div>
           )}
+        </div>
+      ) : viewMode === 'table' ? (
+        /* ================= HIGH-DENSITY ACCOUNTING LEDGER TABLE ================= */
+        <div className="bg-[#0C0C10] border border-[#1E1E28] rounded-2xl overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[#1E1E28] bg-[#08080C]/80 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                  <th className="py-3.5 px-4">Order ID & Date</th>
+                  <th className="py-3.5 px-4">Tool(s) Sold</th>
+                  <th className="py-3.5 px-4">Sale Value</th>
+                  <th className="py-3.5 px-4">Supplier Cost</th>
+                  <th className="py-3.5 px-4">Net Profit</th>
+                  <th className="py-3.5 px-4">Vendor & Status</th>
+                  <th className="py-3.5 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1A1A24]">
+                {filteredOrders.map((order) => {
+                  const form = editStateMap[order.id] || {
+                    costPKR: '',
+                    vendorName: '',
+                    vendorPaymentStatus: 'unpaid',
+                    vendorNotes: '',
+                  };
+
+                  const isSaving = savingId === order.id;
+                  const isSaved = savedSuccessId === order.id;
+
+                  const rawCost = form.costPKR === '' ? 0 : Number(form.costPKR);
+                  const liveCost = isNaN(rawCost) ? 0 : Math.max(0, rawCost);
+                  const liveProfit = order.totalPKR - liveCost;
+                  const liveMargin = order.totalPKR > 0 ? Math.round((liveProfit / order.totalPKR) * 100) : 0;
+
+                  const orderDate = order.createdAt ? new Date(order.createdAt) : null;
+                  const formattedDate = orderDate && !isNaN(orderDate.getTime())
+                    ? orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : 'Recent';
+
+                  return (
+                    <tr key={order.id} className="hover:bg-[#14141E]/80 transition-colors">
+                      {/* Order ID & Customer */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="font-mono font-black text-white text-sm">
+                          {order.id}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 mt-0.5">
+                          {formattedDate} &bull; <span className="text-zinc-300 font-medium">{order.customerName}</span>
+                        </div>
+                      </td>
+
+                      {/* Tool / Item */}
+                      <td className="py-3 px-4 max-w-[200px]">
+                        <div className="font-medium text-white truncate text-xs">
+                          {order.items.map((i) => `${i.title} (x${i.quantity})`).join(', ')}
+                        </div>
+                      </td>
+
+                      {/* Sale Value */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="font-mono font-bold text-white text-xs">
+                          Rs {order.totalPKR.toLocaleString()}
+                        </span>
+                      </td>
+
+                      {/* Supplier Cost Input */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="relative w-28">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-zinc-500 font-bold">
+                            Rs
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={form.costPKR}
+                            onChange={(e) => handleFieldChange(order.id, 'costPKR', e.target.value)}
+                            className="w-full pl-7 pr-2 py-1.5 rounded-lg bg-black border border-[#2B2B3E] focus:border-amber-400 text-xs font-mono font-bold text-amber-400 focus:outline-none"
+                          />
+                        </div>
+                      </td>
+
+                      {/* Net Profit & Margin */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`font-mono font-black text-xs ${liveProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {liveProfit >= 0 ? `+Rs ${liveProfit.toLocaleString()}` : `-Rs ${Math.abs(liveProfit).toLocaleString()}`}
+                          </span>
+                          {order.totalPKR > 0 && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${liveProfit >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                              {liveMargin}%
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Vendor Name & Status Toggle */}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            placeholder="Vendor Name"
+                            value={form.vendorName}
+                            onChange={(e) => handleFieldChange(order.id, 'vendorName', e.target.value)}
+                            className="w-28 px-2 py-1.5 rounded-lg bg-black border border-[#2B2B3E] focus:border-purple-400 text-xs text-white placeholder-zinc-600 focus:outline-none"
+                          />
+                          <select
+                            value={form.vendorPaymentStatus}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                order.id,
+                                'vendorPaymentStatus',
+                                e.target.value as 'paid' | 'unpaid'
+                              )
+                            }
+                            className={`px-2 py-1.5 rounded-lg text-[11px] font-bold border focus:outline-none cursor-pointer ${
+                              form.vendorPaymentStatus === 'paid'
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                                : 'bg-red-500/15 border-red-500/40 text-red-400'
+                            }`}
+                          >
+                            <option value="unpaid" className="bg-[#101018] text-red-400">Unpaid</option>
+                            <option value="paid" className="bg-[#101018] text-emerald-400">Paid</option>
+                          </select>
+                        </div>
+                      </td>
+
+                      {/* Save Action */}
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveOrderFinance(order)}
+                          disabled={isSaving}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 ml-auto transition cursor-pointer ${
+                            isSaved
+                              ? 'bg-emerald-500 text-black'
+                              : 'bg-zinc-800 hover:bg-zinc-700 text-white'
+                          }`}
+                        >
+                          {isSaving ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : isSaved ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>Saved!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3.5 h-3.5" />
+                              <span>Save</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
