@@ -44,11 +44,6 @@ export async function PUT(
       vendorName,
       vendorPaymentStatus,
       vendorNotes,
-      accountEmail,
-      accountPassword,
-      accountProfileOrPin,
-      accountLoginNotes,
-      credentialsDelivered,
       subscriptionDurationDays,
       subscriptionExpiryDate,
       renewalStatus,
@@ -86,13 +81,6 @@ export async function PUT(
     if (vendorNotes !== undefined) {
       updates.vendorNotes = String(vendorNotes).trim();
     }
-
-    // Digital Credentials & Dispatch fields
-    if (accountEmail !== undefined) updates.accountEmail = String(accountEmail).trim();
-    if (accountPassword !== undefined) updates.accountPassword = String(accountPassword).trim();
-    if (accountProfileOrPin !== undefined) updates.accountProfileOrPin = String(accountProfileOrPin).trim();
-    if (accountLoginNotes !== undefined) updates.accountLoginNotes = String(accountLoginNotes).trim();
-    if (credentialsDelivered !== undefined) updates.credentialsDelivered = Boolean(credentialsDelivered);
 
     // Subscription & Renewal fields
     if (subscriptionDurationDays !== undefined) {

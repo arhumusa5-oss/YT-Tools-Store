@@ -25,7 +25,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
-import CredentialsCard from '@/components/CredentialsCard';
 
 export default function DirectPaymentInvoicePage() {
   const params = useParams();
@@ -362,22 +361,6 @@ export default function DirectPaymentInvoicePage() {
                 </span>
               </div>
             </div>
-
-            {/* 1-Click Copy Credentials Box if active */}
-            {(order.accountEmail || order.accountPassword || order.accountProfileOrPin || order.accountLoginNotes) && (
-              <div className="pt-2">
-                <CredentialsCard
-                  orderId={order.id}
-                  accountEmail={order.accountEmail}
-                  accountPassword={order.accountPassword}
-                  accountProfileOrPin={order.accountProfileOrPin}
-                  accountLoginNotes={order.accountLoginNotes}
-                  subscriptionExpiryDate={order.subscriptionExpiryDate}
-                  subscriptionDurationDays={order.subscriptionDurationDays}
-                  productTitle={order.items.map((i) => i.title).join(', ')}
-                />
-              </div>
-            )}
 
             {order.status === 'completed' ? (
               /* Completed: Clean Return to Store CTA */

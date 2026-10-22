@@ -58,13 +58,6 @@ export interface Order {
   vendorPaymentStatus?: 'paid' | 'unpaid'; // Whether admin paid the vendor
   vendorNotes?: string;
 
-  // Digital Credentials & Dispatch Fields
-  accountEmail?: string;
-  accountPassword?: string;
-  accountProfileOrPin?: string;
-  accountLoginNotes?: string;
-  credentialsDelivered?: boolean;
-
   // Subscription Expiry & Renewal Tracking Fields
   subscriptionDurationDays?: number; // e.g. 30, 90, 365
   subscriptionExpiryDate?: string; // YYYY-MM-DD
