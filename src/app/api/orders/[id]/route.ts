@@ -48,6 +48,7 @@ export async function PUT(
       subscriptionExpiryDate,
       renewalStatus,
       renewalNotes,
+      lastRenewalEmailSentAt,
     } = body;
 
     const updates: Record<string, unknown> = {};
@@ -94,6 +95,9 @@ export async function PUT(
     }
     if (renewalNotes !== undefined) {
       updates.renewalNotes = String(renewalNotes).trim();
+    }
+    if (lastRenewalEmailSentAt !== undefined) {
+      updates.lastRenewalEmailSentAt = String(lastRenewalEmailSentAt).trim();
     }
 
     const updated = await db.updateOrder(id, updates);

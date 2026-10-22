@@ -18,6 +18,7 @@ import {
   Users,
   Layers,
   Wallet,
+  CalendarClock,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Bundle Links', href: '/admin/bundles', icon: Layers },
     { label: 'Add Product', href: '/admin/products/new', icon: PlusCircle },
     { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
+    { label: 'Renewals & Expiry', href: '/admin/renewals', icon: CalendarClock },
     { label: 'Finances & Profit', href: '/admin/finances', icon: Wallet },
     { label: 'Customers', href: '/admin/users', icon: Users },
     { label: 'Reviews', href: '/admin/reviews', icon: MessageSquareQuote },

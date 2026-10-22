@@ -63,6 +63,7 @@ export interface Order {
   subscriptionExpiryDate?: string; // YYYY-MM-DD
   renewalStatus?: 'active' | 'expiring_soon' | 'expired' | 'renewed';
   renewalNotes?: string;
+  lastRenewalEmailSentAt?: string; // ISO date string when renewal reminder email was sent
 }
 
 export interface Review {
