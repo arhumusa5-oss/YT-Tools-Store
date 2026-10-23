@@ -31,6 +31,21 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
 
+    // Guard: Prevent customer payment submissions on cancelled orders
+    if (
+      existingOrder.status === 'cancelled' &&
+      (body.paymentStatus === 'paid' || body.transactionId || body.paymentProofUrl || body.advanceTID || body.balanceTID) &&
+      body.status !== 'cancelled' &&
+      body.isAdminRequest !== true &&
+      body.adminNotes === undefined &&
+      body.costPKR === undefined
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'This order has been cancelled by the store and cannot accept payment submissions.' },
+        { status: 400 }
+      );
+    }
+
     const {
       status,
       adminNotes,

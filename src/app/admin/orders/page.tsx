@@ -1833,19 +1833,31 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* Dedicated Customer Payment Invoice Bar */}
-                {(order.isDirectInvoice || order.paymentStatus === 'unpaid' || order.status === 'pending') && (
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-purple-950/20 border border-purple-500/30">
+                {(order.isDirectInvoice || order.paymentStatus === 'unpaid' || order.status === 'pending' || order.status === 'cancelled') && (
+                  <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border ${
+                    order.status === 'cancelled'
+                      ? 'bg-red-950/20 border-red-500/30'
+                      : 'bg-purple-950/20 border-purple-500/30'
+                  }`}>
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        order.status === 'cancelled'
+                          ? 'bg-red-500/20 text-red-300'
+                          : 'bg-purple-500/20 text-purple-300'
+                      }`}>
                         <Receipt className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-purple-300">
+                          <span className={`text-[10px] font-black uppercase tracking-wider ${
+                            order.status === 'cancelled' ? 'text-red-300' : 'text-purple-300'
+                          }`}>
                             Customer Payment Invoice Link
                           </span>
-                          <span className="text-[10px] font-semibold text-zinc-400">
-                            • {order.paymentStatus === 'paid' ? 'Paid' : 'Awaiting Payment'}
+                          <span className={`text-[10px] font-bold ${
+                            order.status === 'cancelled' ? 'text-red-400' : 'text-zinc-400'
+                          }`}>
+                            • {order.status === 'cancelled' ? 'Cancelled (Payment Closed)' : order.paymentStatus === 'paid' ? 'Paid' : 'Awaiting Payment'}
                           </span>
                         </div>
                         <div className="font-mono text-xs text-zinc-300 truncate select-all">

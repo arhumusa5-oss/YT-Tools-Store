@@ -23,8 +23,10 @@ import {
   Package,
   Store,
   ExternalLink,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import WhatsAppIcon from '@/components/WhatsAppIcon';
 
 export default function DirectPaymentInvoicePage() {
   const params = useParams();
@@ -45,8 +47,9 @@ export default function DirectPaymentInvoicePage() {
   const [formError, setFormError] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Settings for payment accounts
+  // Settings for payment accounts & contact
   const [paymentAccounts, setPaymentAccounts] = useState<any>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState('+92 3702260919');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -73,8 +76,13 @@ export default function DirectPaymentInvoicePage() {
           setErrorMsg('Payment invoice not found or link has expired.');
         }
 
-        if (settingsData.success && settingsData.settings?.paymentAccounts) {
-          setPaymentAccounts(settingsData.settings.paymentAccounts);
+        if (settingsData.success && settingsData.settings) {
+          if (settingsData.settings.whatsappNumber) {
+            setWhatsappNumber(settingsData.settings.whatsappNumber);
+          }
+          if (settingsData.settings.paymentAccounts) {
+            setPaymentAccounts(settingsData.settings.paymentAccounts);
+          }
         }
       } catch {
         setErrorMsg('Failed to load invoice details. Please check your internet connection.');
@@ -239,6 +247,11 @@ export default function DirectPaymentInvoicePage() {
     e.preventDefault();
     if (!order) return;
 
+    if (order.status === 'cancelled') {
+      setFormError('This order has been cancelled by the store administrator. Payment submission is closed.');
+      return;
+    }
+
     setFormError('');
 
     if (!transactionId.trim()) {
@@ -312,6 +325,15 @@ export default function DirectPaymentInvoicePage() {
     }
   };
 
+  const isCancelled = order?.status === 'cancelled';
+  const cleanWhatsApp = (whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const whatsappCancelMsg = order
+    ? encodeURIComponent(
+        `Assalam o Alaikum, my Order #${order.id} for "${order.items?.map((i) => i.title).join(', ')}" is marked as Cancelled on the payment invoice. I would like to inquire about this.`
+      )
+    : '';
+  const whatsappCancelHref = `https://wa.me/${cleanWhatsApp}?text=${whatsappCancelMsg}`;
+
   const isAlreadyPaid = !isSplit
     ? Boolean(order?.paymentStatus === 'paid' || (order?.transactionId && order?.paymentProofUrl))
     : splitStage === 'completed';
@@ -341,6 +363,150 @@ export default function DirectPaymentInvoicePage() {
               <Link
                 href="/"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-bold text-xs shadow-md shadow-[#660000]/25 transition"
+              >
+                <Store className="w-4 h-4" />
+                <span>Return to Store</span>
+              </Link>
+            </div>
+          </div>
+        ) : isCancelled ? (
+          /* Cancelled Invoice View - Invoice shown, payment disabled with clear Cancelled status */
+          <div className="bg-white dark:bg-[#0c0c12] border-2 border-red-500/40 dark:border-red-500/30 rounded-3xl p-6 sm:p-9 shadow-2xl space-y-6 animate-in fade-in transition-colors">
+            {/* Header Badge & Title */}
+            <div className="text-center pb-5 border-b border-[#f0ebeb] dark:border-white/10">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-red-100 dark:bg-red-950/70 text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-wider mb-2 border border-red-500/30 shadow-sm">
+                <XCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>OFFICIAL INVOICE • CANCELLED</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400 tracking-tight">
+                Invoice Cancelled
+              </h1>
+              <p className="text-xs text-[#111827] dark:text-zinc-300 mt-1.5 font-medium">
+                Order <strong className="font-mono text-red-600 dark:text-red-400 font-bold">{order.id}</strong> issued for{' '}
+                <strong className="text-[#0a0a0a] dark:text-white">{order.customerName}</strong>
+              </p>
+            </div>
+
+            {/* Prominent Cancel Notice Box */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-red-50 dark:bg-red-950/40 border-2 border-red-500/40 text-left space-y-2 shadow-sm">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-300 font-black text-xs uppercase tracking-wide">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>Order Cancelled — Payment Disabled</span>
+              </div>
+              <p className="text-xs text-red-900 dark:text-red-200 font-semibold leading-relaxed">
+                Yeh order store administrator ki taraf se <strong>Cancel</strong> kar diya gaya hai. Is invoice par ab mazeed koi payment submit ya confirm nahi ho sakti.
+              </p>
+              <p className="text-[11px] text-red-700/80 dark:text-red-300/80 font-normal">
+                This invoice has been voided and marked as Cancelled. Payments cannot be confirmed or submitted for this order.
+              </p>
+            </div>
+
+            {/* Products & Pricing Breakdown (Shown clearly as requested) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-[#e5e7eb] dark:border-white/5">
+                <span className="text-[10px] text-[#111827] dark:text-zinc-300 uppercase font-black tracking-wider block">
+                  Products &amp; Pricing Breakdown
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400 border border-red-500/30">
+                  Cancelled
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-3.5 h-3.5 text-[#660000] dark:text-[#ff6b6b] shrink-0" />
+                      <span className="font-bold text-[#0a0a0a] dark:text-white">
+                        {item.title} <span className="text-[#4b5563] dark:text-zinc-300 font-bold">x{item.quantity}</span>
+                      </span>
+                    </div>
+                    <span className="font-bold text-[#0a0a0a] dark:text-white">
+                      {formatPrice(item.pricePKR * item.quantity, item.priceUSD * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {isSplit && (
+                <div className="pt-2.5 border-t border-[#d1c7c7] dark:border-white/10 text-xs space-y-1.5 text-left">
+                  <div className="flex justify-between text-[#4b5563] dark:text-zinc-400">
+                    <span>Total Deal Value:</span>
+                    <span className="font-mono font-bold text-[#0a0a0a] dark:text-white">Rs {totalAmountPKR.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                    <span>Step 1 Advance:</span>
+                    <span className="font-mono font-bold">Rs {advanceAmountPKR.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-zinc-500 dark:text-zinc-400">
+                    <span>Step 2 Balance:</span>
+                    <span className="font-mono font-bold">Rs {balanceAmountPKR.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-[#d1c7c7] dark:border-white/10 flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-[#0a0a0a] dark:text-white">
+                  Total Amount:
+                </span>
+                <div className="text-right">
+                  <span className="text-xl font-black text-[#660000] dark:text-[#ff6b6b] mr-2">
+                    Rs {totalAmountPKR.toLocaleString()}
+                  </span>
+                  <span className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-wide">
+                    (Cancelled)
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Details Metadata */}
+            <div className="p-4 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 text-left text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Order ID:</span>
+                <span className="font-mono font-black text-red-600 dark:text-red-400 text-sm">{order.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Customer Name:</span>
+                <span className="font-bold text-black dark:text-white">{order.customerName}</span>
+              </div>
+              {order.customerWhatsApp && (
+                <div className="flex justify-between">
+                  <span className="text-[#111827] dark:text-zinc-300 font-bold">Customer WhatsApp:</span>
+                  <span className="font-mono font-bold text-black dark:text-white">{order.customerWhatsApp}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Invoice Status:</span>
+                <span className="font-black uppercase text-red-600 dark:text-red-400">CANCELLED</span>
+              </div>
+            </div>
+
+            {/* Disabled / Closed Indicator */}
+            <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-[#141420] border border-zinc-200 dark:border-white/10 text-center space-y-1">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                <span>Payment Confirmation Disabled</span>
+              </div>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                Payments cannot be submitted or confirmed for this cancelled invoice.
+              </p>
+            </div>
+
+            {/* CTAs */}
+            <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+              <a
+                href={whatsappCancelHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#25D366]/25 transition active:scale-95 cursor-pointer"
+              >
+                <WhatsAppIcon className="w-4 h-4 fill-white" />
+                <span>Contact Support on WhatsApp</span>
+              </a>
+              <Link
+                href="/"
+                className="py-3.5 px-6 rounded-full bg-[#faf8f8] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-xs font-bold text-[#0a0a0a] dark:text-white border border-[#d1c7c7] dark:border-white/10 transition text-center flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Store className="w-4 h-4" />
                 <span>Return to Store</span>
