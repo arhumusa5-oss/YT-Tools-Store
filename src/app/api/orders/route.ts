@@ -103,3 +103,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  try {
+    const deletedCount = await db.deleteAllOrders();
+    return NextResponse.json({
+      success: true,
+      message: `All ${deletedCount} orders deleted successfully`,
+      count: deletedCount,
+    });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+  }
+}

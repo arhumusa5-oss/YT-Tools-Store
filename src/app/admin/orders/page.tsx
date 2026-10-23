@@ -109,6 +109,11 @@ export default function AdminOrdersPage() {
   // Copy Invoice Link State & Helper
   const [copiedInvoiceId, setCopiedInvoiceId] = useState<string | null>(null);
 
+  // Delete All Orders State
+  const [isDeleteAllModalOpen, setIsDeleteAllModalOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [deleteAllConfirmInput, setDeleteAllConfirmInput] = useState('');
+
   const getInvoiceUrl = (orderId: string) => {
     const cleanId = orderId.replace(/^#/, '');
     if (typeof window !== 'undefined') {
@@ -783,6 +788,28 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleDeleteAllOrders = async () => {
+    setIsDeletingAll(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrders([]);
+        setIsDeleteAllModalOpen(false);
+        setDeleteAllConfirmInput('');
+        alert(`All orders have been permanently deleted.`);
+      } else {
+        alert(data.error || 'Failed to delete all orders.');
+      }
+    } catch {
+      alert('Network error. Failed to delete all orders.');
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const formatRenewalMessage = (order: Order) => {
     const storeOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://yttoolsstore.pk';
     const itemsText = order.items.map((i) => i.title).join(', ');
@@ -1084,6 +1111,19 @@ export default function AdminOrdersPage() {
             className="px-3.5 py-2.5 rounded-xl bg-[#161926] hover:bg-[#202538] text-zinc-300 hover:text-white border border-[#2B3147] text-xs font-semibold transition cursor-pointer"
           >
             Refresh
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteAllConfirmInput('');
+              setIsDeleteAllModalOpen(true);
+            }}
+            className="px-3.5 py-2.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 border border-red-500/40 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-sm"
+            title="Permanently delete all customer orders from store"
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+            <span>Delete All Orders</span>
           </button>
         </div>
       </div>
@@ -3766,6 +3806,77 @@ export default function AdminOrdersPage() {
                 <span>Download / View Original</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Orders Confirmation Modal */}
+      {isDeleteAllModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#12121a] border-2 border-red-500/50 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 border border-red-500/30">
+                <Trash2 className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-white">Delete All Customer Orders</h3>
+                <p className="text-xs text-red-400 font-semibold">Warning: This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30 text-xs text-zinc-300 space-y-1.5">
+              <p>
+                You are about to permanently delete <strong className="text-white font-mono">{orders.length} orders</strong> from the store database.
+              </p>
+              <p className="text-zinc-400 text-[11px]">
+                All customer invoices, payment proofs, and tracking history associated with these orders will be wiped clean.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-zinc-300">
+                Type <span className="text-red-400 font-mono font-black">DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteAllConfirmInput}
+                onChange={(e) => setDeleteAllConfirmInput(e.target.value)}
+                placeholder="Type DELETE..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0c0c12] border border-red-500/40 text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 text-xs font-mono font-bold"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteAllModalOpen(false);
+                  setDeleteAllConfirmInput('');
+                }}
+                disabled={isDeletingAll}
+                className="px-4 py-2.5 rounded-xl bg-[#1c1c28] hover:bg-[#282838] text-xs font-bold text-zinc-300 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAllOrders}
+                disabled={deleteAllConfirmInput.trim() !== 'DELETE' || isDeletingAll}
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-red-600/30 transition cursor-pointer"
+              >
+                {isDeletingAll ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Deleting All Orders...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Yes, Delete All Orders</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

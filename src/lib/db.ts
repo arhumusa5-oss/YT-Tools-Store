@@ -495,6 +495,14 @@ export const db = {
     return false;
   },
 
+  async deleteAllOrders(): Promise<number> {
+    const data = await getData();
+    const count = data.orders.length;
+    data.orders = [];
+    await saveData(data);
+    return count;
+  },
+
   // Reviews
   async getReviews(): Promise<Review[]> {
     const data = await getData();
