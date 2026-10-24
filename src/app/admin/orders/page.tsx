@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Order, Product } from '@/lib/types';
+import { Order, Product, InvoiceCustomField, InvoiceInstructionNote } from '@/lib/types';
 import {
   ShoppingBag,
   Search,
@@ -84,6 +84,7 @@ export default function AdminOrdersPage() {
   const [invoiceCustomerWhatsApp, setInvoiceCustomerWhatsApp] = useState('');
   const [invoiceCustomerEmail, setInvoiceCustomerEmail] = useState('');
   const [invoiceOrderId, setInvoiceOrderId] = useState('');
+  const [invoiceDate, setInvoiceDate] = useState('');
   const [invoiceNotes, setInvoiceNotes] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState<'pending' | 'completed'>('pending');
   const [invoiceItems, setInvoiceItems] = useState<
@@ -96,6 +97,11 @@ export default function AdminOrdersPage() {
       image: string;
     }>
   >([]);
+  const [invoiceCustomFields, setInvoiceCustomFields] = useState<InvoiceCustomField[]>([]);
+  const [invoiceInstructionNotes, setInvoiceInstructionNotes] = useState<InvoiceInstructionNote[]>([]);
+  const [showInvoiceCustomerSuggestions, setShowInvoiceCustomerSuggestions] = useState(false);
+  const [showModalCustomerSuggestions, setShowModalCustomerSuggestions] = useState(false);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [generatedOrder, setGeneratedOrder] = useState<Order | null>(null);
@@ -180,6 +186,99 @@ export default function AdminOrdersPage() {
   const [modalAdvanceTID, setModalAdvanceTID] = useState('');
   const [modalBalanceTID, setModalBalanceTID] = useState('');
   const [modalSplitPaymentStatus, setModalSplitPaymentStatus] = useState<Order['splitPaymentStatus']>('advance_paid');
+
+  // Customer Autocomplete & Derivation from Orders History
+  const pastCustomers = useMemo(() => {
+    const map = new Map<string, { name: string; whatsapp: string; email: string }>();
+    orders.forEach((o) => {
+      const trimmedName = (o.customerName || '').trim();
+      if (!trimmedName) return;
+      const key = trimmedName.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          name: trimmedName,
+          whatsapp: (o.customerWhatsApp || '').trim(),
+          email: (o.customerEmail || '').trim(),
+        });
+      } else {
+        const existing = map.get(key)!;
+        if (!existing.whatsapp && o.customerWhatsApp) {
+          existing.whatsapp = o.customerWhatsApp.trim();
+        }
+        if (!existing.email && o.customerEmail) {
+          existing.email = o.customerEmail.trim();
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [orders]);
+
+  const filteredInvoiceCustomers = useMemo(() => {
+    const query = invoiceCustomerName.trim().toLowerCase();
+    if (!query) return [];
+    return pastCustomers
+      .filter((c) => c.name.toLowerCase().includes(query) || c.whatsapp.includes(query))
+      .slice(0, 6);
+  }, [pastCustomers, invoiceCustomerName]);
+
+  const filteredModalCustomers = useMemo(() => {
+    const query = modalCustomerName.trim().toLowerCase();
+    if (!query) return [];
+    return pastCustomers
+      .filter((c) => c.name.toLowerCase().includes(query) || c.whatsapp.includes(query))
+      .slice(0, 6);
+  }, [pastCustomers, modalCustomerName]);
+
+  // Live Search Suggestions for Search Bar
+  const searchSuggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    const matches: Array<{
+      type: 'order' | 'customer';
+      title: string;
+      sub: string;
+      searchValue: string;
+    }> = [];
+    const seenOrderKeys = new Set<string>();
+    const seenCustomerKeys = new Set<string>();
+
+    orders.forEach((o) => {
+      const idStr = String(o.id || '').toLowerCase();
+      const cleanId = idStr.replace(/^#/, '');
+      const nameStr = String(o.customerName || '').toLowerCase();
+      const phoneStr = String(o.customerWhatsApp || '').toLowerCase();
+
+      if ((idStr.includes(q) || cleanId.includes(q)) && !seenOrderKeys.has(o.id)) {
+        seenOrderKeys.add(o.id);
+        matches.push({
+          type: 'order',
+          title: o.id,
+          sub: `${o.customerName} • Rs ${Number(o.totalPKR || 0).toLocaleString()} • ${o.status}`,
+          searchValue: o.id,
+        });
+      }
+
+      if ((nameStr.includes(q) || phoneStr.includes(q)) && !seenCustomerKeys.has(nameStr)) {
+        seenCustomerKeys.add(nameStr);
+        matches.push({
+          type: 'customer',
+          title: o.customerName,
+          sub: `${o.customerWhatsApp || 'No WhatsApp'} • past customer`,
+          searchValue: o.customerName,
+        });
+      }
+    });
+
+    return matches.slice(0, 8);
+  }, [orders, search]);
+
+  const nextCalculatedId = useMemo(() => {
+    const numericIds = orders
+      .map((o) => parseInt(o.id.replace(/\D/g, ''), 10))
+      .filter((n) => !isNaN(n));
+    const maxId = numericIds.length > 0 ? Math.max(...numericIds) : 2508;
+    return `#${maxId + 1}`;
+  }, [orders]);
 
   const fetchOrders = async (silent = false) => {
     try {
@@ -318,32 +417,14 @@ export default function AdminOrdersPage() {
     setInvoiceStatus('pending');
     setIsSplitInvoice(false);
     setAdvanceAmountPKR('');
+    setInvoiceCustomFields([]);
+    setInvoiceInstructionNotes([]);
+    setShowInvoiceCustomerSuggestions(false);
+    setInvoiceDate(new Date().toISOString().slice(0, 10));
+    setInvoiceOrderId(nextCalculatedId);
+    // By default, payment link items are empty as requested
+    setInvoiceItems([]);
     fetchProductsAndSettings();
-
-    // Default with first available product or empty
-    if (products.length > 0) {
-      setInvoiceItems([
-        {
-          productId: products[0].id,
-          title: products[0].title,
-          pricePKR: products[0].pricePKR,
-          priceUSD: products[0].priceUSD,
-          quantity: 1,
-          image: products[0].images?.[0] || '/images/default-tool.png',
-        },
-      ]);
-    } else {
-      setInvoiceItems([
-        {
-          productId: 'custom-item',
-          title: 'YouTube Premium 1 Month',
-          pricePKR: 450,
-          priceUSD: 2,
-          quantity: 1,
-          image: '/images/default-tool.png',
-        },
-      ]);
-    }
   };
 
   const handleAddItem = (product?: Product) => {
@@ -415,6 +496,7 @@ export default function AdminOrdersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: invoiceOrderId.trim(),
+          createdAt: invoiceDate ? `${invoiceDate}T12:00:00.000Z` : undefined,
           customerName: invoiceCustomerName.trim(),
           customerWhatsApp: invoiceCustomerWhatsApp.trim(),
           customerEmail: invoiceCustomerEmail.trim(),
@@ -429,6 +511,13 @@ export default function AdminOrdersPage() {
           balanceAmountPKR: isSplitInvoice
             ? Math.max(0, invoiceTotalPKR - (Number(advanceAmountPKR) || Math.round(invoiceTotalPKR / 2)))
             : undefined,
+          customFields: invoiceCustomFields.filter((f) => f.label.trim()),
+          instructionNotes: invoiceInstructionNotes
+            .filter((n) => n.note.trim() || (n.copyableBoxes && n.copyableBoxes.some((b) => b.trim())))
+            .map((n) => ({
+              ...n,
+              copyableBoxes: (n.copyableBoxes || []).filter((b) => b.trim()),
+            })),
         }),
       });
 
@@ -451,7 +540,8 @@ export default function AdminOrdersPage() {
   const openCreateManualOrderModal = () => {
     setEditingOrder(null);
     setModalError('');
-    setModalOrderId(invoiceOrderId || '');
+    setModalOrderId(invoiceOrderId || nextCalculatedId || '');
+    setShowModalCustomerSuggestions(false);
     const nowLocal = new Date();
     const offset = nowLocal.getTimezoneOffset() * 60000;
     const localISOTime = new Date(nowLocal.getTime() - offset).toISOString().slice(0, 16);
@@ -1266,19 +1356,68 @@ export default function AdminOrdersPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setShowSearchSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowSearchSuggestions(true);
+            }}
             placeholder="Search by Order ID (#2505), Customer name, WhatsApp, TID, Tool..."
             className="w-full pl-10 pr-9 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs placeholder-zinc-500 focus:outline-none transition-colors"
           />
           {search && (
             <button
               type="button"
-              onClick={() => setSearch('')}
+              onClick={() => {
+                setSearch('');
+                setShowSearchSuggestions(false);
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white p-1 cursor-pointer"
               title="Clear search"
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          )}
+
+          {/* Live Search Suggestions Dropdown */}
+          {showSearchSuggestions && searchSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-[#0e0e14] border border-[#2b2b3a] rounded-xl shadow-2xl overflow-hidden divide-y divide-[#1e1e28] animate-in fade-in duration-150">
+              <div className="px-3 py-1.5 bg-[#14141c] text-[10px] font-black uppercase tracking-wider text-zinc-400 flex items-center justify-between">
+                <span>Matching Suggestions</span>
+                <span className="text-[9px] text-zinc-500">Click to filter</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {searchSuggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setSearch(item.searchValue);
+                      setShowSearchSuggestions(false);
+                    }}
+                    className="px-3.5 py-2 hover:bg-[#1a1a26] cursor-pointer transition flex items-center justify-between text-xs"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-2">
+                        {item.type === 'order' ? (
+                          <Receipt className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        ) : (
+                          <User className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        )}
+                        <span className="font-bold text-white truncate">{item.title}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300 uppercase font-mono">
+                          {item.type}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-400 truncate mt-0.5 ml-5">
+                        {item.sub}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-orange-400 font-bold shrink-0">Filter →</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
@@ -2180,6 +2319,133 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
 
+                {/* Submitted Custom Information */}
+                {order.customFields && order.customFields.some((f) => f.value) && (
+                  <div className="p-3.5 rounded-xl bg-blue-950/25 border border-blue-500/30 space-y-2">
+                    <span className="text-[10px] text-blue-300 uppercase font-black tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Customer Provided Information / Links</span>
+                    </span>
+                    <div className="space-y-1.5 text-xs">
+                      {order.customFields
+                        .filter((f) => f.value)
+                        .map((f) => {
+                          const val = f.value || '';
+                          const isUrl =
+                            f.type === 'url' ||
+                            val.startsWith('http://') ||
+                            val.startsWith('https://') ||
+                            val.includes('youtube.com') ||
+                            val.includes('youtu.be') ||
+                            val.startsWith('www.');
+                          const href = val.startsWith('http') ? val : `https://${val}`;
+                          return (
+                            <div
+                              key={f.id}
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-black/50 p-2.5 rounded-lg border border-blue-500/20"
+                            >
+                              <span className="text-zinc-400 font-medium text-[11px]">{f.label}:</span>
+                              {isUrl ? (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2.5 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 font-bold text-[11px] inline-flex items-center gap-1 border border-blue-500/40 transition truncate max-w-[220px]"
+                                  >
+                                    <span className="truncate">{val}</span>
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(val);
+                                      setCopiedInvoiceId(`cf-${f.id}`);
+                                      setTimeout(() => setCopiedInvoiceId(null), 2000);
+                                    }}
+                                    className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                                    title="Copy link"
+                                  >
+                                    {copiedInvoiceId === `cf-${f.id}` ? (
+                                      <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="font-bold text-white font-mono break-all text-xs">{val}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(val);
+                                      setCopiedInvoiceId(`cf-${f.id}`);
+                                      setTimeout(() => setCopiedInvoiceId(null), 2000);
+                                    }}
+                                    className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                                    title="Copy text"
+                                  >
+                                    {copiedInvoiceId === `cf-${f.id}` ? (
+                                      <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Instructions & Copyable Items if any */}
+                {order.instructionNotes && order.instructionNotes.length > 0 && (
+                  <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-2">
+                    <span className="text-[10px] text-amber-300 uppercase font-black tracking-wider flex items-center gap-1.5">
+                      <Receipt className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Store Instructions &amp; Copyable Boxes</span>
+                    </span>
+                    <div className="space-y-2 text-xs">
+                      {order.instructionNotes.map((noteItem, nIdx) => (
+                        <div key={noteItem.id || nIdx} className="space-y-1.5 bg-black/50 p-2.5 rounded-lg border border-amber-500/20">
+                          {noteItem.note && (
+                            <p className="text-zinc-300 font-medium text-xs whitespace-pre-line">
+                              {noteItem.note}
+                            </p>
+                          )}
+                          {noteItem.copyableBoxes && noteItem.copyableBoxes.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {noteItem.copyableBoxes.map((box, bIdx) => (
+                                <button
+                                  key={bIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(box);
+                                    setCopiedInvoiceId(`card-box-${nIdx}-${bIdx}`);
+                                    setTimeout(() => setCopiedInvoiceId(null), 2000);
+                                  }}
+                                  className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-amber-500/20 text-white font-mono text-[11px] inline-flex items-center gap-1.5 transition cursor-pointer"
+                                  title="Click to copy"
+                                >
+                                  <span>{box}</span>
+                                  {copiedInvoiceId === `card-box-${nIdx}-${bIdx}` ? (
+                                    <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                  ) : (
+                                    <Copy className="w-3 h-3 text-amber-400" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Renewal Alert Banner (Expiring Soon or Expired) */}
                 {diffDays !== null && order.renewalStatus !== 'renewed' && (
                   <>
@@ -2654,6 +2920,133 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
 
+                {/* Customer Submitted Information in Drawer */}
+                {selectedOrderForDrawer.customFields && selectedOrderForDrawer.customFields.some((f) => f.value) && (
+                  <div className="p-4 rounded-xl bg-blue-950/25 border border-blue-500/30 space-y-2.5">
+                    <span className="text-[10px] text-blue-300 uppercase font-black tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Customer Provided Information / Links</span>
+                    </span>
+                    <div className="space-y-2 text-xs">
+                      {selectedOrderForDrawer.customFields
+                        .filter((f) => f.value)
+                        .map((f) => {
+                          const val = f.value || '';
+                          const isUrl =
+                            f.type === 'url' ||
+                            val.startsWith('http://') ||
+                            val.startsWith('https://') ||
+                            val.includes('youtube.com') ||
+                            val.includes('youtu.be') ||
+                            val.startsWith('www.');
+                          const href = val.startsWith('http') ? val : `https://${val}`;
+                          return (
+                            <div
+                              key={f.id}
+                              className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 bg-black/60 p-2.5 rounded-lg border border-blue-500/20"
+                            >
+                              <span className="text-zinc-400 font-medium text-[11px]">{f.label}:</span>
+                              {isUrl ? (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-2.5 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 font-bold text-[11px] inline-flex items-center gap-1 border border-blue-500/40 transition truncate max-w-[240px]"
+                                  >
+                                    <span className="truncate">{val}</span>
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(val);
+                                      setCopiedInvoiceId(`drawer-cf-${f.id}`);
+                                      setTimeout(() => setCopiedInvoiceId(null), 2000);
+                                    }}
+                                    className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                                    title="Copy link"
+                                  >
+                                    {copiedInvoiceId === `drawer-cf-${f.id}` ? (
+                                      <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className="font-bold text-white font-mono break-all text-xs">{val}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(val);
+                                      setCopiedInvoiceId(`drawer-cf-${f.id}`);
+                                      setTimeout(() => setCopiedInvoiceId(null), 2000);
+                                    }}
+                                    className="p-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
+                                    title="Copy text"
+                                  >
+                                    {copiedInvoiceId === `drawer-cf-${f.id}` ? (
+                                      <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                    ) : (
+                                      <Copy className="w-3 h-3" />
+                                    )}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Instructions in Drawer */}
+                {selectedOrderForDrawer.instructionNotes && selectedOrderForDrawer.instructionNotes.length > 0 && (
+                  <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-2.5">
+                    <span className="text-[10px] text-amber-300 uppercase font-black tracking-wider flex items-center gap-1.5">
+                      <Receipt className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Store Instructions &amp; Copyable Boxes</span>
+                    </span>
+                    <div className="space-y-2 text-xs">
+                      {selectedOrderForDrawer.instructionNotes.map((noteItem, nIdx) => (
+                        <div key={noteItem.id || nIdx} className="space-y-1.5 bg-black/60 p-2.5 rounded-lg border border-amber-500/20">
+                          {noteItem.note && (
+                            <p className="text-zinc-300 font-medium text-xs whitespace-pre-line">
+                              {noteItem.note}
+                            </p>
+                          )}
+                          {noteItem.copyableBoxes && noteItem.copyableBoxes.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {noteItem.copyableBoxes.map((box, bIdx) => (
+                                <button
+                                  key={bIdx}
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(box);
+                                    setCopiedInvoiceId(`drawer-box-${nIdx}-${bIdx}`);
+                                    setTimeout(() => setCopiedInvoiceId(null), 2000);
+                                  }}
+                                  className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 border border-amber-500/20 text-white font-mono text-[11px] inline-flex items-center gap-1.5 transition cursor-pointer"
+                                  title="Click to copy"
+                                >
+                                  <span>{box}</span>
+                                  {copiedInvoiceId === `drawer-box-${nIdx}-${bIdx}` ? (
+                                    <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                                  ) : (
+                                    <Copy className="w-3 h-3 text-amber-400" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* 3. Payment Verification & Receipt Proof */}
                 <div className="p-4 rounded-xl bg-black/60 border border-[#1A1A24] space-y-3">
                   <span className="text-[10px] text-zinc-500 uppercase font-black tracking-wider block">
@@ -2951,37 +3344,83 @@ export default function AdminOrdersPage() {
                   </div>
                 )}
 
-                {/* Order ID Auto-Fetch */}
+                {/* Order ID & Invoice Date */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-zinc-300 mb-1">
-                      Order ID (Auto-Fetched)
+                      Order ID (Auto-Generated)
                     </label>
                     <input
                       type="text"
                       value={invoiceOrderId}
                       onChange={(e) => setInvoiceOrderId(e.target.value)}
-                      placeholder="#2506"
+                      placeholder="#2509"
                       className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs font-mono font-bold text-white focus:outline-none focus:border-[#660000]"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Invoice Date
+                    </label>
+                    <input
+                      type="date"
+                      value={invoiceDate}
+                      onChange={(e) => setInvoiceDate(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs font-medium text-white focus:outline-none focus:border-[#660000] cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Customer Full Name with Autocomplete Suggestions */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="relative">
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
                       Customer Full Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Usman Ali"
+                      placeholder="e.g. Wajahat Ali"
                       value={invoiceCustomerName}
-                      onChange={(e) => setInvoiceCustomerName(e.target.value)}
+                      onFocus={() => setShowInvoiceCustomerSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowInvoiceCustomerSuggestions(false), 200)}
+                      onChange={(e) => {
+                        setInvoiceCustomerName(e.target.value);
+                        setShowInvoiceCustomerSuggestions(true);
+                      }}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#660000]"
                     />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Autocomplete Dropdown */}
+                    {showInvoiceCustomerSuggestions && filteredInvoiceCustomers.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-[#12121a] border border-zinc-700 rounded-xl shadow-2xl overflow-hidden divide-y divide-zinc-800">
+                        <div className="px-3 py-1 bg-zinc-900 text-[10px] font-bold uppercase text-zinc-400">
+                          Past Customer Suggestions (Auto-fill)
+                        </div>
+                        {filteredInvoiceCustomers.map((c, cIdx) => (
+                          <div
+                            key={cIdx}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setInvoiceCustomerName(c.name);
+                              if (c.whatsapp) setInvoiceCustomerWhatsApp(c.whatsapp);
+                              if (c.email) setInvoiceCustomerEmail(c.email);
+                              setShowInvoiceCustomerSuggestions(false);
+                            }}
+                            className="px-3 py-2 hover:bg-zinc-800 cursor-pointer transition text-xs flex items-center justify-between"
+                          >
+                            <div>
+                              <span className="font-bold text-white block">{c.name}</span>
+                              <span className="text-[11px] text-zinc-400 font-mono">{c.whatsapp}</span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400 font-bold">Auto-fill →</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-zinc-300 mb-1">
                       WhatsApp Number <span className="text-red-500">*</span>
@@ -2995,19 +3434,19 @@ export default function AdminOrdersPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#660000]"
                     />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-300 mb-1">
-                      Email Address <span className="text-zinc-500">(Optional)</span>
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="e.g. usman@gmail.com"
-                      value={invoiceCustomerEmail}
-                      onChange={(e) => setInvoiceCustomerEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#660000]"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                    Email Address <span className="text-zinc-500">(Optional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="e.g. wajahat@gmail.com"
+                    value={invoiceCustomerEmail}
+                    onChange={(e) => setInvoiceCustomerEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#660000]"
+                  />
                 </div>
 
                 {/* Items Selection */}
@@ -3045,47 +3484,53 @@ export default function AdminOrdersPage() {
                   </div>
 
                   <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                    {invoiceItems.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded-xl bg-black border border-zinc-800 flex items-center gap-2 text-xs"
-                      >
-                        <input
-                          type="text"
-                          value={item.title}
-                          onChange={(e) => handleItemChange(idx, 'title', e.target.value)}
-                          placeholder="Product Title"
-                          className="flex-[2] bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none"
-                        />
-                        <div className="flex items-center gap-1 flex-1">
-                          <span className="text-zinc-500 text-[11px]">Rs</span>
-                          <input
-                            type="number"
-                            value={item.pricePKR}
-                            onChange={(e) => handleItemChange(idx, 'pricePKR', Number(e.target.value))}
-                            placeholder="Price"
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1 w-16">
-                          <span className="text-zinc-500 text-[11px]">x</span>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => handleItemChange(idx, 'quantity', Number(e.target.value))}
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none text-center"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(idx)}
-                          className="p-1.5 text-zinc-500 hover:text-red-400 transition cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    {invoiceItems.length === 0 ? (
+                      <div className="p-4 rounded-xl bg-black/40 border border-zinc-800/80 text-center text-xs text-zinc-500">
+                        No products added yet. Click <strong>&quot;+ Add Store Product&quot;</strong> or <strong>&quot;+ Custom Item&quot;</strong> above to add items.
                       </div>
-                    ))}
+                    ) : (
+                      invoiceItems.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl bg-black border border-zinc-800 flex items-center gap-2 text-xs"
+                        >
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => handleItemChange(idx, 'title', e.target.value)}
+                            placeholder="Product Title"
+                            className="flex-[2] bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none"
+                          />
+                          <div className="flex items-center gap-1 flex-1">
+                            <span className="text-zinc-500 text-[11px]">Rs</span>
+                            <input
+                              type="number"
+                              value={item.pricePKR}
+                              onChange={(e) => handleItemChange(idx, 'pricePKR', Number(e.target.value))}
+                              placeholder="Price"
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 w-16">
+                            <span className="text-zinc-500 text-[11px]">x</span>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => handleItemChange(idx, 'quantity', Number(e.target.value))}
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-xs focus:outline-none text-center"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(idx)}
+                            className="p-1.5 text-zinc-500 hover:text-red-400 transition cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   {/* Total summary */}
@@ -3174,6 +3619,235 @@ export default function AdminOrdersPage() {
                       <p className="text-[10px] text-zinc-400 leading-relaxed">
                         ✓ Customer will see <strong>Step 1: Pay Advance (Rs {(Number(advanceAmountPKR) || Math.round(invoiceTotalPKR / 2)).toLocaleString()})</strong>. Once advance is submitted, the <strong>SAME single link</strong> will prompt for the remaining balance on delivery.
                       </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Custom Information Requested from Customer (+ Fields) */}
+                <div className="p-3.5 rounded-2xl bg-blue-950/20 border border-blue-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Request Info from Customer (e.g. Channel Link)</span>
+                      </span>
+                      <p className="text-[10px] text-zinc-400">
+                        Customer will be required/prompted to provide this before payment.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setInvoiceCustomFields([
+                          ...invoiceCustomFields,
+                          {
+                            id: `field_${Date.now()}`,
+                            label: '',
+                            type: 'url',
+                            required: true,
+                            value: '',
+                          },
+                        ])
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add Field</span>
+                    </button>
+                  </div>
+
+                  {invoiceCustomFields.length > 0 && (
+                    <div className="space-y-2.5 pt-1">
+                      {invoiceCustomFields.map((field, fIdx) => (
+                        <div
+                          key={field.id || fIdx}
+                          className="p-3 rounded-xl bg-black border border-zinc-800 space-y-2 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={field.label}
+                              onChange={(e) => {
+                                const updated = [...invoiceCustomFields];
+                                updated[fIdx].label = e.target.value;
+                                setInvoiceCustomFields(updated);
+                              }}
+                              placeholder="Field label (e.g. Provide Us Your Channel Link)"
+                              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-blue-500"
+                            />
+                            <select
+                              value={field.type}
+                              onChange={(e) => {
+                                const updated = [...invoiceCustomFields];
+                                updated[fIdx].type = e.target.value as any;
+                                setInvoiceCustomFields(updated);
+                              }}
+                              className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-zinc-200 text-xs focus:outline-none cursor-pointer"
+                            >
+                              <option value="url">Link / URL</option>
+                              <option value="text">Single-line Text</option>
+                              <option value="textarea">Multi-line Note</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setInvoiceCustomFields(invoiceCustomFields.filter((_, i) => i !== fIdx))
+                              }
+                              className="p-1.5 text-zinc-500 hover:text-red-400 transition cursor-pointer"
+                              title="Delete field"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px]">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={field.required}
+                                onChange={(e) => {
+                                  const updated = [...invoiceCustomFields];
+                                  updated[fIdx].required = e.target.checked;
+                                  setInvoiceCustomFields(updated);
+                                }}
+                                className="w-3.5 h-3.5 rounded text-blue-600 bg-zinc-900 border-zinc-700 cursor-pointer"
+                              />
+                              <span className={field.required ? 'text-blue-300 font-bold' : 'text-zinc-400'}>
+                                {field.required ? '✓ Mandatory / Required' : 'Optional'}
+                              </span>
+                            </label>
+                            <span className="text-zinc-500 text-[10px]">
+                              {field.type === 'url' ? 'Customer enters URL/link' : 'Customer enters text'}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Store Instruction Notes with Copyable Boxes */}
+                <div className="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Receipt className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Instructions with 1-Click Copyable Boxes</span>
+                      </span>
+                      <p className="text-[10px] text-zinc-400">
+                        Add text notes &amp; copyable boxes (e.g. emails) for customers to copy with 1 click.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setInvoiceInstructionNotes([
+                          ...invoiceInstructionNotes,
+                          {
+                            id: `note_${Date.now()}`,
+                            note: '',
+                            copyableBoxes: [''],
+                          },
+                        ])
+                      }
+                      className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Add Instruction</span>
+                    </button>
+                  </div>
+
+                  {invoiceInstructionNotes.length > 0 && (
+                    <div className="space-y-3 pt-1">
+                      {invoiceInstructionNotes.map((noteItem, nIdx) => (
+                        <div
+                          key={noteItem.id || nIdx}
+                          className="p-3 rounded-xl bg-black border border-zinc-800 space-y-2 text-xs"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <textarea
+                              rows={2}
+                              value={noteItem.note}
+                              onChange={(e) => {
+                                const updated = [...invoiceInstructionNotes];
+                                updated[nIdx].note = e.target.value;
+                                setInvoiceInstructionNotes(updated);
+                              }}
+                              placeholder="Instruction note (e.g. Give Manager Access in Those Two Mails)"
+                              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-xs focus:outline-none focus:border-amber-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setInvoiceInstructionNotes(
+                                  invoiceInstructionNotes.filter((_, i) => i !== nIdx)
+                                )
+                              }
+                              className="p-1.5 text-zinc-500 hover:text-red-400 transition cursor-pointer shrink-0"
+                              title="Delete instruction"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Copyable Boxes for this instruction */}
+                          <div className="space-y-1.5 pl-1 border-l-2 border-amber-500/30">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-zinc-400 font-semibold">
+                                Copyable Item Boxes (1-Click Copy on Invoice):
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...invoiceInstructionNotes];
+                                  updated[nIdx].copyableBoxes = [
+                                    ...(updated[nIdx].copyableBoxes || []),
+                                    '',
+                                  ];
+                                  setInvoiceInstructionNotes(updated);
+                                }}
+                                className="text-[10px] text-amber-400 hover:underline font-bold cursor-pointer"
+                              >
+                                + Add Box
+                              </button>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              {(noteItem.copyableBoxes || []).map((box, bIdx) => (
+                                <div key={bIdx} className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={box}
+                                    onChange={(e) => {
+                                      const updated = [...invoiceInstructionNotes];
+                                      const boxes = [...(updated[nIdx].copyableBoxes || [])];
+                                      boxes[bIdx] = e.target.value;
+                                      updated[nIdx].copyableBoxes = boxes;
+                                      setInvoiceInstructionNotes(updated);
+                                    }}
+                                    placeholder="e.g. manager1@gmail.com"
+                                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1 text-white font-mono text-xs focus:outline-none focus:border-amber-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...invoiceInstructionNotes];
+                                      updated[nIdx].copyableBoxes = (
+                                        updated[nIdx].copyableBoxes || []
+                                      ).filter((_, i) => i !== bIdx);
+                                      setInvoiceInstructionNotes(updated);
+                                    }}
+                                    className="p-1 text-zinc-500 hover:text-red-400 transition cursor-pointer"
+                                    title="Delete box"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -3309,7 +3983,7 @@ export default function AdminOrdersPage() {
 
               {/* Customer Information */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
+                <div className="relative">
                   <label className="block text-xs font-bold text-zinc-300 mb-1">
                     Customer Name <span className="text-red-500">*</span>
                   </label>
@@ -3318,9 +3992,42 @@ export default function AdminOrdersPage() {
                     required
                     placeholder="e.g. Usman Ali"
                     value={modalCustomerName}
-                    onChange={(e) => setModalCustomerName(e.target.value)}
+                    onFocus={() => setShowModalCustomerSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowModalCustomerSuggestions(false), 200)}
+                    onChange={(e) => {
+                      setModalCustomerName(e.target.value);
+                      setShowModalCustomerSuggestions(true);
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-black border border-zinc-700 text-xs text-white focus:outline-none focus:border-[#FF5500]"
                   />
+
+                  {/* Autocomplete Dropdown */}
+                  {showModalCustomerSuggestions && filteredModalCustomers.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-[#12121a] border border-zinc-700 rounded-xl shadow-2xl overflow-hidden divide-y divide-zinc-800">
+                      <div className="px-3 py-1 bg-zinc-900 text-[10px] font-bold uppercase text-zinc-400">
+                        Past Customer Suggestions (Auto-fill)
+                      </div>
+                      {filteredModalCustomers.map((c, cIdx) => (
+                        <div
+                          key={cIdx}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setModalCustomerName(c.name);
+                            if (c.whatsapp) setModalCustomerWhatsApp(c.whatsapp);
+                            if (c.email) setModalCustomerEmail(c.email);
+                            setShowModalCustomerSuggestions(false);
+                          }}
+                          className="px-3 py-2 hover:bg-zinc-800 cursor-pointer transition text-xs flex items-center justify-between"
+                        >
+                          <div>
+                            <span className="font-bold text-white block">{c.name}</span>
+                            <span className="text-[11px] text-zinc-400 font-mono">{c.whatsapp}</span>
+                          </div>
+                          <span className="text-[10px] text-emerald-400 font-bold">Auto-fill →</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>

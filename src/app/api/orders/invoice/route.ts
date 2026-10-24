@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
       isSplitPayment,
       advanceAmountPKR,
       balanceAmountPKR,
+      customFields,
+      instructionNotes,
+      createdAt,
     } = body;
 
     if (!customerName || !customerWhatsApp || !items || items.length === 0) {
@@ -68,6 +71,9 @@ export async function POST(req: NextRequest) {
       status: status === 'completed' ? 'completed' : 'pending',
       isDirectInvoice: true,
       paymentStatus: 'unpaid',
+      createdAt: createdAt ? String(createdAt).trim() : undefined,
+      customFields: Array.isArray(customFields) ? customFields : undefined,
+      instructionNotes: Array.isArray(instructionNotes) ? instructionNotes : undefined,
       adminNotes: note ? `Invoice Note: ${note}` : undefined,
       isSplitPayment: Boolean(isSplitPayment),
       advanceAmountPKR: isSplitPayment

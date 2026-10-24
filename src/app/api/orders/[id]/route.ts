@@ -173,6 +173,8 @@ export async function PUT(
     if (balanceProofUrl !== undefined) updates.balanceProofUrl = String(balanceProofUrl).trim();
     if (balancePaymentMethod !== undefined) updates.balancePaymentMethod = String(balancePaymentMethod).trim();
     if (splitPaymentStatus !== undefined) updates.splitPaymentStatus = splitPaymentStatus;
+    if (body.customFields !== undefined && Array.isArray(body.customFields)) updates.customFields = body.customFields;
+    if (body.instructionNotes !== undefined && Array.isArray(body.instructionNotes)) updates.instructionNotes = body.instructionNotes;
 
     const updated = await db.updateOrder(id, updates);
     if (!updated) {

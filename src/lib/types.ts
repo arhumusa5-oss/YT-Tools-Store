@@ -32,6 +32,20 @@ export interface OrderItem {
   image: string;
 }
 
+export interface InvoiceCustomField {
+  id: string;
+  label: string;
+  type?: 'text' | 'url' | 'textarea';
+  required: boolean;
+  value?: string;
+}
+
+export interface InvoiceInstructionNote {
+  id: string;
+  note: string;
+  copyableBoxes?: string[];
+}
+
 export interface Order {
   id: string;
   customerName: string;
@@ -50,6 +64,10 @@ export interface Order {
   isDirectInvoice?: boolean;
   paymentStatus?: 'unpaid' | 'paid';
   createdAt: string;
+
+  // Custom Invoice Fields requested from customer & Admin copyable instructions
+  customFields?: InvoiceCustomField[];
+  instructionNotes?: InvoiceInstructionNote[];
 
   // Order Financial Accounting Fields
   costPKR?: number; // Cost of goods / supplier cost

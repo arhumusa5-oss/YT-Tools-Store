@@ -24,6 +24,9 @@ import {
   Store,
   ExternalLink,
   XCircle,
+  Key,
+  HelpCircle,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
@@ -50,6 +53,7 @@ export default function DirectPaymentInvoicePage() {
   // Settings for payment accounts & contact
   const [paymentAccounts, setPaymentAccounts] = useState<any>(null);
   const [whatsappNumber, setWhatsappNumber] = useState('+92 3702260919');
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -72,6 +76,13 @@ export default function DirectPaymentInvoicePage() {
 
         if (orderData.success && orderData.order) {
           setOrder(orderData.order);
+          if (orderData.order.customFields && Array.isArray(orderData.order.customFields)) {
+            const initialVals: Record<string, string> = {};
+            orderData.order.customFields.forEach((f: any) => {
+              initialVals[f.id] = f.value || '';
+            });
+            setCustomFieldValues(initialVals);
+          }
         } else {
           setErrorMsg('Payment invoice not found or link has expired.');
         }
@@ -264,11 +275,32 @@ export default function DirectPaymentInvoicePage() {
       return;
     }
 
+    // Validate custom fields requested by admin
+    if (order.customFields && order.customFields.length > 0) {
+      for (const field of order.customFields) {
+        if (field.required) {
+          const val = (customFieldValues[field.id] || '').trim();
+          if (!val) {
+            setFormError(`Please provide "${field.label}" before submitting payment.`);
+            return;
+          }
+        }
+      }
+    }
+
     setSubmitting(true);
     try {
-      let bodyData: any = {};
+      const updatedCustomFields = (order.customFields || []).map((f) => ({
+        ...f,
+        value: (customFieldValues[f.id] || '').trim(),
+      }));
+
+      let bodyData: any = {
+        customFields: updatedCustomFields,
+      };
       if (!isSplit) {
         bodyData = {
+          ...bodyData,
           paymentMethod,
           transactionId: transactionId.trim(),
           paymentProofUrl: paymentProofUrl.trim(),
@@ -277,6 +309,7 @@ export default function DirectPaymentInvoicePage() {
         };
       } else if (splitStage === 'stage1_advance') {
         bodyData = {
+          ...bodyData,
           advancePaymentMethod: paymentMethod,
           advanceTID: transactionId.trim(),
           advanceProofUrl: paymentProofUrl.trim(),
@@ -289,6 +322,7 @@ export default function DirectPaymentInvoicePage() {
         };
       } else if (splitStage === 'stage2_balance') {
         bodyData = {
+          ...bodyData,
           balancePaymentMethod: paymentMethod,
           balanceTID: transactionId.trim(),
           balanceProofUrl: paymentProofUrl.trim(),
@@ -579,6 +613,46 @@ export default function DirectPaymentInvoicePage() {
                   </a>
                 </div>
               )}
+
+              {/* Submitted Custom Information */}
+              {order.customFields && order.customFields.some((f) => f.value) && (
+                <div className="pt-2 border-t border-[#d1c7c7] dark:border-white/10 space-y-1.5">
+                  <span className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400">
+                    Your Provided Information:
+                  </span>
+                  {order.customFields
+                    .filter((f) => f.value)
+                    .map((f) => {
+                      const val = f.value || '';
+                      const isUrl =
+                        f.type === 'url' ||
+                        val.startsWith('http://') ||
+                        val.startsWith('https://') ||
+                        val.includes('youtube.com') ||
+                        val.includes('youtu.be') ||
+                        val.startsWith('www.');
+                      const href = val.startsWith('http') ? val : `https://${val}`;
+                      return (
+                        <div key={f.id} className="flex flex-col sm:flex-row sm:justify-between text-xs gap-0.5">
+                          <span className="text-zinc-500 dark:text-zinc-400 font-medium">{f.label}:</span>
+                          {isUrl ? (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 break-all"
+                            >
+                              <span>{val}</span>
+                              <ExternalLink className="w-3 h-3 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="font-bold text-black dark:text-white break-all">{val}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
               {isSplit && (
                 <div className="p-3.5 rounded-xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#d1c7c7] dark:border-white/10 text-xs space-y-1.5 text-left">
                   <div className="flex justify-between">
@@ -602,6 +676,63 @@ export default function DirectPaymentInvoicePage() {
                 </span>
               </div>
             </div>
+
+            {/* Instruction Notes in Receipt Card if any */}
+            {order.instructionNotes && order.instructionNotes.length > 0 && (
+              <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/30 text-left space-y-3">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-black text-xs uppercase tracking-wider">
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span>Store Instructions &amp; Copyable Info</span>
+                </div>
+                <div className="space-y-2.5">
+                  {order.instructionNotes.map((noteItem, nIdx) => (
+                    <div key={noteItem.id || nIdx} className="space-y-2 text-xs">
+                      {noteItem.note && (
+                        <p className="font-semibold text-[#0a0a0a] dark:text-zinc-200 leading-relaxed whitespace-pre-line">
+                          {noteItem.note}
+                        </p>
+                      )}
+                      {noteItem.copyableBoxes && noteItem.copyableBoxes.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                          {noteItem.copyableBoxes.map((box, bIdx) => {
+                            const fieldId = `receipt-note-${nIdx}-${bIdx}`;
+                            const isCopied = copiedField === fieldId;
+                            return (
+                              <div
+                                key={bIdx}
+                                className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#14141e] border border-amber-500/20 shadow-sm"
+                              >
+                                <span className="font-mono text-xs font-bold text-[#0a0a0a] dark:text-white truncate select-all pr-2">
+                                  {box}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(box, fieldId)}
+                                  className="shrink-0 p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                                  title="Copy to clipboard"
+                                >
+                                  {isCopied ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                      <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {order.status === 'completed' ? (
               /* Completed: Clean Return to Store CTA */
@@ -808,6 +939,63 @@ export default function DirectPaymentInvoicePage() {
               </div>
             </div>
 
+            {/* Store Instruction Notes with Copyable Boxes */}
+            {order.instructionNotes && order.instructionNotes.length > 0 && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/30 space-y-3.5 text-left">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-black text-xs uppercase tracking-wider">
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span>Important Instructions from Store</span>
+                </div>
+                <div className="space-y-3">
+                  {order.instructionNotes.map((noteItem, nIdx) => (
+                    <div key={noteItem.id || nIdx} className="space-y-2 text-xs">
+                      {noteItem.note && (
+                        <p className="font-semibold text-[#0a0a0a] dark:text-zinc-200 leading-relaxed whitespace-pre-line">
+                          {noteItem.note}
+                        </p>
+                      )}
+                      {noteItem.copyableBoxes && noteItem.copyableBoxes.length > 0 && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                          {noteItem.copyableBoxes.map((box, bIdx) => {
+                            const fieldId = `invoice-note-${nIdx}-${bIdx}`;
+                            const isCopied = copiedField === fieldId;
+                            return (
+                              <div
+                                key={bIdx}
+                                className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#14141e] border border-amber-500/20 shadow-sm"
+                              >
+                                <span className="font-mono text-xs font-bold text-[#0a0a0a] dark:text-white truncate select-all pr-2">
+                                  {box}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => copyToClipboard(box, fieldId)}
+                                  className="shrink-0 p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 transition cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                                  title="Copy to clipboard"
+                                >
+                                  {isCopied ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                      <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span>Copy</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {formError && (
               <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2 animate-shake">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -815,7 +1003,67 @@ export default function DirectPaymentInvoicePage() {
               </div>
             )}
 
-            <form onSubmit={handleConfirmPayment} className="space-y-5">
+            <form onSubmit={handleConfirmPayment} className="space-y-5 text-left">
+              {/* Custom Information Requested by Admin */}
+              {order.customFields && order.customFields.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-blue-500/5 dark:bg-blue-950/20 border border-blue-500/30 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-wider text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <span>Required Order Information</span>
+                    </label>
+                    <span className="text-[10px] text-blue-700 dark:text-blue-400 font-bold uppercase tracking-wider">
+                      Please Fill
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {order.customFields.map((field) => {
+                      const val = customFieldValues[field.id] || '';
+                      return (
+                        <div key={field.id} className="space-y-1.5">
+                          <label className="block text-xs font-bold text-[#0a0a0a] dark:text-zinc-200">
+                            {field.label}
+                            {field.required ? (
+                              <span className="text-red-500 font-black ml-1">* (Required)</span>
+                            ) : (
+                              <span className="text-zinc-500 dark:text-zinc-400 font-medium ml-1 text-[11px]">(Optional)</span>
+                            )}
+                          </label>
+
+                          {field.type === 'textarea' ? (
+                            <textarea
+                              rows={3}
+                              value={val}
+                              onChange={(e) =>
+                                setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))
+                              }
+                              placeholder={`Enter ${field.label.toLowerCase()}...`}
+                              required={field.required}
+                              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#14141e] border border-[#d1c7c7] dark:border-white/10 text-xs font-medium text-[#0a0a0a] dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#660000] dark:focus:ring-[#ff6b6b]"
+                            />
+                          ) : (
+                            <input
+                              type={field.type === 'url' ? 'url' : 'text'}
+                              value={val}
+                              onChange={(e) =>
+                                setCustomFieldValues((prev) => ({ ...prev, [field.id]: e.target.value }))
+                              }
+                              placeholder={
+                                field.type === 'url'
+                                  ? 'https://youtube.com/... or paste link here'
+                                  : `Enter ${field.label.toLowerCase()}...`
+                              }
+                              required={field.required}
+                              className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#14141e] border border-[#d1c7c7] dark:border-white/10 text-xs font-medium text-[#0a0a0a] dark:text-white placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#660000] dark:focus:ring-[#ff6b6b]"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {/* Step 1: Payment Method Tabs */}
               <div className="space-y-2.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#0a0a0a] dark:text-white">
