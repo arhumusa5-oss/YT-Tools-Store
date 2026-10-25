@@ -19,6 +19,7 @@ import {
   Layers,
   Wallet,
   CalendarClock,
+  Activity,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -64,6 +65,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { label: 'Live Traffic & Analytics', href: '/admin/analytics', icon: Activity },
+    { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
     { label: 'Products', href: '/admin/products', icon: Package },
     { label: 'Bundle Links', href: '/admin/bundles', icon: Layers },
     { label: 'Add Product', href: '/admin/products/new', icon: PlusCircle },

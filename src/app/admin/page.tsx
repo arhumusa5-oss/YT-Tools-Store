@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Sparkles,
   Wallet,
+  Activity,
 } from 'lucide-react';
 
 type FilterPeriod = 'lifetime' | 'this_month' | 'last_month' | 'custom_month';
@@ -41,6 +42,13 @@ export default function AdminDashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [analyticsStats, setAnalyticsStats] = useState<{
+    liveVisitorsCount: number;
+    todayVisitors: number;
+    todayPageviews: number;
+    todayOrders: number;
+    conversionRate: number;
+  } | null>(null);
 
   // Time-period filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>('lifetime');
@@ -53,9 +61,10 @@ export default function AdminDashboardPage() {
   const fetchData = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const [prodRes, orderRes] = await Promise.all([
+      const [prodRes, orderRes, anaRes] = await Promise.all([
         fetch('/api/products'),
         fetch('/api/orders'),
+        fetch('/api/analytics/stats', { headers: { 'Cache-Control': 'no-cache' } }).catch(() => null),
       ]);
 
       const prodData = await prodRes.json();
@@ -66,6 +75,19 @@ export default function AdminDashboardPage() {
       }
       if (orderData.success && Array.isArray(orderData.orders)) {
         setOrders(orderData.orders);
+      }
+
+      if (anaRes && anaRes.ok) {
+        const anaData = await anaRes.json();
+        if (anaData.success && anaData.stats) {
+          setAnalyticsStats({
+            liveVisitorsCount: anaData.stats.liveVisitorsCount ?? 0,
+            todayVisitors: anaData.stats.today?.visitors ?? 0,
+            todayPageviews: anaData.stats.today?.pageviews ?? 0,
+            todayOrders: anaData.stats.today?.orders ?? 0,
+            conversionRate: anaData.stats.today?.conversionRate ?? 0,
+          });
+        }
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -272,6 +294,40 @@ export default function AdminDashboardPage() {
             <span>Add New Product</span>
           </Link>
         </div>
+      </div>
+
+      {/* ================= LIVE STORE TRAFFIC & CONVERSION PULSE STRIP ================= */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#0c0c14] via-[#12121c] to-[#0c0c14] border border-[#242436] shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="relative flex h-3.5 w-3.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-lg font-black text-white">
+                {analyticsStats?.liveVisitorsCount ?? 0}
+              </span>
+              <span className="text-xs font-bold text-zinc-300">
+                {(analyticsStats?.liveVisitorsCount ?? 0) === 1 ? 'Customer Browsing Right Now' : 'Customers Browsing Right Now'}
+              </span>
+              <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                Live (Admin Excluded)
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Today: <strong className="text-white font-mono">{analyticsStats?.todayVisitors ?? 0}</strong> unique visitors &bull; <strong className="text-white font-mono">{analyticsStats?.todayPageviews ?? 0}</strong> views &bull; <strong className="text-emerald-400 font-mono">{analyticsStats?.todayOrders ?? 0}</strong> orders ({analyticsStats?.conversionRate ?? 0}% conversion)
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/admin/analytics"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#FF7733] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 transition shadow-md shadow-orange-500/20 active:scale-95 shrink-0"
+        >
+          <Activity className="w-3.5 h-3.5" />
+          <span>Full Live Analytics &amp; Trends &rarr;</span>
+        </Link>
       </div>
 
       {/* ================= TIME RANGE FILTER BAR ================= */}
