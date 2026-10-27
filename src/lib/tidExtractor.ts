@@ -1,4 +1,5 @@
 import { createWorker } from 'tesseract.js';
+import os from 'os';
 
 let sharedWorker: any = null;
 let workerInitializing = false;
@@ -6,16 +7,20 @@ let workerInitializing = false;
 async function getWorker() {
   if (sharedWorker) return sharedWorker;
   if (workerInitializing) {
-    // Wait briefly if another call is currently initializing
-    while (workerInitializing && !sharedWorker) {
+    let waited = 0;
+    while (workerInitializing && !sharedWorker && waited < 4000) {
       await new Promise((resolve) => setTimeout(resolve, 100));
+      waited += 100;
     }
     if (sharedWorker) return sharedWorker;
   }
 
   workerInitializing = true;
   try {
-    sharedWorker = await createWorker('eng');
+    const cachePath = os.tmpdir();
+    sharedWorker = await createWorker('eng', 1, {
+      cachePath,
+    });
   } catch (err) {
     console.error('Failed to create Tesseract worker:', err);
     sharedWorker = null;
@@ -115,19 +120,31 @@ export function extractTidFromText(text: string): string | null {
 }
 
 export async function recognizeTidFromImage(imageBuffer: Buffer): Promise<{ tid: string | null; rawText: string }> {
-  try {
-    const worker = await getWorker();
-    if (!worker) {
+  // Wrap with a strict 6-second timeout so it never hangs requests
+  const timeoutPromise = new Promise<{ tid: string | null; rawText: string }>((resolve) => {
+    setTimeout(() => {
+      console.warn('OCR recognition timed out after 6 seconds.');
+      resolve({ tid: null, rawText: '' });
+    }, 6000);
+  });
+
+  const workerPromise = (async () => {
+    try {
+      const worker = await getWorker();
+      if (!worker) {
+        return { tid: null, rawText: '' };
+      }
+
+      const ret = await worker.recognize(imageBuffer);
+      const rawText = ret?.data?.text || '';
+      const tid = extractTidFromText(rawText);
+
+      return { tid, rawText };
+    } catch (err) {
+      console.error('Error during OCR TID recognition:', err);
       return { tid: null, rawText: '' };
     }
+  })();
 
-    const ret = await worker.recognize(imageBuffer);
-    const rawText = ret?.data?.text || '';
-    const tid = extractTidFromText(rawText);
-
-    return { tid, rawText };
-  } catch (err) {
-    console.error('Error during OCR TID recognition:', err);
-    return { tid: null, rawText: '' };
-  }
+  return Promise.race([workerPromise, timeoutPromise]);
 }

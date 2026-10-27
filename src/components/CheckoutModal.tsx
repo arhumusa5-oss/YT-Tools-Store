@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { validateEmail, validateWhatsAppNumber } from '@/lib/validation';
+import { resizeImageForOcr } from '@/lib/clientImageHelper';
 import {
   X,
   ArrowLeft,
@@ -52,6 +53,7 @@ export default function CheckoutModal() {
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'bank' | 'binance'>('easypaisa');
   const [transactionId, setTransactionId] = useState('');
   const [tidAutoDetected, setTidAutoDetected] = useState(false);
+  const [isDetectingTid, setIsDetectingTid] = useState(false);
   const [paymentProofUrl, setPaymentProofUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -81,6 +83,7 @@ export default function CheckoutModal() {
       setPhoneError('');
       setEmailError('');
       setTidAutoDetected(false);
+      setIsDetectingTid(false);
     }
   }, [isCheckoutOpen]);
 
@@ -273,6 +276,7 @@ export default function CheckoutModal() {
       const formData = new FormData();
       formData.append('file', file);
 
+      // 1. Fast upload (completes in ~200ms)
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -283,15 +287,37 @@ export default function CheckoutModal() {
         throw new Error(data.error || 'Failed to upload receipt screenshot.');
       }
 
+      // Immediately show the uploaded receipt preview to the user
       setPaymentProofUrl(data.url);
-      if (data.extractedTid) {
-        setTransactionId(data.extractedTid);
-        setTidAutoDetected(true);
-      }
-      setErrorMsg(''); // Clear any previous screenshot missing error
+      setUploadingReceipt(false);
+      setErrorMsg('');
+
+      // 2. Background Asynchronous TID Auto-Detection (never blocks the upload or ordering)
+      setIsDetectingTid(true);
+      (async () => {
+        try {
+          const resizedBase64 = await resizeImageForOcr(file);
+          const tidRes = await fetch('/api/extract-tid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageBase64: resizedBase64 || undefined,
+              url: !resizedBase64 ? data.url : undefined,
+            }),
+          });
+          const tidData = await tidRes.json();
+          if (tidData?.tid) {
+            setTransactionId((currentVal) => (currentVal && currentVal.trim() ? currentVal : tidData.tid));
+            setTidAutoDetected(true);
+          }
+        } catch (ocrErr) {
+          console.warn('Background TID extraction skipped:', ocrErr);
+        } finally {
+          setIsDetectingTid(false);
+        }
+      })();
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
-    } finally {
       setUploadingReceipt(false);
     }
   };
@@ -900,11 +926,15 @@ export default function CheckoutModal() {
                     <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200">
                       Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
                     </label>
-                    {tidAutoDetected && (
+                    {isDetectingTid ? (
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Detecting TID...
+                      </span>
+                    ) : tidAutoDetected ? (
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-in fade-in">
                         <CheckCircle2 className="w-3 h-3" /> Auto-detected from receipt
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <input
                     type="text"

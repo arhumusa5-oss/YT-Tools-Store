@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { recognizeTidFromImage } from '@/lib/tidExtractor';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,18 +35,6 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // OCR TID Auto-Extraction for payment screenshots
-    let extractedTid: string | null = null;
-    const shouldExtractTid = formData.get('extractTid') !== 'false';
-    if (shouldExtractTid && file.type.startsWith('image/')) {
-      try {
-        const ocrRes = await recognizeTidFromImage(buffer);
-        extractedTid = ocrRes.tid;
-      } catch (ocrErr) {
-        console.error('OCR processing error (non-fatal):', ocrErr);
-      }
-    }
-
     // Try saving to public/uploads
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     try {
@@ -67,7 +54,6 @@ export async function POST(req: NextRequest) {
         success: true,
         url: publicUrl,
         filename,
-        extractedTid,
       });
     } catch {
       // Fallback for environments with read-only filesystem (e.g. serverless):
@@ -79,7 +65,6 @@ export async function POST(req: NextRequest) {
         success: true,
         url: dataUri,
         filename: file.name,
-        extractedTid,
       });
     }
   } catch (err) {
