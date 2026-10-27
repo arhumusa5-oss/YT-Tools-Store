@@ -31,6 +31,7 @@ import {
 import Link from 'next/link';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { resizeImageForOcr } from '@/lib/clientImageHelper';
+import { scanTidFromClient } from '@/lib/clientTidScanner';
 
 export default function DirectPaymentInvoicePage() {
   const params = useParams();
@@ -229,22 +230,36 @@ export default function DirectPaymentInvoicePage() {
       setUploadingReceipt(false);
       setFormError('');
 
-      // 2. Background Asynchronous TID Auto-Detection
+      // 2. Dual Engine Background TID Auto-Detection (Client-Side Browser OCR + Server API parallel)
       setIsDetectingTid(true);
       (async () => {
         try {
           const resizedBase64 = await resizeImageForOcr(file);
-          const tidRes = await fetch('/api/extract-tid', {
+
+          // Launch Client-side browser scanning and Server-side API in parallel
+          const clientScanPromise = scanTidFromClient(resizedBase64 || file);
+
+          const serverScanPromise = fetch('/api/extract-tid', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               imageBase64: resizedBase64 || undefined,
               url: !resizedBase64 ? data.url : undefined,
             }),
-          });
-          const tidData = await tidRes.json();
-          if (tidData?.tid) {
-            setTransactionId((currentVal) => (currentVal && currentVal.trim() ? currentVal : tidData.tid));
+          })
+            .then((r) => r.json())
+            .then((d) => d?.tid || null)
+            .catch(() => null);
+
+          // Check whichever finishes first with a valid TID
+          const foundTid = await Promise.race([
+            clientScanPromise.then((t) => (t ? t : serverScanPromise)),
+            serverScanPromise.then((t) => (t ? t : clientScanPromise)),
+          ]);
+
+          const finalTid = foundTid || (await clientScanPromise) || (await serverScanPromise);
+          if (finalTid) {
+            setTransactionId((currentVal) => (currentVal && currentVal.trim() ? currentVal : finalTid));
             setTidAutoDetected(true);
           }
         } catch (ocrErr) {
