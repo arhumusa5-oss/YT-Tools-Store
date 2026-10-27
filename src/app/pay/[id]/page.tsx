@@ -30,8 +30,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
-import { resizeImageForOcr } from '@/lib/clientImageHelper';
-import { scanTidFromClient } from '@/lib/clientTidScanner';
 
 export default function DirectPaymentInvoicePage() {
   const params = useParams();
@@ -45,8 +43,6 @@ export default function DirectPaymentInvoicePage() {
   // Payment form states
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'bank' | 'binance'>('easypaisa');
   const [transactionId, setTransactionId] = useState('');
-  const [tidAutoDetected, setTidAutoDetected] = useState(false);
-  const [isDetectingTid, setIsDetectingTid] = useState(false);
   const [paymentProofUrl, setPaymentProofUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -214,7 +210,6 @@ export default function DirectPaymentInvoicePage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // 1. Fast upload (completes in ~200ms)
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -225,51 +220,11 @@ export default function DirectPaymentInvoicePage() {
         throw new Error(data.error || 'Failed to upload receipt screenshot.');
       }
 
-      // Immediately display uploaded proof so user is not waiting
       setPaymentProofUrl(data.url);
-      setUploadingReceipt(false);
       setFormError('');
-
-      // 2. Dual Engine Background TID Auto-Detection (Client-Side Browser OCR + Server API parallel)
-      setIsDetectingTid(true);
-      (async () => {
-        try {
-          const resizedBase64 = await resizeImageForOcr(file);
-
-          // Launch Client-side browser scanning and Server-side API in parallel
-          const clientScanPromise = scanTidFromClient(resizedBase64 || file);
-
-          const serverScanPromise = fetch('/api/extract-tid', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageBase64: resizedBase64 || undefined,
-              url: !resizedBase64 ? data.url : undefined,
-            }),
-          })
-            .then((r) => r.json())
-            .then((d) => d?.tid || null)
-            .catch(() => null);
-
-          // Check whichever finishes first with a valid TID
-          const foundTid = await Promise.race([
-            clientScanPromise.then((t) => (t ? t : serverScanPromise)),
-            serverScanPromise.then((t) => (t ? t : clientScanPromise)),
-          ]);
-
-          const finalTid = foundTid || (await clientScanPromise) || (await serverScanPromise);
-          if (finalTid) {
-            setTransactionId((currentVal) => (currentVal && currentVal.trim() ? currentVal : finalTid));
-            setTidAutoDetected(true);
-          }
-        } catch (ocrErr) {
-          console.warn('Background TID extraction skipped:', ocrErr);
-        } finally {
-          setIsDetectingTid(false);
-        }
-      })();
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } finally {
       setUploadingReceipt(false);
     }
   };
@@ -1253,29 +1208,15 @@ export default function DirectPaymentInvoicePage() {
 
               {/* Step 2: Transaction ID Input */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white">
-                    Step 2: Transaction ID (TID) <span className="text-red-600 dark:text-red-400">* (Required)</span>
-                  </label>
-                  {isDetectingTid ? (
-                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 animate-pulse">
-                      <Loader2 className="w-3 h-3 animate-spin" /> Detecting TID...
-                    </span>
-                  ) : tidAutoDetected ? (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-in fade-in">
-                      <CheckCircle2 className="w-3 h-3" /> Auto-detected from receipt
-                    </span>
-                  ) : null}
-                </div>
+                <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
+                  Step 2: Transaction ID (TID) <span className="text-red-600 dark:text-red-400">* (Required)</span>
+                </label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. TID: 01928374652 or Sender Mobile Number"
                   value={transactionId}
-                  onChange={(e) => {
-                    setTransactionId(e.target.value);
-                    setTidAutoDetected(false);
-                  }}
+                  onChange={(e) => setTransactionId(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs font-medium text-[#0a0a0a] dark:text-white placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition"
                 />
               </div>

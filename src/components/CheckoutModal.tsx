@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { validateEmail, validateWhatsAppNumber } from '@/lib/validation';
-import { resizeImageForOcr } from '@/lib/clientImageHelper';
-import { scanTidFromClient } from '@/lib/clientTidScanner';
 import {
   X,
   ArrowLeft,
@@ -53,8 +51,6 @@ export default function CheckoutModal() {
   // Payment Details Form State
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'bank' | 'binance'>('easypaisa');
   const [transactionId, setTransactionId] = useState('');
-  const [tidAutoDetected, setTidAutoDetected] = useState(false);
-  const [isDetectingTid, setIsDetectingTid] = useState(false);
   const [paymentProofUrl, setPaymentProofUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -83,8 +79,6 @@ export default function CheckoutModal() {
       setUploadError('');
       setPhoneError('');
       setEmailError('');
-      setTidAutoDetected(false);
-      setIsDetectingTid(false);
     }
   }, [isCheckoutOpen]);
 
@@ -277,7 +271,6 @@ export default function CheckoutModal() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // 1. Fast upload (completes in ~200ms)
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -288,51 +281,11 @@ export default function CheckoutModal() {
         throw new Error(data.error || 'Failed to upload receipt screenshot.');
       }
 
-      // Immediately show the uploaded receipt preview to the user
       setPaymentProofUrl(data.url);
-      setUploadingReceipt(false);
-      setErrorMsg('');
-
-      // 2. Dual Engine Background TID Auto-Detection (Client-Side Browser OCR + Server API parallel)
-      setIsDetectingTid(true);
-      (async () => {
-        try {
-          const resizedBase64 = await resizeImageForOcr(file);
-
-          // Launch Client-side browser scanning and Server-side API in parallel
-          const clientScanPromise = scanTidFromClient(resizedBase64 || file);
-
-          const serverScanPromise = fetch('/api/extract-tid', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageBase64: resizedBase64 || undefined,
-              url: !resizedBase64 ? data.url : undefined,
-            }),
-          })
-            .then((r) => r.json())
-            .then((d) => d?.tid || null)
-            .catch(() => null);
-
-          // Check whichever finishes first with a valid TID
-          const foundTid = await Promise.race([
-            clientScanPromise.then((t) => (t ? t : serverScanPromise)),
-            serverScanPromise.then((t) => (t ? t : clientScanPromise)),
-          ]);
-
-          const finalTid = foundTid || (await clientScanPromise) || (await serverScanPromise);
-          if (finalTid) {
-            setTransactionId((currentVal) => (currentVal && currentVal.trim() ? currentVal : finalTid));
-            setTidAutoDetected(true);
-          }
-        } catch (ocrErr) {
-          console.warn('Background TID extraction skipped:', ocrErr);
-        } finally {
-          setIsDetectingTid(false);
-        }
-      })();
+      setErrorMsg(''); // Clear any previous screenshot missing error
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } finally {
       setUploadingReceipt(false);
     }
   };
@@ -937,29 +890,15 @@ export default function CheckoutModal() {
 
                 {/* Mandatory TID Input */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200">
-                      Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
-                    </label>
-                    {isDetectingTid ? (
-                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Detecting TID...
-                      </span>
-                    ) : tidAutoDetected ? (
-                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-in fade-in">
-                        <CheckCircle2 className="w-3 h-3" /> Auto-detected from receipt
-                      </span>
-                    ) : null}
-                  </div>
+                  <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
+                    Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: +92 300 1234567"
                     value={transactionId}
-                    onChange={(e) => {
-                      setTransactionId(e.target.value);
-                      setTidAutoDetected(false);
-                    }}
+                    onChange={(e) => setTransactionId(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium"
                   />
                 </div>
