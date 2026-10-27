@@ -51,6 +51,7 @@ export default function CheckoutModal() {
   // Payment Details Form State
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'bank' | 'binance'>('easypaisa');
   const [transactionId, setTransactionId] = useState('');
+  const [tidAutoDetected, setTidAutoDetected] = useState(false);
   const [paymentProofUrl, setPaymentProofUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -79,6 +80,7 @@ export default function CheckoutModal() {
       setUploadError('');
       setPhoneError('');
       setEmailError('');
+      setTidAutoDetected(false);
     }
   }, [isCheckoutOpen]);
 
@@ -282,6 +284,10 @@ export default function CheckoutModal() {
       }
 
       setPaymentProofUrl(data.url);
+      if (data.extractedTid) {
+        setTransactionId(data.extractedTid);
+        setTidAutoDetected(true);
+      }
       setErrorMsg(''); // Clear any previous screenshot missing error
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
@@ -890,15 +896,25 @@ export default function CheckoutModal() {
 
                 {/* Mandatory TID Input */}
                 <div>
-                  <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
-                    Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200">
+                      Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
+                    </label>
+                    {tidAutoDetected && (
+                      <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-in fade-in">
+                        <CheckCircle2 className="w-3 h-3" /> Auto-detected from receipt
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
                     placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: +92 300 1234567"
                     value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
+                    onChange={(e) => {
+                      setTransactionId(e.target.value);
+                      setTidAutoDetected(false);
+                    }}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium"
                   />
                 </div>

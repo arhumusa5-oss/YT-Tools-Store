@@ -43,6 +43,7 @@ export default function DirectPaymentInvoicePage() {
   // Payment form states
   const [paymentMethod, setPaymentMethod] = useState<'easypaisa' | 'jazzcash' | 'bank' | 'binance'>('easypaisa');
   const [transactionId, setTransactionId] = useState('');
+  const [tidAutoDetected, setTidAutoDetected] = useState(false);
   const [paymentProofUrl, setPaymentProofUrl] = useState('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -221,6 +222,10 @@ export default function DirectPaymentInvoicePage() {
       }
 
       setPaymentProofUrl(data.url);
+      if (data.extractedTid) {
+        setTransactionId(data.extractedTid);
+        setTidAutoDetected(true);
+      }
       setFormError('');
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
@@ -1208,15 +1213,25 @@ export default function DirectPaymentInvoicePage() {
 
               {/* Step 2: Transaction ID Input */}
               <div>
-                <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
-                  Step 2: Transaction ID (TID) <span className="text-red-600 dark:text-red-400">* (Required)</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white">
+                    Step 2: Transaction ID (TID) <span className="text-red-600 dark:text-red-400">* (Required)</span>
+                  </label>
+                  {tidAutoDetected && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-in fade-in">
+                      <CheckCircle2 className="w-3 h-3" /> Auto-detected from receipt
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
                   placeholder="e.g. TID: 01928374652 or Sender Mobile Number"
                   value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
+                  onChange={(e) => {
+                    setTransactionId(e.target.value);
+                    setTidAutoDetected(false);
+                  }}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs font-medium text-[#0a0a0a] dark:text-white placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition"
                 />
               </div>
