@@ -162,6 +162,11 @@ export interface StoreSettings {
     gmailAppPassword?: string;
     resendApiKey?: string;
   };
+  googleSheetsSync?: {
+    enabled?: boolean;
+    webhookUrl?: string;
+    lastSyncedAt?: string;
+  };
 }
 
 export interface Category {

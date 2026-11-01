@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendCustomerOrderStatusNotification, sendEmailNotification } from '@/lib/emailService';
+import { syncOrderToGoogleSheet, deleteOrderFromGoogleSheet } from '@/lib/googleSheetsService';
 
 export async function GET(
   request: Request,
@@ -254,6 +255,11 @@ export async function PUT(
       }
     }
 
+    // Auto-sync updated order to Google Sheet (non-blocking)
+    syncOrderToGoogleSheet(updated).catch((err) =>
+      console.error('[GoogleSheetSync] Order update sync error:', err)
+    );
+
     return NextResponse.json({ success: true, order: updated });
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
@@ -270,6 +276,12 @@ export async function DELETE(
     if (!deleted) {
       return NextResponse.json({ success: false, error: 'Order not found or could not be deleted' }, { status: 404 });
     }
+
+    // Mark as cancelled/deleted in Google Sheet in background
+    deleteOrderFromGoogleSheet(id).catch((err) =>
+      console.error('[GoogleSheetSync] Order delete sync error:', err)
+    );
+
     return NextResponse.json({ success: true, message: 'Order deleted successfully' });
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });

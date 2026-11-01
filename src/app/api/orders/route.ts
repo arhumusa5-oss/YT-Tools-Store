@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendEmailNotification } from '@/lib/emailService';
+import { syncOrderToGoogleSheet } from '@/lib/googleSheetsService';
 
 export async function GET() {
   try {
@@ -97,6 +98,11 @@ export async function POST(request: Request) {
         // ignore
       }
     }
+
+    // Auto-sync new order to Google Sheet (non-blocking)
+    syncOrderToGoogleSheet(newOrder).catch((err) =>
+      console.error('[GoogleSheetSync] Create order sync error:', err)
+    );
 
     return NextResponse.json({ success: true, order: newOrder });
   } catch (error) {

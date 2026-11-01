@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { OrderItem } from '@/lib/types';
+import { syncOrderToGoogleSheet } from '@/lib/googleSheetsService';
 
 export async function POST(req: NextRequest) {
   try {
@@ -91,6 +92,11 @@ export async function POST(req: NextRequest) {
     const protocol = req.headers.get('x-forwarded-proto') || 'http';
     const cleanId = newOrder.id.replace(/^#/, '');
     const paymentUrl = `${protocol}://${host}/pay/${cleanId}`;
+
+    // Auto-sync invoice order to Google Sheet (non-blocking)
+    syncOrderToGoogleSheet(newOrder).catch((err) =>
+      console.error('[GoogleSheetSync] Invoice create sync error:', err)
+    );
 
     return NextResponse.json({
       success: true,

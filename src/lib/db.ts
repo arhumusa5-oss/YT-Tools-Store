@@ -55,6 +55,11 @@ const DEFAULT_SETTINGS: StoreSettings = {
     gmailAppPassword: process.env.SMTP_PASSWORD || '',
     resendApiKey: process.env.RESEND_API_KEY || '',
   },
+  googleSheetsSync: {
+    enabled: true,
+    webhookUrl: process.env.GOOGLE_SHEETS_WEBHOOK_URL || '',
+    lastSyncedAt: undefined,
+  },
 };
 
 interface DatabaseSchema {

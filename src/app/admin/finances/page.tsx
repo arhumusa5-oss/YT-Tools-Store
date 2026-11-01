@@ -29,6 +29,7 @@ import {
   X,
   LayoutList,
   LayoutGrid,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 type FilterPeriod = 'lifetime' | 'this_month' | 'last_month' | 'custom_month';
@@ -77,6 +78,8 @@ export default function AdminFinancesPage() {
 
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedSuccessId, setSavedSuccessId] = useState<string | null>(null);
+  const [syncingSheet, setSyncingSheet] = useState(false);
+  const [syncSheetMsg, setSyncSheetMsg] = useState('');
 
   const fetchOrders = async (silent = false) => {
     try {
@@ -227,6 +230,29 @@ export default function AdminFinancesPage() {
       alert('Error updating order finances.');
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleSyncToSheet = async () => {
+    setSyncingSheet(true);
+    setSyncSheetMsg('');
+    try {
+      const res = await fetch('/api/admin/sheets-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sync_all' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSyncSheetMsg(`✓ ${data.syncedCount || orders.length} Synced!`);
+        setTimeout(() => setSyncSheetMsg(''), 4000);
+      } else {
+        alert(data.error || 'Failed to sync to Google Sheet. Please check Settings -> Google Sheets Sync.');
+      }
+    } catch {
+      alert('Error syncing to Google Sheet.');
+    } finally {
+      setSyncingSheet(false);
     }
   };
 
@@ -389,14 +415,27 @@ export default function AdminFinancesPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => fetchOrders()}
-          className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#1C1C22] hover:bg-[#25252D] text-zinc-300 hover:text-white text-xs font-semibold border border-[#2D2D38] transition cursor-pointer self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#FF5500]' : ''}`} />
-          <span>Refresh Finances</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={handleSyncToSheet}
+            disabled={syncingSheet}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/40 transition cursor-pointer active:scale-95 disabled:opacity-50"
+            title="Sync all orders and profit formulas to Google Sheet"
+          >
+            <FileSpreadsheet className={`w-3.5 h-3.5 ${syncingSheet ? 'animate-spin' : ''}`} />
+            <span>{syncingSheet ? 'Syncing...' : syncSheetMsg || 'Sync to Google Sheet'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => fetchOrders()}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#1C1C22] hover:bg-[#25252D] text-zinc-300 hover:text-white text-xs font-semibold border border-[#2D2D38] transition cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-[#FF5500]' : ''}`} />
+            <span>Refresh Finances</span>
+          </button>
+        </div>
       </div>
 
       {/* ================= TIME RANGE FILTER BAR ================= */}
