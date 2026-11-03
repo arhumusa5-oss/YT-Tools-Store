@@ -356,21 +356,17 @@ export default function CheckoutModal() {
       return;
     }
 
-    // Strict Email Validation (blocks .con typos etc.)
-    const emailVal = validateEmail(customerEmail);
-    if (!emailVal.valid) {
-      setEmailError(emailVal.error || 'Please enter a valid email address.');
-      setErrorMsg(emailVal.error || 'Please enter a valid email address.');
-      return;
+    // Optional Email Validation (validates only if provided)
+    if (customerEmail.trim()) {
+      const emailVal = validateEmail(customerEmail);
+      if (!emailVal.valid) {
+        setEmailError(emailVal.error || 'Please enter a valid email address.');
+        setErrorMsg(emailVal.error || 'Please enter a valid email address.');
+        return;
+      }
     }
 
-    // MANDATORY 1: Transaction ID (TID)
-    if (!transactionId.trim()) {
-      setErrorMsg('⚠️ Transaction ID (TID) is required. Please send payment and enter your TID.');
-      return;
-    }
-
-    // MANDATORY 2: Payment Screenshot Proof URL
+    // MANDATORY: Payment Screenshot Proof URL
     if (!paymentProofUrl.trim()) {
       setErrorMsg('⚠️ Payment screenshot / receipt is required. Please upload your payment proof.');
       return;
@@ -391,7 +387,7 @@ export default function CheckoutModal() {
           totalUSD,
           currency,
           paymentMethod,
-          transactionId: transactionId.trim(),
+          transactionId: 'N/A',
           paymentProofUrl: paymentProofUrl.trim(),
         }),
       });
@@ -660,15 +656,17 @@ export default function CheckoutModal() {
                   </div>
                 </div>
 
-                {/* Email Address (Full Width - Channel link removed as requested) */}
+                {/* Email Address (Optional) */}
                 <div>
-                  <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
-                    Email Address <span className="text-red-700 font-bold">* (For Invite / Activation)</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-[#111827] dark:text-zinc-200">
+                      Email Address <span className="text-[#6b7280] dark:text-zinc-400 font-medium">(Optional)</span>
+                    </label>
+                    <span className="text-[10px] text-zinc-500 font-medium">Invite / Activation (if needed)</span>
+                  </div>
                   <input
                     type="email"
-                    required
-                    placeholder="e.g. yourname@gmail.com"
+                    placeholder="e.g. yourname@gmail.com (Optional)"
                     value={customerEmail}
                     onChange={(e) => handleEmailChange(e.target.value)}
                     onBlur={handleEmailBlur}
@@ -752,7 +750,7 @@ export default function CheckoutModal() {
                         </div>
                       </div>
                       <p className="text-xs text-[#1f2937] dark:text-zinc-300 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
-                        {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and enter Transaction ID (TID) below.'}
+                        {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and upload payment screenshot below.'}
                       </p>
                     </div>
                   )}
@@ -782,7 +780,7 @@ export default function CheckoutModal() {
                         </div>
                       </div>
                       <p className="text-xs text-[#1f2937] dark:text-zinc-300 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
-                        {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and enter Transaction ID.'}
+                        {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and upload payment screenshot below.'}
                       </p>
                     </div>
                   )}
@@ -879,29 +877,14 @@ export default function CheckoutModal() {
                 </div>
               </div>
 
-              {/* Step 3: Payment Verification & Proof (BOTH MANDATORY) */}
+              {/* Step 3: Payment Verification & Proof (Screenshot Required) */}
               <div className="space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#0a0a0a] dark:text-white flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black">
                     3
                   </span>
-                  <span>Payment Verification (TID &amp; Screenshot Required)</span>
+                  <span>Payment Verification (Screenshot Required)</span>
                 </h4>
-
-                {/* Mandatory TID Input */}
-                <div>
-                  <label className="block text-[11px] font-bold text-[#111827] dark:text-zinc-200 mb-1">
-                    Transaction ID (TID) / Sender Info <span className="text-red-700 font-bold">* (Required)</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: +92 300 1234567"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-[#0a0a0a] dark:text-white text-xs placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition-colors font-medium"
-                  />
-                </div>
 
                 {/* Mandatory Receipt Screenshot Upload */}
                 <div>

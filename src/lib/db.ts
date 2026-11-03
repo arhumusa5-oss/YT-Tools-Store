@@ -23,13 +23,13 @@ const DEFAULT_SETTINGS: StoreSettings = {
       enabled: true,
       title: 'Your Account Title',
       number: '0300 0000000',
-      instructions: 'Send payment via EasyPaisa and enter Transaction ID (TID) below.',
+      instructions: 'Send payment via EasyPaisa and upload payment screenshot below.',
     },
     jazzcash: {
       enabled: true,
       title: 'Your Account Title',
       number: '0300 0000000',
-      instructions: 'Send payment via JazzCash mobile account and enter TID.',
+      instructions: 'Send payment via JazzCash mobile account and upload payment screenshot.',
     },
     bank: {
       enabled: true,

@@ -266,7 +266,7 @@ export async function PUT(
     }
 
     // If payment was just submitted via direct link, notify store admin
-    if (transactionId && paymentProofUrl && (!existingOrder.transactionId || existingOrder.paymentStatus === 'unpaid')) {
+    if (paymentProofUrl && (!existingOrder.paymentProofUrl || existingOrder.paymentStatus === 'unpaid')) {
       try {
         await sendEmailNotification({
           type: 'order',

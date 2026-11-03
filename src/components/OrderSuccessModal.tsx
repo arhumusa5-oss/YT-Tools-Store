@@ -159,12 +159,14 @@ export default function OrderSuccessModal() {
               <span className="font-extrabold uppercase text-black dark:text-white">{order.paymentMethod}</span>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span className="text-[#111827] dark:text-zinc-300 font-bold">Transaction ID (TID):</span>
-              <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs">
-                {order.transactionId || 'Awaiting Verification'}
-              </span>
-            </div>
+            {order.transactionId && order.transactionId !== 'N/A' && order.transactionId !== 'Direct/Manual' && (
+              <div className="flex items-center justify-between">
+                <span className="text-[#111827] dark:text-zinc-300 font-bold">Transaction ID (TID):</span>
+                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 text-xs">
+                  {order.transactionId}
+                </span>
+              </div>
+            )}
 
             {order.paymentProofUrl && (
               <div className="flex items-center justify-between pt-1 border-t border-[#d1c7c7] dark:border-white/5">

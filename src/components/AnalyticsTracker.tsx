@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { useCart } from '@/context/CartContext';
 
 function getOrSetVisitorId(): string {
   if (typeof window === 'undefined') return '';
@@ -56,38 +57,139 @@ function isUserAdmin(): boolean {
 
 export default function AnalyticsTracker() {
   const pathname = usePathname();
-  const lastPathRef = useRef<string>('');
+  const {
+    isCheckoutOpen,
+    checkoutItems,
+    activeProductModal,
+    isCartOpen,
+    cart,
+    orderSuccess,
+  } = useCart();
 
+  const lastActivitySignatureRef = useRef<string>('');
+
+  // Compute live activity and details in real-time
+  const { currentActivity, activityDetails } = useMemo(() => {
+    if (isCheckoutOpen) {
+      const details =
+        checkoutItems.length === 1
+          ? checkoutItems[0].title
+          : checkoutItems.length > 1
+          ? `${checkoutItems[0].title} (+${checkoutItems.length - 1} more)`
+          : 'Checkout Modal';
+      return {
+        currentActivity: 'checkout',
+        activityDetails: details,
+      };
+    }
+
+    if (activeProductModal) {
+      return {
+        currentActivity: 'product_modal',
+        activityDetails: activeProductModal.title,
+      };
+    }
+
+    if (isCartOpen) {
+      const details =
+        cart.length > 0
+          ? `${cart.length} item${cart.length === 1 ? '' : 's'} in cart`
+          : 'Cart Drawer (Empty)';
+      return {
+        currentActivity: 'cart_drawer',
+        activityDetails: details,
+      };
+    }
+
+    if (orderSuccess) {
+      return {
+        currentActivity: 'order_success',
+        activityDetails: `Order #${orderSuccess.id}`,
+      };
+    }
+
+    if (pathname?.startsWith('/pay/')) {
+      const payId = pathname.split('/')[2] || '';
+      return {
+        currentActivity: 'invoice_pay',
+        activityDetails: payId ? `Invoice #${payId}` : 'Invoice Payment',
+      };
+    }
+
+    if (pathname === '/track-order') {
+      return {
+        currentActivity: 'track_order',
+        activityDetails: 'Order Tracker',
+      };
+    }
+
+    if (pathname === '/profile') {
+      return {
+        currentActivity: 'profile',
+        activityDetails: 'User Profile',
+      };
+    }
+
+    if (pathname === '/login') {
+      return {
+        currentActivity: 'login',
+        activityDetails: 'Sign In Page',
+      };
+    }
+
+    if (pathname === '/') {
+      return {
+        currentActivity: 'browsing',
+        activityDetails: 'Catalog / Home',
+      };
+    }
+
+    return {
+      currentActivity: 'viewing_page',
+      activityDetails: pathname || '/',
+    };
+  }, [
+    pathname,
+    isCheckoutOpen,
+    checkoutItems,
+    activeProductModal,
+    isCartOpen,
+    cart,
+    orderSuccess,
+  ]);
+
+  // Track pageviews & live activity state changes
   useEffect(() => {
     // Never track admin panel pages or admin users ("hamain hata kr")
     if (!pathname || pathname.startsWith('/admin') || isUserAdmin()) {
       return;
     }
 
-    // Prevent duplicate pageview triggers on identical path
-    if (lastPathRef.current === pathname) {
-      return;
-    }
-    lastPathRef.current = pathname;
-
+    const activitySignature = `${pathname}::${currentActivity}::${activityDetails}`;
     const visitorId = getOrSetVisitorId();
     const sessionId = getOrSetSessionId();
     const deviceType = getDeviceType();
 
-    const trackPageview = async () => {
+    // Check if activity changed
+    const activityChanged = lastActivitySignatureRef.current !== activitySignature;
+    lastActivitySignatureRef.current = activitySignature;
+
+    const sendTrack = async (isPageView: boolean) => {
       try {
         await fetch('/api/analytics/track', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           keepalive: true,
           body: JSON.stringify({
-            type: 'pageview',
+            type: isPageView ? 'pageview' : 'heartbeat',
             visitorId,
             sessionId,
             path: pathname,
             title: typeof document !== 'undefined' ? document.title : '',
             referrer: typeof document !== 'undefined' ? document.referrer : '',
             deviceType,
+            currentActivity,
+            activityDetails,
             isAdmin: false,
           }),
         });
@@ -96,62 +198,30 @@ export default function AnalyticsTracker() {
       }
     };
 
-    // Small delay to ensure document title is set
-    const timer = setTimeout(trackPageview, 250);
+    if (activityChanged) {
+      sendTrack(true);
+    }
 
-    // Heartbeat every 30 seconds for live active visitors
+    // Heartbeat every 20 seconds for continuous active radar
     const heartbeatInterval = setInterval(() => {
       if (document.visibilityState === 'visible' && !isUserAdmin()) {
-        try {
-          fetch('/api/analytics/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            keepalive: true,
-            body: JSON.stringify({
-              type: 'heartbeat',
-              visitorId,
-              sessionId,
-              path: pathname,
-              deviceType,
-              isAdmin: false,
-            }),
-          });
-        } catch {
-          // ignore
-        }
+        sendTrack(false);
       }
-    }, 30000);
+    }, 20000);
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !isUserAdmin()) {
-        try {
-          fetch('/api/analytics/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            keepalive: true,
-            body: JSON.stringify({
-              type: 'heartbeat',
-              visitorId,
-              sessionId,
-              path: pathname,
-              deviceType,
-              isAdmin: false,
-            }),
-          });
-        } catch {
-          // ignore
-        }
+        sendTrack(false);
       }
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      clearTimeout(timer);
       clearInterval(heartbeatInterval);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [pathname]);
+  }, [pathname, currentActivity, activityDetails]);
 
   return null;
 }

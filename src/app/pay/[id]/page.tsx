@@ -265,11 +265,6 @@ export default function DirectPaymentInvoicePage() {
 
     setFormError('');
 
-    if (!transactionId.trim()) {
-      setFormError('Transaction ID (TID) is required. Please send payment and enter your TID.');
-      return;
-    }
-
     if (!paymentProofUrl.trim()) {
       setFormError('Payment screenshot proof is required. Please upload your payment screenshot.');
       return;
@@ -302,7 +297,7 @@ export default function DirectPaymentInvoicePage() {
         bodyData = {
           ...bodyData,
           paymentMethod,
-          transactionId: transactionId.trim(),
+          transactionId: 'N/A',
           paymentProofUrl: paymentProofUrl.trim(),
           paymentStatus: 'paid',
           status: order.status === 'completed' ? 'completed' : 'pending',
@@ -311,26 +306,26 @@ export default function DirectPaymentInvoicePage() {
         bodyData = {
           ...bodyData,
           advancePaymentMethod: paymentMethod,
-          advanceTID: transactionId.trim(),
+          advanceTID: 'N/A',
           advanceProofUrl: paymentProofUrl.trim(),
           advancePaidPKR: advanceAmountPKR,
           splitPaymentStatus: 'advance_paid',
           paymentStatus: 'unpaid',
           status: 'processing',
-          transactionId: `Adv: ${transactionId.trim()}`,
+          transactionId: 'N/A',
           paymentProofUrl: paymentProofUrl.trim(),
         };
       } else if (splitStage === 'stage2_balance') {
         bodyData = {
           ...bodyData,
           balancePaymentMethod: paymentMethod,
-          balanceTID: transactionId.trim(),
+          balanceTID: 'N/A',
           balanceProofUrl: paymentProofUrl.trim(),
           balancePaidPKR: balanceAmountPKR,
           splitPaymentStatus: 'fully_paid',
           paymentStatus: 'paid',
           status: 'completed',
-          transactionId: `${order.advanceTID || ''} | Bal: ${transactionId.trim()}`,
+          transactionId: 'N/A',
           paymentProofUrl: paymentProofUrl.trim(),
         };
       }
@@ -369,7 +364,7 @@ export default function DirectPaymentInvoicePage() {
   const whatsappCancelHref = `https://wa.me/${cleanWhatsApp}?text=${whatsappCancelMsg}`;
 
   const isAlreadyPaid = !isSplit
-    ? Boolean(order?.paymentStatus === 'paid' || (order?.transactionId && order?.paymentProofUrl))
+    ? Boolean(order?.paymentStatus === 'paid' || order?.paymentProofUrl)
     : splitStage === 'completed';
 
   return (
@@ -599,10 +594,12 @@ export default function DirectPaymentInvoicePage() {
                 <span className="text-[#111827] dark:text-zinc-300 font-bold">Payment Method:</span>
                 <span className="font-extrabold uppercase text-black dark:text-white">{order.paymentMethod}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#111827] dark:text-zinc-300 font-bold">Transaction ID (TID):</span>
-                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{order.transactionId}</span>
-              </div>
+              {order.transactionId && order.transactionId !== 'N/A' && order.transactionId !== 'Direct/Manual' && (
+                <div className="flex justify-between">
+                  <span className="text-[#111827] dark:text-zinc-300 font-bold">Transaction ID (TID):</span>
+                  <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{order.transactionId}</span>
+                </div>
+              )}
               {order.paymentProofUrl && (
                 <div className="flex items-center justify-between pt-1 border-t border-[#d1c7c7] dark:border-white/10">
                   <span className="text-[#111827] dark:text-zinc-300 font-bold">Receipt Screenshot:</span>
@@ -1117,7 +1114,7 @@ export default function DirectPaymentInvoicePage() {
                         </div>
                       </div>
                       <p className="text-[11px] text-[#1f2937] dark:text-zinc-200 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
-                        {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and enter Transaction ID (TID) below.'}
+                        {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and upload payment screenshot below.'}
                       </p>
                     </>
                   )}
@@ -1146,7 +1143,7 @@ export default function DirectPaymentInvoicePage() {
                         </div>
                       </div>
                       <p className="text-[11px] text-[#1f2937] dark:text-zinc-200 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
-                        {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and enter Transaction ID.'}
+                        {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and upload payment screenshot below.'}
                       </p>
                     </>
                   )}
@@ -1205,25 +1202,10 @@ export default function DirectPaymentInvoicePage() {
                 </div>
               </div>
 
-              {/* Step 2: Transaction ID Input */}
+              {/* Step 2: Receipt Screenshot Upload */}
               <div>
                 <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
-                  Step 2: Transaction ID (TID) <span className="text-red-600 dark:text-red-400">* (Required)</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. TID: 01928374652 or Sender Mobile Number"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs font-medium text-[#0a0a0a] dark:text-white placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition"
-                />
-              </div>
-
-              {/* Step 3: Receipt Screenshot Upload */}
-              <div>
-                <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
-                  Step 3: Payment Screenshot / Proof <span className="text-red-600 dark:text-red-400">* (Required)</span>
+                  Step 2: Payment Screenshot / Proof <span className="text-red-600 dark:text-red-400">* (Required)</span>
                 </label>
 
                 <input

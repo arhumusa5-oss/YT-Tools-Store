@@ -13,6 +13,8 @@ export interface PageviewEvent {
   browser?: string;
   os?: string;
   isAdmin?: boolean;
+  currentActivity?: string;
+  activityDetails?: string;
 }
 
 export interface ActiveSessionHeartbeat {
@@ -21,6 +23,8 @@ export interface ActiveSessionHeartbeat {
   path: string;
   deviceType?: 'mobile' | 'desktop' | 'tablet';
   isAdmin?: boolean;
+  currentActivity?: string;
+  activityDetails?: string;
 }
 
 export interface PeriodStats {
@@ -39,6 +43,8 @@ export interface AnalyticsSummary {
     lastPath: string;
     deviceType: string;
     secondsAgo: number;
+    currentActivity?: string;
+    activityDetails?: string;
   }>;
   today: PeriodStats;
   yesterday: PeriodStats;
@@ -120,7 +126,18 @@ const LOCAL_FILE = path.join(DATA_DIR, 'analytics.json');
 
 interface LocalAnalyticsData {
   pageviews: Array<PageviewEvent & { id: string; createdAt: string }>;
-  activeSessions: Record<string, { visitorId: string; lastPath: string; deviceType: string; lastActiveAt: number; isAdmin: boolean }>;
+  activeSessions: Record<
+    string,
+    {
+      visitorId: string;
+      lastPath: string;
+      deviceType: string;
+      lastActiveAt: number;
+      isAdmin: boolean;
+      currentActivity?: string;
+      activityDetails?: string;
+    }
+  >;
 }
 
 function getLocalData(): LocalAnalyticsData {
@@ -172,8 +189,12 @@ export async function ensureAnalyticsTables() {
         last_path VARCHAR(255) NOT NULL,
         device_type VARCHAR(32) DEFAULT 'desktop',
         last_active_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        is_admin BOOLEAN DEFAULT FALSE
+        is_admin BOOLEAN DEFAULT FALSE,
+        current_activity VARCHAR(255),
+        activity_details VARCHAR(255)
       );
+      ALTER TABLE yt_active_sessions ADD COLUMN IF NOT EXISTS current_activity VARCHAR(255);
+      ALTER TABLE yt_active_sessions ADD COLUMN IF NOT EXISTS activity_details VARCHAR(255);
       CREATE INDEX IF NOT EXISTS idx_pageviews_created_at ON yt_pageviews(created_at);
       CREATE INDEX IF NOT EXISTS idx_pageviews_visitor_id ON yt_pageviews(visitor_id);
       CREATE INDEX IF NOT EXISTS idx_active_sessions_last_active ON yt_active_sessions(last_active_at);
@@ -201,6 +222,8 @@ export async function recordPageview(event: PageviewEvent): Promise<boolean> {
   const deviceTypeVal = (event.deviceType || 'desktop').slice(0, 32);
   const browserVal = (event.browser || '').slice(0, 64);
   const osVal = (event.os || '').slice(0, 64);
+  const activityVal = (event.currentActivity || 'browsing').slice(0, 255);
+  const detailsVal = (event.activityDetails || '').slice(0, 255);
   const isAdminVal = false;
 
   if (sql) {
@@ -211,13 +234,15 @@ export async function recordPageview(event: PageviewEvent): Promise<boolean> {
       `;
 
       await sql`
-        INSERT INTO yt_active_sessions (session_id, visitor_id, last_path, device_type, last_active_at, is_admin)
-        VALUES (${sessionId}, ${visitorId}, ${pathVal}, ${deviceTypeVal}, CURRENT_TIMESTAMP, ${isAdminVal})
+        INSERT INTO yt_active_sessions (session_id, visitor_id, last_path, device_type, last_active_at, is_admin, current_activity, activity_details)
+        VALUES (${sessionId}, ${visitorId}, ${pathVal}, ${deviceTypeVal}, CURRENT_TIMESTAMP, ${isAdminVal}, ${activityVal}, ${detailsVal})
         ON CONFLICT (session_id) DO UPDATE SET
           last_active_at = CURRENT_TIMESTAMP,
           last_path = EXCLUDED.last_path,
           device_type = EXCLUDED.device_type,
-          is_admin = EXCLUDED.is_admin
+          is_admin = EXCLUDED.is_admin,
+          current_activity = EXCLUDED.current_activity,
+          activity_details = EXCLUDED.activity_details
       `;
       return true;
     } catch (err) {
@@ -243,6 +268,8 @@ export async function recordPageview(event: PageviewEvent): Promise<boolean> {
       deviceType: deviceTypeVal,
       lastActiveAt: Date.now(),
       isAdmin: false,
+      currentActivity: activityVal,
+      activityDetails: detailsVal,
     };
     saveLocalData(local);
     return true;
@@ -261,17 +288,21 @@ export async function recordHeartbeat(heartbeat: ActiveSessionHeartbeat): Promis
   const sessionId = (heartbeat.sessionId || 's_anon').slice(0, 64);
   const pathVal = (heartbeat.path || '/').slice(0, 255);
   const deviceTypeVal = (heartbeat.deviceType || 'desktop').slice(0, 32);
+  const activityVal = (heartbeat.currentActivity || 'browsing').slice(0, 255);
+  const detailsVal = (heartbeat.activityDetails || '').slice(0, 255);
 
   if (sql) {
     try {
       await sql`
-        INSERT INTO yt_active_sessions (session_id, visitor_id, last_path, device_type, last_active_at, is_admin)
-        VALUES (${sessionId}, ${visitorId}, ${pathVal}, ${deviceTypeVal}, CURRENT_TIMESTAMP, false)
+        INSERT INTO yt_active_sessions (session_id, visitor_id, last_path, device_type, last_active_at, is_admin, current_activity, activity_details)
+        VALUES (${sessionId}, ${visitorId}, ${pathVal}, ${deviceTypeVal}, CURRENT_TIMESTAMP, false, ${activityVal}, ${detailsVal})
         ON CONFLICT (session_id) DO UPDATE SET
           last_active_at = CURRENT_TIMESTAMP,
           last_path = EXCLUDED.last_path,
           device_type = EXCLUDED.device_type,
-          is_admin = false
+          is_admin = false,
+          current_activity = EXCLUDED.current_activity,
+          activity_details = EXCLUDED.activity_details
       `;
       return true;
     } catch (err) {
@@ -287,6 +318,8 @@ export async function recordHeartbeat(heartbeat: ActiveSessionHeartbeat): Promis
       deviceType: deviceTypeVal,
       lastActiveAt: Date.now(),
       isAdmin: false,
+      currentActivity: activityVal,
+      activityDetails: detailsVal,
     };
     saveLocalData(local);
     return true;
@@ -369,6 +402,8 @@ export async function getAnalyticsSummary(allOrders: Order[] = []): Promise<Anal
           visitor_id, 
           last_path, 
           COALESCE(device_type, 'desktop') AS device_type,
+          COALESCE(current_activity, '') AS current_activity,
+          COALESCE(activity_details, '') AS activity_details,
           EXTRACT(EPOCH FROM (NOW() - last_active_at))::int AS seconds_ago
         FROM yt_active_sessions 
         WHERE is_admin = FALSE 
@@ -382,6 +417,8 @@ export async function getAnalyticsSummary(allOrders: Order[] = []): Promise<Anal
         visitorId: row.visitor_id,
         lastPath: row.last_path,
         deviceType: row.device_type,
+        currentActivity: row.current_activity || '',
+        activityDetails: row.activity_details || '',
         secondsAgo: Math.max(0, row.seconds_ago || 0),
       }));
 
@@ -605,6 +642,8 @@ export async function getAnalyticsSummary(allOrders: Order[] = []): Promise<Anal
     visitorId: s.visitorId,
     lastPath: s.lastPath,
     deviceType: s.deviceType,
+    currentActivity: s.currentActivity || '',
+    activityDetails: s.activityDetails || '',
     secondsAgo: Math.max(0, Math.floor((Date.now() - s.lastActiveAt) / 1000)),
   }));
 

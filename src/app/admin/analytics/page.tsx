@@ -22,6 +22,12 @@ import {
   Calendar,
   Layers,
   Percent,
+  CreditCard,
+  Package,
+  ShoppingCart,
+  CheckCircle2,
+  Receipt,
+  Compass,
 } from 'lucide-react';
 import { AnalyticsSummary, PeriodStats } from '@/lib/analytics';
 
@@ -188,42 +194,103 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Live Active Customers Current Locations (if any) */}
+        {/* Live Active Customers Current Locations & Real-Time Actions */}
         {data && data.liveSessions.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
+          <div className="mt-5 pt-4 border-t border-white/10 space-y-3">
             <div className="flex items-center justify-between text-[11px] font-bold text-zinc-400">
               <span className="uppercase tracking-wider flex items-center gap-1.5 text-emerald-400">
                 <Eye className="w-3.5 h-3.5" />
-                <span>Currently Active Customer Paths ({data.liveSessions.length}):</span>
+                <span>Live Active Customer Radar ({data.liveSessions.length} Online Now):</span>
               </span>
-              <span className="text-zinc-500 font-normal">Auto-updates live</span>
+              <span className="text-zinc-500 font-normal">Real-time page, checkout &amp; product card tracking</span>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {data.liveSessions.map((s, idx) => (
-                <div
-                  key={s.sessionId || idx}
-                  className="px-2.5 py-1.5 rounded-xl bg-black/70 border border-emerald-500/25 text-xs flex items-center gap-2 shadow-sm"
-                >
-                  {s.deviceType === 'mobile' ? (
-                    <Smartphone className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  ) : s.deviceType === 'tablet' ? (
-                    <Tablet className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  ) : (
-                    <Monitor className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                  )}
-                  <Link
-                    href={s.lastPath || '/'}
-                    target="_blank"
-                    className="font-mono text-white hover:text-emerald-300 font-bold text-[11px] transition truncate max-w-[180px]"
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {data.liveSessions.map((s, idx) => {
+                const act = s.currentActivity || 'browsing';
+                const isCheckout = act === 'checkout';
+                const isProduct = act === 'product_modal';
+                const isCart = act === 'cart_drawer';
+                const isInvoice = act === 'invoice_pay';
+                const isSuccess = act === 'order_success';
+
+                let cardBg = 'bg-black/60 border-zinc-800';
+                let tagBg = 'bg-zinc-800/80 text-zinc-300 border-zinc-700/50';
+                let Icon = Compass;
+                let activityLabel = 'Browsing Catalog';
+
+                if (isCheckout) {
+                  cardBg = 'bg-rose-950/20 border-rose-500/40 shadow-rose-950/20';
+                  tagBg = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+                  Icon = CreditCard;
+                  activityLabel = 'On Checkout Modal';
+                } else if (isProduct) {
+                  cardBg = 'bg-purple-950/20 border-purple-500/40 shadow-purple-950/20';
+                  tagBg = 'bg-purple-500/20 text-purple-300 border-purple-500/40';
+                  Icon = Package;
+                  activityLabel = 'Viewing Product Card';
+                } else if (isCart) {
+                  cardBg = 'bg-blue-950/20 border-blue-500/40 shadow-blue-950/20';
+                  tagBg = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+                  Icon = ShoppingCart;
+                  activityLabel = 'In Cart Drawer';
+                } else if (isInvoice) {
+                  cardBg = 'bg-amber-950/20 border-amber-500/40 shadow-amber-950/20';
+                  tagBg = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                  Icon = Receipt;
+                  activityLabel = 'Paying Invoice';
+                } else if (isSuccess) {
+                  cardBg = 'bg-emerald-950/20 border-emerald-500/40 shadow-emerald-950/20';
+                  tagBg = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                  Icon = CheckCircle2;
+                  activityLabel = 'Order Placed';
+                }
+
+                return (
+                  <div
+                    key={s.sessionId || idx}
+                    className={`p-3 rounded-2xl border text-xs flex flex-col justify-between gap-2.5 shadow-md transition ${cardBg}`}
                   >
-                    {s.lastPath}
-                  </Link>
-                  <span className="text-[10px] text-emerald-400 font-mono shrink-0">
-                    {s.secondsAgo < 60 ? `${s.secondsAgo}s ago` : `${Math.floor(s.secondsAgo / 60)}m ago`}
-                  </span>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-wider ${tagBg}`}>
+                        <Icon className="w-3 h-3 shrink-0" />
+                        <span>{activityLabel}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-zinc-400 text-[10px]">
+                        {s.deviceType === 'mobile' ? (
+                          <span title="Mobile Device" className="inline-flex items-center gap-1">
+                            <Smartphone className="w-3 h-3" /> Mobile
+                          </span>
+                        ) : s.deviceType === 'tablet' ? (
+                          <span title="Tablet Device" className="inline-flex items-center gap-1">
+                            <Tablet className="w-3 h-3" /> Tablet
+                          </span>
+                        ) : (
+                          <span title="Desktop Computer" className="inline-flex items-center gap-1">
+                            <Monitor className="w-3 h-3" /> Desktop
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-white text-xs truncate" title={s.activityDetails || s.lastPath}>
+                        {s.activityDetails || (s.lastPath === '/' ? 'Store Catalog' : s.lastPath)}
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                        <span className="font-mono truncate max-w-[140px] text-zinc-400">
+                          {s.lastPath}
+                        </span>
+                        <span className="text-emerald-400 font-mono font-bold flex items-center gap-1 shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          {s.secondsAgo < 60 ? `${s.secondsAgo}s ago` : `${Math.floor(s.secondsAgo / 60)}m ago`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

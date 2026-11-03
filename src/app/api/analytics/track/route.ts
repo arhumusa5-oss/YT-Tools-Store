@@ -4,7 +4,23 @@ import { recordPageview, recordHeartbeat, PageviewEvent, ActiveSessionHeartbeat 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, visitorId, sessionId, path, title, referrer, deviceType, isAdmin } = body;
+    const {
+      type,
+      visitorId,
+      sessionId,
+      path,
+      title,
+      referrer,
+      deviceType,
+      isAdmin,
+      currentActivity,
+      activity,
+      activityDetails,
+      details,
+    } = body;
+
+    const resolvedActivity = currentActivity || activity || '';
+    const resolvedDetails = activityDetails || details || '';
 
     // Check if request is from admin or admin path
     const refererHeader = req.headers.get('referer') || '';
@@ -35,6 +51,8 @@ export async function POST(req: NextRequest) {
         path: String(path || '/'),
         deviceType: deviceType || 'desktop',
         isAdmin: false,
+        currentActivity: resolvedActivity,
+        activityDetails: resolvedDetails,
       };
       await recordHeartbeat(heartbeat);
       return NextResponse.json({ success: true });
@@ -50,6 +68,8 @@ export async function POST(req: NextRequest) {
       deviceType: deviceType || 'desktop',
       browser: userAgent.slice(0, 64),
       isAdmin: false,
+      currentActivity: resolvedActivity,
+      activityDetails: resolvedDetails,
     };
 
     await recordPageview(event);
