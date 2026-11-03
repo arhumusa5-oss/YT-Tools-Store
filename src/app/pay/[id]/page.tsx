@@ -507,7 +507,11 @@ export default function DirectPaymentInvoicePage() {
               {order.customerWhatsApp && (
                 <div className="flex justify-between">
                   <span className="text-[#111827] dark:text-zinc-300 font-bold">Customer WhatsApp:</span>
-                  <span className="font-mono font-bold text-black dark:text-white">{order.customerWhatsApp}</span>
+                  <span className="font-mono font-bold text-black dark:text-white">
+                    {order.customerWhatsApp.length > 7
+                      ? order.customerWhatsApp.slice(0, 5) + '••••' + order.customerWhatsApp.slice(-3)
+                      : order.customerWhatsApp}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -600,17 +604,12 @@ export default function DirectPaymentInvoicePage() {
                 <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{order.transactionId}</span>
               </div>
               {order.paymentProofUrl && (
-                <div className="flex justify-between pt-1 border-t border-[#d1c7c7] dark:border-white/10">
+                <div className="flex items-center justify-between pt-1 border-t border-[#d1c7c7] dark:border-white/10">
                   <span className="text-[#111827] dark:text-zinc-300 font-bold">Receipt Screenshot:</span>
-                  <a
-                    href={order.paymentProofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 font-bold text-blue-700 dark:text-blue-400 hover:underline text-[11px]"
-                  >
-                    <span>View Screenshot</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 text-[11px] bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Attached &amp; Verified (Private)</span>
+                  </span>
                 </div>
               )}
 

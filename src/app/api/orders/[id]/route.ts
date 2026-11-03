@@ -3,6 +3,32 @@ import { db } from '@/lib/db';
 import { sendCustomerOrderStatusNotification, sendEmailNotification } from '@/lib/emailService';
 import { syncOrderToGoogleSheet, deleteOrderFromGoogleSheet } from '@/lib/googleSheetsService';
 
+function isAuthorizedAdmin(request: Request, body?: any): boolean {
+  if (body?.isAdminRequest === true) return true;
+  const authHeader =
+    request.headers.get('x-admin-token') ||
+    request.headers.get('authorization') ||
+    '';
+  return authHeader.includes('yt-admin-token-');
+}
+
+function sanitizeOrderForPublic(order: any) {
+  return {
+    ...order,
+    // Replace raw screenshot storage URLs with a privacy marker so public visitors cannot view receipts or personal numbers
+    paymentProofUrl: order.paymentProofUrl ? 'attached_private' : '',
+    advanceProofUrl: order.advanceProofUrl ? 'attached_private' : '',
+    balanceProofUrl: order.balanceProofUrl ? 'attached_private' : '',
+    // Strip sensitive internal accounting & supplier data
+    costPKR: undefined,
+    profitPKR: undefined,
+    vendorName: undefined,
+    vendorPaymentStatus: undefined,
+    vendorNotes: undefined,
+    adminNotes: undefined,
+  };
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -13,7 +39,12 @@ export async function GET(
     if (!order) {
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
-    return NextResponse.json({ success: true, order });
+
+    if (isAuthorizedAdmin(request)) {
+      return NextResponse.json({ success: true, order });
+    }
+
+    return NextResponse.json({ success: true, order: sanitizeOrderForPublic(order) });
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
@@ -260,7 +291,11 @@ export async function PUT(
       console.error('[GoogleSheetSync] Order update sync error:', err)
     );
 
-    return NextResponse.json({ success: true, order: updated });
+    const returnedOrder = isAuthorizedAdmin(request, body)
+      ? updated
+      : sanitizeOrderForPublic(updated);
+
+    return NextResponse.json({ success: true, order: returnedOrder });
   } catch (error) {
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }

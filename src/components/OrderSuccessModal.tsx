@@ -169,16 +169,10 @@ export default function OrderSuccessModal() {
             {order.paymentProofUrl && (
               <div className="flex items-center justify-between pt-1 border-t border-[#d1c7c7] dark:border-white/5">
                 <span className="text-[#111827] dark:text-zinc-300 font-bold">Payment Screenshot:</span>
-                <a
-                  href={order.paymentProofUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-bold text-blue-700 dark:text-blue-400 hover:underline text-[11px]"
-                >
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                  <span>Attached &amp; Verified</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
+                <span className="inline-flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 text-[11px] bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Attached &amp; Secured (Private)</span>
+                </span>
               </div>
             )}
 
