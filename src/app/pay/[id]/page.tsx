@@ -265,8 +265,8 @@ export default function DirectPaymentInvoicePage() {
 
     setFormError('');
 
-    if (!paymentProofUrl.trim()) {
-      setFormError('Payment screenshot proof is required. Please upload your payment screenshot.');
+    if (!transactionId.trim()) {
+      setFormError('Transaction ID (TID) is required. Please send payment and enter your TID.');
       return;
     }
 
@@ -297,8 +297,8 @@ export default function DirectPaymentInvoicePage() {
         bodyData = {
           ...bodyData,
           paymentMethod,
-          transactionId: 'N/A',
-          paymentProofUrl: paymentProofUrl.trim(),
+          transactionId: transactionId.trim(),
+          paymentProofUrl: '',
           paymentStatus: 'paid',
           status: order.status === 'completed' ? 'completed' : 'pending',
         };
@@ -306,27 +306,27 @@ export default function DirectPaymentInvoicePage() {
         bodyData = {
           ...bodyData,
           advancePaymentMethod: paymentMethod,
-          advanceTID: 'N/A',
-          advanceProofUrl: paymentProofUrl.trim(),
+          advanceTID: transactionId.trim(),
+          advanceProofUrl: '',
           advancePaidPKR: advanceAmountPKR,
           splitPaymentStatus: 'advance_paid',
           paymentStatus: 'unpaid',
           status: 'processing',
-          transactionId: 'N/A',
-          paymentProofUrl: paymentProofUrl.trim(),
+          transactionId: `Adv: ${transactionId.trim()}`,
+          paymentProofUrl: '',
         };
       } else if (splitStage === 'stage2_balance') {
         bodyData = {
           ...bodyData,
           balancePaymentMethod: paymentMethod,
-          balanceTID: 'N/A',
-          balanceProofUrl: paymentProofUrl.trim(),
+          balanceTID: transactionId.trim(),
+          balanceProofUrl: '',
           balancePaidPKR: balanceAmountPKR,
           splitPaymentStatus: 'fully_paid',
           paymentStatus: 'paid',
           status: 'completed',
-          transactionId: 'N/A',
-          paymentProofUrl: paymentProofUrl.trim(),
+          transactionId: `${order.advanceTID || ''} | Bal: ${transactionId.trim()}`,
+          paymentProofUrl: '',
         };
       }
 
@@ -364,7 +364,7 @@ export default function DirectPaymentInvoicePage() {
   const whatsappCancelHref = `https://wa.me/${cleanWhatsApp}?text=${whatsappCancelMsg}`;
 
   const isAlreadyPaid = !isSplit
-    ? Boolean(order?.paymentStatus === 'paid' || order?.paymentProofUrl)
+    ? Boolean(order?.paymentStatus === 'paid' || (order?.transactionId && order?.transactionId !== 'N/A') || order?.paymentProofUrl)
     : splitStage === 'completed';
 
   return (
@@ -1114,7 +1114,7 @@ export default function DirectPaymentInvoicePage() {
                         </div>
                       </div>
                       <p className="text-[11px] text-[#1f2937] dark:text-zinc-200 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
-                        {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and upload payment screenshot below.'}
+                        {paymentAccounts?.easypaisa?.instructions || 'Send exact amount via EasyPaisa and enter Transaction ID (TID) below.'}
                       </p>
                     </>
                   )}
@@ -1143,7 +1143,7 @@ export default function DirectPaymentInvoicePage() {
                         </div>
                       </div>
                       <p className="text-[11px] text-[#1f2937] dark:text-zinc-200 font-medium pt-1.5 border-t border-[#d1c7c7] dark:border-white/10">
-                        {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and upload payment screenshot below.'}
+                        {paymentAccounts?.jazzcash?.instructions || 'Send payment via JazzCash mobile account and enter Transaction ID (TID) below.'}
                       </p>
                     </>
                   )}
@@ -1202,88 +1202,29 @@ export default function DirectPaymentInvoicePage() {
                 </div>
               </div>
 
-              {/* Step 2: Receipt Screenshot Upload */}
+              {/* Step 2: Transaction ID (TID) Input */}
               <div>
                 <label className="block text-xs font-bold text-[#0a0a0a] dark:text-white mb-1">
-                  Step 2: Payment Screenshot / Proof <span className="text-red-600 dark:text-red-400">* (Required)</span>
+                  Step 2: Transaction ID (TID) / Sender Info <span className="text-red-600 dark:text-red-400 font-black">* (Required)</span>
                 </label>
-
                 <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
+                  type="text"
+                  required
+                  placeholder="e.g. EasyPaisa / JazzCash TID: 01928374652 or Sender Mobile Number"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border-2 border-[#d1c7c7] dark:border-white/10 focus:border-[#660000] dark:focus:border-[#ff4d4d] text-xs font-bold text-[#0a0a0a] dark:text-white placeholder-[#6b7280] dark:placeholder-zinc-400 focus:outline-none transition shadow-sm"
                 />
-
-                {paymentProofUrl ? (
-                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-500/40 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/10 shrink-0 border border-emerald-500/30">
-                        <img
-                          src={paymentProofUrl}
-                          alt="Receipt"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Screenshot Attached Successfully
-                        </span>
-                        <span className="text-[10px] text-[#111827] dark:text-zinc-300 font-semibold">
-                          Proof linked to Order #{order.id}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3 py-1.5 rounded-lg bg-white dark:bg-[#1a1a26] text-xs font-bold text-[#1f2937] dark:text-zinc-200 border border-[#d1c7c7] dark:border-white/10 transition cursor-pointer"
-                    >
-                      Change
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={uploadingReceipt}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full py-4 px-4 rounded-xl border-2 border-dashed border-[#660000]/40 dark:border-[#ff4d4d]/40 hover:border-[#660000] bg-[#660000]/[0.02] dark:bg-[#14141e] transition flex flex-col items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    {uploadingReceipt ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin text-[#660000] dark:text-[#ff6b6b]" />
-                        <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">Uploading Screenshot...</span>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-8 h-8 rounded-full bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] flex items-center justify-center">
-                          <Upload className="w-4 h-4" />
-                        </div>
-                        <span className="text-xs font-bold text-[#0a0a0a] dark:text-white">
-                          Click to Upload Payment Screenshot
-                        </span>
-                        <span className="text-[10px] text-red-600 dark:text-red-400 font-bold">
-                          ⚠️ Screenshot upload is mandatory before submitting
-                        </span>
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {uploadError && (
-                  <p className="mt-1 text-[11px] text-red-600 dark:text-red-400 font-semibold">
-                    {uploadError}
-                  </p>
-                )}
+                <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  Send exact payment to account above and enter your Transaction ID (TID) from payment SMS or sender number.
+                </p>
               </div>
 
               {/* Submit CTA */}
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={submitting || uploadingReceipt}
+                  disabled={submitting}
                   className="w-full py-4 px-4 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-[#660000]/25 transition active:scale-98 disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? (
