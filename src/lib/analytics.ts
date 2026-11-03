@@ -182,7 +182,9 @@ export async function ensureAnalyticsTables() {
         os VARCHAR(64),
         is_admin BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
+      )
+    `);
+    await sql.query(`
       CREATE TABLE IF NOT EXISTS yt_active_sessions (
         session_id VARCHAR(64) PRIMARY KEY,
         visitor_id VARCHAR(64) NOT NULL,
@@ -192,13 +194,21 @@ export async function ensureAnalyticsTables() {
         is_admin BOOLEAN DEFAULT FALSE,
         current_activity VARCHAR(255),
         activity_details VARCHAR(255)
-      );
-      ALTER TABLE yt_active_sessions ADD COLUMN IF NOT EXISTS current_activity VARCHAR(255);
-      ALTER TABLE yt_active_sessions ADD COLUMN IF NOT EXISTS activity_details VARCHAR(255);
-      CREATE INDEX IF NOT EXISTS idx_pageviews_created_at ON yt_pageviews(created_at);
-      CREATE INDEX IF NOT EXISTS idx_pageviews_visitor_id ON yt_pageviews(visitor_id);
-      CREATE INDEX IF NOT EXISTS idx_active_sessions_last_active ON yt_active_sessions(last_active_at);
+      )
     `);
+    try {
+      await sql.query(`ALTER TABLE yt_active_sessions ADD COLUMN IF NOT EXISTS current_activity VARCHAR(255)`);
+      await sql.query(`ALTER TABLE yt_active_sessions ADD COLUMN IF NOT EXISTS activity_details VARCHAR(255)`);
+    } catch {
+      // Column may already exist
+    }
+    try {
+      await sql.query(`CREATE INDEX IF NOT EXISTS idx_pageviews_created_at ON yt_pageviews(created_at)`);
+      await sql.query(`CREATE INDEX IF NOT EXISTS idx_pageviews_visitor_id ON yt_pageviews(visitor_id)`);
+      await sql.query(`CREATE INDEX IF NOT EXISTS idx_active_sessions_last_active ON yt_active_sessions(last_active_at)`);
+    } catch {
+      // Indexes exist
+    }
     tablesInitialized = true;
   } catch (err) {
     console.error('Error ensuring analytics tables:', err);
