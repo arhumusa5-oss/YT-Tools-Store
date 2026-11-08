@@ -29,6 +29,10 @@ function ProductCard({ product }: ProductCardProps) {
 
   const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
 
+  React.useEffect(() => {
+    router.prefetch('/cart');
+  }, [router]);
+
   const handleAddToCart = () => {
     addToCart(product, currentQty);
     setAdded(true);
@@ -38,9 +42,7 @@ function ProductCard({ product }: ProductCardProps) {
   const handleProceedToCart = () => {
     addToCart(product, currentQty);
     setIsNavigating(true);
-    setTimeout(() => {
-      router.push('/cart');
-    }, 300);
+    router.push('/cart');
   };
 
   const isService = (product.category || '').toLowerCase().includes('service');

@@ -20,7 +20,7 @@ export default function BufferingLoader({
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-[99999] bg-white/80 dark:bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 transition-all animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] bg-white dark:bg-[#060608] flex flex-col items-center justify-center p-4 transition-all animate-in fade-in duration-150"
     >
       <div className="relative flex flex-col items-center">
         {/* Ambient Soft Red Glow */}

@@ -28,6 +28,10 @@ export default function ProductModal() {
   const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
+    router.prefetch('/cart');
+  }, [router]);
+
+  useEffect(() => {
     if (activeProductModal) {
       setCurrentProduct(activeProductModal);
       setIsClosing(false);
@@ -431,9 +435,7 @@ export default function ProductModal() {
                       addToCart(product, currentQty);
                       handleClose();
                       setIsNavigating(true);
-                      setTimeout(() => {
-                        router.push('/cart');
-                      }, 300);
+                      router.push('/cart');
                     }}
                     className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                   >

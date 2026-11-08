@@ -88,6 +88,11 @@ export default function CartPage() {
   const grandTotalPKR = subtotalPKR;
   const grandTotalUSD = subtotalUSD;
 
+  // Prefetch checkout page for instant transition
+  React.useEffect(() => {
+    router.prefetch('/checkout');
+  }, [router]);
+
   // Proceed to Checkout handler with Buffering Roller
   const handleProceedToCheckout = () => {
     if (selectedItems.length === 0) {
@@ -101,9 +106,7 @@ export default function CartPage() {
     } catch {
       // ignore
     }
-    setTimeout(() => {
-      router.push('/checkout');
-    }, 400);
+    router.push('/checkout');
   };
 
   return (
