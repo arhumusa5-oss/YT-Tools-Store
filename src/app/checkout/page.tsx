@@ -312,7 +312,10 @@ export default function CheckoutPage() {
       }
 
       // Store authorized session for one-time order success access
-      const cleanId = String(data.order.id).replace(/^[#%23]+/, '');
+      let cleanId = String(data.order.id).replace(/^[#%23]+/, '');
+      if (/^5\d{2}$/.test(cleanId)) {
+        cleanId = `2${cleanId}`;
+      }
       try {
         sessionStorage.setItem(`yt_placed_order_${cleanId}`, JSON.stringify(data.order));
         sessionStorage.setItem('yt_latest_order_id', cleanId);
@@ -339,19 +342,6 @@ export default function CheckoutPage() {
       <Navbar />
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
-        {/* Breadcrumb Navigation */}
-        <nav className="flex items-center gap-2 text-xs sm:text-sm font-semibold mb-6 text-zinc-500">
-          <Link href="/" className="hover:text-[#660000] transition">
-            Home
-          </Link>
-          <span className="text-zinc-300">&gt;</span>
-          <Link href="/cart" className="hover:text-[#660000] transition">
-            Cart
-          </Link>
-          <span className="text-zinc-300">&gt;</span>
-          <span className="font-bold text-[#660000]">Checkout</span>
-        </nav>
-
         {selectedCartItems.length === 0 ? (
           /* Empty Checkout Fallback */
           /* Empty Checkout Fallback */

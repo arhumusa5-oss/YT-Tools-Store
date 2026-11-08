@@ -30,7 +30,11 @@ export default function OrderSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  const cleanOrderId = decodeURIComponent(rawId).replace(/^(#|%23)+/, '');
+  let cleanOrderId = decodeURIComponent(rawId).replace(/^(#|%23)+/, '');
+  // Normalize if 3-digit missing leading 2 (e.g. 528 -> 2528)
+  if (/^5\d{2}$/.test(cleanOrderId)) {
+    cleanOrderId = `2${cleanOrderId}`;
+  }
 
   useEffect(() => {
     if (!cleanOrderId) {
@@ -41,10 +45,12 @@ export default function OrderSuccessPage() {
     // Security Verification: Check if this order was placed in this session
     // If user copied the link and pasted it in a new tab/browser, sessionStorage will be empty
     try {
-      const sessionOrderRaw = sessionStorage.getItem(`yt_placed_order_${cleanOrderId}`);
+      const sessionOrderRaw =
+        sessionStorage.getItem(`yt_placed_order_${cleanOrderId}`) ||
+        sessionStorage.getItem(`yt_placed_order_${rawId.replace(/^(#|%23)+/, '')}`);
       const latestPlacedId = sessionStorage.getItem('yt_latest_order_id');
 
-      if (!sessionOrderRaw && latestPlacedId !== cleanOrderId) {
+      if (!sessionOrderRaw && latestPlacedId !== cleanOrderId && latestPlacedId !== rawId.replace(/^(#|%23)+/, '')) {
         // Unauthorized direct link hit or copied/pasted link -> Immediately redirect to home
         window.location.replace('/');
         return;
@@ -71,12 +77,19 @@ export default function OrderSuccessPage() {
     } catch {
       window.location.replace('/');
     }
-  }, [cleanOrderId, router]);
+  }, [cleanOrderId, rawId, router]);
+
+  // Priority: use order.id if available, fallback to cleanOrderId
+  let displayOrderId = order?.id ? order.id.replace(/^(#|%23)+/, '') : cleanOrderId;
+  if (/^5\d{2}$/.test(displayOrderId)) {
+    displayOrderId = `2${displayOrderId}`;
+  }
 
   // If not authorized or redirecting, don't render receipt
   if (!isAuthorized && !order) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-white">
+      <main className="min-h-screen flex items-center justify-center bg-white relative">
+        <div className="fixed inset-0 pointer-events-none bg-grid-pattern z-0" />
         <BufferingLoader show={true} message="Verifying Order..." subtitle="Please wait..." />
       </main>
     );
@@ -84,7 +97,7 @@ export default function OrderSuccessPage() {
 
   const whatsappNumber = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   const whatsappMsg = encodeURIComponent(
-    `Assalam o Alaikum! I just placed Order #${cleanOrderId} on YT Tools Store. Please confirm delivery and activation instructions.`
+    `Assalam o Alaikum! I just placed Order #${displayOrderId} on YT Tools Store. Please confirm delivery and activation instructions.`
   );
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${whatsappMsg}`;
 
@@ -112,6 +125,10 @@ export default function OrderSuccessPage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#1f2937] relative transition-colors duration-200">
+      {/* Explicit Geometric Grid Pattern in background outside the white card */}
+      <div className="fixed inset-0 pointer-events-none bg-grid-pattern z-0" />
+      <div className="fixed inset-0 pointer-events-none ambient-glow glow-top z-0" />
+
       <BufferingLoader
         show={loading}
         message="Loading Order Receipt..."
@@ -120,7 +137,7 @@ export default function OrderSuccessPage() {
 
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20 w-full">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-12 sm:py-20 w-full">
         {/* ONE SINGLE UNIFIED WHITE CARD */}
         <div className="w-full max-w-xl mx-auto p-7 sm:p-10 rounded-3xl bg-white border border-[#e8e1e1] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] text-center space-y-6 animate-in fade-in duration-300">
           
@@ -142,7 +159,7 @@ export default function OrderSuccessPage() {
             <p className="text-base sm:text-lg font-bold text-zinc-700">
               Your order id is{' '}
               <span className="font-sans font-black text-[#660000]">
-                #{cleanOrderId}
+                #{displayOrderId}
               </span>
             </p>
             <p className="text-xs sm:text-sm max-w-md mx-auto text-zinc-500 leading-relaxed">
@@ -160,7 +177,7 @@ export default function OrderSuccessPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-[#0a0a0a]">
-                    Order #{cleanOrderId}
+                    Order #{displayOrderId}
                   </h3>
                   <p className="text-[11px] font-medium text-zinc-500">
                     {displayDate}

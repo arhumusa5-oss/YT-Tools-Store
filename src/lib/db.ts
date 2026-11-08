@@ -399,12 +399,12 @@ export const db = {
         return match ? parseInt(match[0], 10) : 0;
       })
       .filter((n) => n > 0);
-    const maxExistingNum = existingNumericIds.length > 0 ? Math.max(...existingNumericIds) : 2526;
+    const maxExistingNum = existingNumericIds.length > 0 ? Math.max(...existingNumericIds) : 2527;
     const configuredNext =
-      typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
+      typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 2528
         ? data.settings.nextOrderNumber
-        : 2527;
-    const currentNum = Math.max(configuredNext, maxExistingNum + 1, 2527);
+        : 2528;
+    const currentNum = Math.max(configuredNext, maxExistingNum + 1, 2528);
     return `#${currentNum}`;
   },
 
@@ -418,16 +418,21 @@ export const db = {
         return match ? parseInt(match[0], 10) : 0;
       })
       .filter((n) => n > 0);
-    const maxExistingNum = existingNumericIds.length > 0 ? Math.max(...existingNumericIds) : 2526;
+    const maxExistingNum = existingNumericIds.length > 0 ? Math.max(...existingNumericIds) : 2527;
 
     let id = orderData.id ? String(orderData.id).trim() : '';
+    // If incoming ID is a 3-digit order missing prefix (e.g. #528 or 528), normalize to #2528
+    if (id && /^#?5\d{2}$/.test(id)) {
+      id = id.startsWith('#') ? `#2${id.slice(1)}` : `#2${id}`;
+    }
+
     if (!id || id === '-' || id === '#-' || id === '#' || !/[a-zA-Z0-9]/.test(id)) {
-      // Sequential order number (guaranteed >= 2527 and > maxExistingNum)
+      // Sequential order number (guaranteed >= 2528 and > maxExistingNum)
       const configuredNext =
-        typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 1000
+        typeof data.settings.nextOrderNumber === 'number' && data.settings.nextOrderNumber >= 2528
           ? data.settings.nextOrderNumber
-          : 2527;
-      const currentNum = Math.max(configuredNext, maxExistingNum + 1, 2527);
+          : 2528;
+      const currentNum = Math.max(configuredNext, maxExistingNum + 1, 2528);
       id = `#${currentNum}`;
       data.settings.nextOrderNumber = currentNum + 1;
     } else {
@@ -437,7 +442,7 @@ export const db = {
       const numMatch = id.match(/\d+/);
       if (numMatch) {
         const num = parseInt(numMatch[0], 10);
-        if (num >= (data.settings.nextOrderNumber || 2527)) {
+        if (num >= (data.settings.nextOrderNumber || 2528)) {
           data.settings.nextOrderNumber = num + 1;
         }
       }
