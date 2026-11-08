@@ -24,9 +24,9 @@ function Navbar({ onSearchClick }: NavbarProps) {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-3 sm:gap-4">
         {/* Left Section: Cart Button (at arrow position) + Logo */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Cart Icon Button */}
-          <button
-            onClick={() => setIsCartOpen(true)}
+          {/* Cart Icon Button - Directly opens the full window /cart page */}
+          <Link
+            href="/cart"
             className="relative p-2 sm:p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer flex items-center justify-center group"
             aria-label="Open Shopping Cart"
             title="Shopping Cart"
@@ -37,7 +37,7 @@ function Navbar({ onSearchClick }: NavbarProps) {
                 {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}
-          </button>
+          </Link>
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
@@ -141,12 +141,9 @@ function Navbar({ onSearchClick }: NavbarProps) {
                   </div>
 
                   <div className="py-1 border-b border-[#f0ebeb] dark:border-white/10 mb-1 space-y-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        setIsCartOpen(true);
-                      }}
+                    <Link
+                      href="/cart"
+                      onClick={() => setUserDropdownOpen(false)}
                       className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#1f2937] dark:text-zinc-200 hover:bg-[#faf8f8] dark:hover:bg-[#161622] transition text-left cursor-pointer"
                     >
                       <span className="flex items-center gap-2">
@@ -158,7 +155,7 @@ function Navbar({ onSearchClick }: NavbarProps) {
                           {cartCount}
                         </span>
                       )}
-                    </button>
+                    </Link>
                     <Link
                       href="/track-order"
                       onClick={() => setUserDropdownOpen(false)}
@@ -214,11 +211,9 @@ function Navbar({ onSearchClick }: NavbarProps) {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-white/98 dark:bg-[#0c0c12]/98 backdrop-blur-2xl border-b border-[#e8e1e1] dark:border-white/10 px-4 py-4 space-y-3 shadow-lg">
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false);
-              setIsCartOpen(true);
-            }}
+          <Link
+            href="/cart"
+            onClick={() => setMobileMenuOpen(false)}
             className="w-full flex items-center justify-between text-sm font-bold text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] py-1.5 cursor-pointer"
           >
             <div className="flex items-center gap-2">
@@ -230,7 +225,7 @@ function Navbar({ onSearchClick }: NavbarProps) {
                 {cartCount} {cartCount === 1 ? 'item' : 'items'}
               </span>
             )}
-          </button>
+          </Link>
 
           {/* Mobile User Account Link */}
           {user ? (

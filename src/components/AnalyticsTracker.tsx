@@ -70,16 +70,36 @@ export default function AnalyticsTracker() {
 
   // Compute live activity and details in real-time
   const { currentActivity, activityDetails } = useMemo(() => {
-    if (isCheckoutOpen) {
+    if (isCheckoutOpen || pathname === '/checkout') {
+      const items = checkoutItems.length > 0 ? checkoutItems : cart;
       const details =
-        checkoutItems.length === 1
-          ? checkoutItems[0].title
-          : checkoutItems.length > 1
-          ? `${checkoutItems[0].title} (+${checkoutItems.length - 1} more)`
-          : 'Checkout Modal';
+        items.length === 1
+          ? items[0].title
+          : items.length > 1
+          ? `${items[0].title} (+${items.length - 1} more)`
+          : 'Checkout Page';
       return {
         currentActivity: 'checkout',
         activityDetails: details,
+      };
+    }
+
+    if (pathname === '/cart') {
+      const details =
+        cart.length > 0
+          ? `${cart.length} item${cart.length === 1 ? '' : 's'} in cart`
+          : 'Cart Page (Empty)';
+      return {
+        currentActivity: 'cart',
+        activityDetails: details,
+      };
+    }
+
+    if (pathname?.startsWith('/order-success/')) {
+      const orderId = pathname.split('/')[2] || '';
+      return {
+        currentActivity: 'order_success',
+        activityDetails: orderId ? `Order #${orderId}` : 'Order Confirmation',
       };
     }
 

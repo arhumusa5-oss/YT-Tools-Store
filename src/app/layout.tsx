@@ -4,10 +4,8 @@ import './globals.css';
 import { CartProvider } from '@/context/CartContext';
 import { AuthProvider } from '@/context/AuthContext';
 import CustomCursor from '@/components/CustomCursor';
-import CartDrawer from '@/components/CartDrawer';
 import CartToast from '@/components/CartToast';
 import AuthModal from '@/components/AuthModal';
-import CheckoutModal from '@/components/CheckoutModal';
 import OrderSuccessModal from '@/components/OrderSuccessModal';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 
@@ -161,10 +159,8 @@ export default function RootLayout({
             <div className="relative z-10 flex flex-col min-h-screen">
               {children}
             </div>
-            <CartDrawer />
             <CartToast />
             <AuthModal />
-            <CheckoutModal />
             <OrderSuccessModal />
           </CartProvider>
         </AuthProvider>

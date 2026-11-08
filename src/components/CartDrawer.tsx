@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight, Zap } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 
 export default function CartDrawer() {
@@ -265,16 +266,37 @@ export default function CartDrawer() {
               </div>
 
               {/* Primary: Proceed to Checkout Button */}
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/cart"
+                  onClick={() => setIsCartOpen(false)}
+                  className="py-3 px-3 rounded-full bg-[#f4efef] dark:bg-[#1c1c28] hover:bg-[#eae4e4] dark:hover:bg-[#262634] text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer text-center"
+                >
+                  <ShoppingCart className="w-3.5 h-3.5" />
+                  <span>View Cart Page</span>
+                </Link>
+
+                <Link
+                  href="/checkout"
+                  onClick={() => setIsCartOpen(false)}
+                  className="py-3 px-3 rounded-full bg-[#660000] hover:bg-[#520000] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#660000]/25 transition active:scale-95 cursor-pointer text-center"
+                >
+                  <span>Checkout</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              {/* Express Modal Checkout Option */}
               <button
                 type="button"
                 onClick={() => {
                   setIsCartOpen(false);
                   openCheckoutWithItems(cart);
                 }}
-                className="w-full py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#520000] text-white font-extrabold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-[#660000]/25 transition-all hover:shadow-[#660000]/35 active:scale-95 cursor-pointer tracking-tight"
+                className="w-full py-2.5 px-3 rounded-full bg-[#660000]/10 dark:bg-[#660000]/20 hover:bg-[#660000]/20 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4" />
+                <Zap className="w-3.5 h-3.5 fill-current text-amber-500" />
+                <span>Instant Modal Checkout</span>
               </button>
 
               {/* Direct WhatsApp Order Option */}

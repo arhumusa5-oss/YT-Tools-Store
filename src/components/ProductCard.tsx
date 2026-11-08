@@ -1,28 +1,33 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Star, Eye, ShoppingCart, Zap, ArrowRight } from 'lucide-react';
+import BufferingLoader from './BufferingLoader';
 
 interface ProductCardProps {
   product: Product;
 }
 
 function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter();
   const {
     currency,
     formatPrice,
     setActiveProductModal,
     settings,
     addToCart,
-    openCheckoutWithProduct,
   } = useCart();
   const { user } = useAuth();
 
   const [quantity, setQuantity] = useState<number | string>(1);
   const [added, setAdded] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
 
   const handleAddToCart = () => {
     addToCart(product, currentQty);
@@ -30,10 +35,16 @@ function ProductCard({ product }: ProductCardProps) {
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const handleProceedToCart = () => {
+    addToCart(product, currentQty);
+    setIsNavigating(true);
+    setTimeout(() => {
+      router.push('/cart');
+    }, 300);
+  };
+
   const isService = (product.category || '').toLowerCase().includes('service');
   const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
-
-  const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
 
   const currentSinglePrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
   const originalSinglePrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
@@ -382,10 +393,10 @@ function ProductCard({ product }: ProductCardProps) {
                 </button>
               </div>
 
-              {/* Primary: Proceed to Checkout Button (Green & White, Clean - No WhatsApp Logo) */}
+              {/* Primary: Proceed to Checkout Button (Redirects directly to /cart - No WhatsApp Logo) */}
               <button
                 type="button"
-                onClick={() => openCheckoutWithProduct(product, currentQty)}
+                onClick={handleProceedToCart}
                 className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
                 title="Proceed to Checkout"
               >
@@ -396,6 +407,12 @@ function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
       </div>
+
+      <BufferingLoader
+        show={isNavigating}
+        message="Loading Cart..."
+        subtitle="Taking you to your order summary..."
+      />
     </div>
   );
 }

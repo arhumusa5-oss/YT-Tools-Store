@@ -1,20 +1,22 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap } from 'lucide-react';
+import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap, ArrowRight } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
+import BufferingLoader from './BufferingLoader';
 import { Product } from '@/lib/types';
 
 export default function ProductModal() {
+  const router = useRouter();
   const {
     activeProductModal,
     setActiveProductModal,
     formatPrice,
     settings,
     addToCart,
-    openCheckoutWithProduct,
   } = useCart();
   const { user } = useAuth();
 
@@ -23,6 +25,7 @@ export default function ProductModal() {
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [quantity, setQuantity] = useState<number | string>(1);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     if (activeProductModal) {
@@ -425,15 +428,19 @@ export default function ProductModal() {
                   <button
                     type="button"
                     onClick={() => {
-                      openCheckoutWithProduct(product, currentQty);
+                      addToCart(product, currentQty);
                       handleClose();
+                      setIsNavigating(true);
+                      setTimeout(() => {
+                        router.push('/cart');
+                      }, 300);
                     }}
                     className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                   >
-                    <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
                     <span>
                       Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
                     </span>
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                   </button>
                 </div>
               )}
@@ -441,6 +448,12 @@ export default function ProductModal() {
           </div>
         </div>
       </div>
+
+      <BufferingLoader
+        show={isNavigating}
+        message="Loading Cart..."
+        subtitle="Taking you to your order summary..."
+      />
     </div>
   );
 }

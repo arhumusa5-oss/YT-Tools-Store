@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { CheckCircle2, ShoppingCart, X, ArrowRight } from 'lucide-react';
 
 export default function CartToast() {
-  const { cartNotification, clearCartNotification, setIsCartOpen } = useCart();
+  const router = useRouter();
+  const { cartNotification, clearCartNotification } = useCart();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export default function CartToast() {
   const handleOpenCart = () => {
     setIsVisible(false);
     clearCartNotification();
-    setIsCartOpen(true);
+    router.push('/cart');
   };
 
   const handleClose = () => {
