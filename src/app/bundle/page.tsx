@@ -25,6 +25,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
+import BufferingLoader from '@/components/BufferingLoader';
 
 interface BundleEntry {
   product: Product;
@@ -194,10 +195,18 @@ function BundleContent() {
   const displayTitle = customTitle.trim() || 'Custom Selected Tools Package';
 
   return (
-    <div className="flex-1 max-w-5xl mx-auto px-4 py-8 sm:py-14 w-full">
+    <div className="flex-1 max-w-5xl mx-auto px-4 py-8 sm:py-14 w-full animate-page-entrance">
+      <BufferingLoader
+        show={loading}
+        message="Loading Tools Bundle..."
+        subtitle="Preparing your customized creator tools package..."
+      />
+
       {loading ? (
         <div className="text-center py-24 space-y-3">
-          <Loader2 className="w-9 h-9 animate-spin mx-auto text-[#660000] dark:text-[#ff6b6b]" />
+          <div className="w-16 h-16 rounded-full border-[3.5px] border-[#e8e1e1] dark:border-white/15 mx-auto relative flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#660000] border-r-[#990000] dark:border-t-[#ff4d4d] dark:border-r-[#ff8080] animate-spin" />
+          </div>
           <p className="text-xs text-[#111827] dark:text-zinc-300 font-bold">
             Loading your customized tools bundle...
           </p>

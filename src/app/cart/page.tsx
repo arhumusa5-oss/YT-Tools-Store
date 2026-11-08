@@ -106,7 +106,9 @@ export default function CartPage() {
     } catch {
       // ignore
     }
-    router.push('/checkout');
+    setTimeout(() => {
+      router.push('/checkout');
+    }, 200);
   };
 
   return (
@@ -119,7 +121,7 @@ export default function CartPage() {
 
       <Navbar />
 
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full animate-page-entrance">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 text-xs sm:text-sm font-semibold mb-6 text-zinc-500">
           <Link href="/" className="hover:text-[#660000] transition">

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Link from 'next/link';
+import BufferingLoader from '@/components/BufferingLoader';
 import { validateEmail } from '@/lib/validation';
 
 function TrackOrderContent() {
@@ -143,7 +144,13 @@ function TrackOrderContent() {
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16 relative z-20">
+    <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16 relative z-20 animate-page-entrance">
+      <BufferingLoader
+        show={loading}
+        message="Tracking Order Status..."
+        subtitle="Connecting to real-time dispatch and activation records..."
+      />
+
       {/* Back button */}
       <Link
         href="/"

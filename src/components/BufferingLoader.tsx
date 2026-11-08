@@ -20,11 +20,11 @@ export default function BufferingLoader({
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-[99999] bg-white dark:bg-[#060608] flex flex-col items-center justify-center p-4 transition-all animate-in fade-in duration-150"
+      className="fixed inset-0 z-[99999] bg-white/98 dark:bg-[#060608]/98 backdrop-blur-xl flex flex-col items-center justify-center p-4 transition-all duration-300 animate-in fade-in"
     >
       <div className="relative flex flex-col items-center">
         {/* Ambient Soft Red Glow */}
-        <div className="absolute w-24 h-24 rounded-full bg-[#660000]/20 dark:bg-[#ff4d4d]/25 blur-2xl animate-pulse pointer-events-none" />
+        <div className="absolute w-28 h-28 rounded-full bg-[#660000]/25 dark:bg-[#ff4d4d]/25 blur-2xl animate-pulse pointer-events-none" />
 
         {/* Circular Buffering Roller */}
         <div className="relative w-16 h-16 flex items-center justify-center">
@@ -47,7 +47,7 @@ export default function BufferingLoader({
           </h4>
         )}
         {subtitle && (
-          <p className="mt-0.5 text-xs text-[#6b7280] dark:text-zinc-400 text-center font-medium">
+          <p className="mt-1 text-xs text-[#6b7280] dark:text-zinc-400 text-center font-medium">
             {subtitle}
           </p>
         )}

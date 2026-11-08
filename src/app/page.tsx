@@ -13,7 +13,7 @@ import Footer from '@/components/Footer';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import BufferingLoader from '@/components/BufferingLoader';
 import { Product } from '@/lib/types';
-import { Sparkles, PackageX, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, PackageX, RefreshCw, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 const ITEMS_PER_PAGE = 8;
@@ -31,10 +31,17 @@ export default function HomePage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      const startTime = Date.now();
       const res = await fetch('/api/products');
       const data = await res.json();
       if (data.success) {
         setProducts(data.products);
+      }
+      // Ensure smooth buffering roller animation duration (~1.2s minimum) so page never flashes raw
+      const elapsed = Date.now() - startTime;
+      const minDuration = 1200;
+      if (elapsed < minDuration) {
+        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
       }
     } catch {
       // fallback
@@ -103,7 +110,7 @@ export default function HomePage() {
 
   const [isTabBuffering, setIsTabBuffering] = useState(false);
 
-  // Single-pass Category switch with instant buffering indicator
+  // Single-pass Category switch with smooth buffering indicator
   const handleCategoryChange = useCallback((cat: string) => {
     if (cat === activeCategory) return;
     setIsTabBuffering(true);
@@ -112,8 +119,8 @@ export default function HomePage() {
       setCurrentPage(1);
       setTimeout(() => {
         setIsTabBuffering(false);
-      }, 150);
-    }, 50);
+      }, 700);
+    }, 150);
   }, [activeCategory]);
 
   // Reset to page 1 whenever user searches
@@ -192,9 +199,19 @@ export default function HomePage() {
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#1f2937] transition-colors duration-150 relative z-10">
       <BufferingLoader
-        show={isTabBuffering}
-        message={activeCategory === 'Tools' ? 'Loading Services & Solutions...' : 'Loading Tools & Subscriptions...'}
-        subtitle="Updating digital catalog..."
+        show={loading || isTabBuffering}
+        message={
+          loading
+            ? 'Loading Store Catalog...'
+            : activeCategory === 'Tools'
+            ? 'Loading Services & Solutions...'
+            : 'Loading Tools & Subscriptions...'
+        }
+        subtitle={
+          loading
+            ? 'Fetching creator tools & digital subscriptions...'
+            : 'Updating digital catalog...'
+        }
       />
 
       {/* Top Bar Announcement */}
@@ -276,13 +293,16 @@ export default function HomePage() {
 
           {/* Product Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-3xl bg-[#f4efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 h-96 animate-pulse"
-                />
-              ))}
+            <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center">
+              <div className="relative w-16 h-16 flex items-center justify-center mb-4">
+                <div className="w-16 h-16 rounded-full border-[3.5px] border-[#e8e1e1] dark:border-white/15" />
+                <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#660000] border-r-[#990000] dark:border-t-[#ff4d4d] dark:border-r-[#ff8080] animate-spin" />
+                <div className="absolute w-8 h-8 rounded-full bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-md shadow-[#660000]/30 animate-pulse">
+                  <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                </div>
+              </div>
+              <h4 className="text-base font-extrabold text-[#0a0a0a] dark:text-white">Loading Digital Catalog...</h4>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Please wait a moment...</p>
             </div>
           ) : products.length === 0 ? (
             /* Clean Empty State when Admin hasn't added products yet */
@@ -336,7 +356,7 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 animate-cards-entrance">
                 {paginatedProducts.map((prod) => (
                   <ProductCard key={prod.id} product={prod} />
                 ))}

@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
+import BufferingLoader from '@/components/BufferingLoader';
 
 export default function DirectPaymentInvoicePage() {
   const params = useParams();
@@ -369,12 +370,20 @@ export default function DirectPaymentInvoicePage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
+      <BufferingLoader
+        show={loading || submitting}
+        message={submitting ? 'Verifying Transaction...' : 'Loading Official Payment Invoice...'}
+        subtitle="Retrieving secure invoice details..."
+      />
+
       <Navbar />
 
-      <div className="flex-1 max-w-2xl mx-auto px-4 py-10 sm:py-16 w-full">
+      <div className="flex-1 max-w-2xl mx-auto px-4 py-10 sm:py-16 w-full animate-page-entrance">
         {loading ? (
           <div className="text-center py-24 space-y-3">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#660000] dark:text-[#ff6b6b]" />
+            <div className="w-16 h-16 rounded-full border-[3.5px] border-[#e8e1e1] dark:border-white/15 mx-auto relative flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#660000] border-r-[#990000] dark:border-t-[#ff4d4d] dark:border-r-[#ff8080] animate-spin" />
+            </div>
             <p className="text-xs text-[#6b7280] dark:text-zinc-400 font-medium">
               Loading official payment invoice...
             </p>

@@ -341,7 +341,7 @@ export default function CheckoutPage() {
 
       <Navbar />
 
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full animate-page-entrance">
         {selectedCartItems.length === 0 ? (
           /* Empty Checkout Fallback */
           /* Empty Checkout Fallback */

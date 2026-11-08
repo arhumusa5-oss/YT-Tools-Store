@@ -42,7 +42,9 @@ function ProductCard({ product }: ProductCardProps) {
   const handleProceedToCart = () => {
     addToCart(product, currentQty);
     setIsNavigating(true);
-    router.push('/cart');
+    setTimeout(() => {
+      router.push('/cart');
+    }, 150);
   };
 
   const isService = (product.category || '').toLowerCase().includes('service');
