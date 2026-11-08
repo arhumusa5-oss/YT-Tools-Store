@@ -8,6 +8,7 @@ import CartToast from '@/components/CartToast';
 import AuthModal from '@/components/AuthModal';
 import OrderSuccessModal from '@/components/OrderSuccessModal';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
+import NavigationLoader from '@/components/NavigationLoader';
 
 const fontSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -156,6 +157,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             <AnalyticsTracker />
+            <NavigationLoader />
             <div className="relative z-10 flex flex-col min-h-screen">
               {children}
             </div>

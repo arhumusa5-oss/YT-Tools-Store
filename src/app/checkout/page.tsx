@@ -55,7 +55,6 @@ export default function CheckoutPage() {
   const [transactionId, setTransactionId] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
 
   // Filter selected items passed from `/cart` if any, or default to entire cart
   const [selectedCartItems, setSelectedCartItems] = useState(cart);
@@ -312,12 +311,17 @@ export default function CheckoutPage() {
         // ignore
       }
 
-      // Display official Order Confirmation in-place (No public link)
-      setConfirmedOrder(data.order);
-      setSubmitting(false);
-      if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Store authorized session for one-time order success access
+      const cleanId = String(data.order.id).replace(/^[#%23]+/, '');
+      try {
+        sessionStorage.setItem(`yt_placed_order_${cleanId}`, JSON.stringify(data.order));
+        sessionStorage.setItem('yt_latest_order_id', cleanId);
+      } catch {
+        // ignore
       }
+
+      // Route to verified order success page
+      router.push(`/order-success/${cleanId}`);
     } catch (err: unknown) {
       setFormError((err as Error).message || 'Something went wrong. Please try again.');
       setSubmitting(false);
@@ -341,160 +345,15 @@ export default function CheckoutPage() {
             Home
           </Link>
           <span className="text-zinc-300">&gt;</span>
-          {confirmedOrder ? (
-            <span className="font-bold text-[#660000]">Order Confirmation</span>
-          ) : (
-            <>
-              <Link href="/cart" className="hover:text-[#660000] transition">
-                Cart
-              </Link>
-              <span className="text-zinc-300">&gt;</span>
-              <span className="font-bold text-[#660000]">Checkout</span>
-            </>
-          )}
+          <Link href="/cart" className="hover:text-[#660000] transition">
+            Cart
+          </Link>
+          <span className="text-zinc-300">&gt;</span>
+          <span className="font-bold text-[#660000]">Checkout</span>
         </nav>
 
-        {confirmedOrder ? (
-          /* ================= ORDER CONFIRMATION SCREEN (IN-PLACE, NO PUBLIC URL) ================= */
-          <div className="py-4 sm:py-8 flex items-center justify-center w-full animate-in fade-in duration-300">
-            <div className="w-full max-w-xl mx-auto p-7 sm:p-10 rounded-3xl bg-white border border-[#e8e1e1] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] text-center space-y-6">
-              
-              {/* 1. Big Circular Checkmark Icon */}
-              <div className="flex justify-center">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-emerald-500 bg-emerald-50 text-emerald-600 shadow-[0_0_36px_rgba(16,185,129,0.25)] flex items-center justify-center">
-                  <Check className="w-10 h-10 sm:w-12 sm:h-12 stroke-[3.5]" />
-                </div>
-              </div>
-
-              {/* 2. Headline & Subtitle */}
-              <div className="space-y-2">
-                <span className="inline-block px-3.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Order Placed Successfully
-                </span>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0a0a0a]">
-                  Thank You For Choosing Our Store!
-                </h1>
-                <p className="text-base sm:text-lg font-bold text-zinc-700">
-                  Your order id is{' '}
-                  <span className="font-sans font-black text-[#660000]">
-                    #{String(confirmedOrder.id).replace(/^[#%23]+/, '')}
-                  </span>
-                </p>
-                <p className="text-xs sm:text-sm max-w-md mx-auto text-zinc-500 leading-relaxed">
-                  Your payment details have been submitted. Account credentials and delivery instructions
-                  will be sent to your WhatsApp.
-                </p>
-              </div>
-
-              {/* 3. Inner Order Details Box */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#faf8f8] border border-[#e8e1e1] text-left space-y-3.5">
-                <div className="flex items-center justify-between pb-3 border-b border-[#e8e1e1]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#660000]/8 text-[#660000] flex items-center justify-center">
-                      <Package className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-extrabold text-[#0a0a0a]">
-                        Order #{String(confirmedOrder.id).replace(/^[#%23]+/, '')}
-                      </h3>
-                      <p className="text-[11px] font-medium text-zinc-500">
-                        {new Date().toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: '2-digit',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
-                    {confirmedOrder.status || 'Pending Verification'}
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-xs text-zinc-600">
-                  {confirmedOrder.customerName && (
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-medium text-zinc-500">
-                        <UserIcon className="w-3.5 h-3.5 opacity-60" />
-                        <span>Customer:</span>
-                      </span>
-                      <span className="font-bold text-[#0a0a0a]">
-                        {confirmedOrder.customerName}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 font-medium text-zinc-500">
-                      <CreditCard className="w-3.5 h-3.5 opacity-60" />
-                      <span>Payment Method:</span>
-                    </span>
-                    <span className="font-bold text-[#0a0a0a]">
-                      {confirmedOrder.paymentMethod === 'easypaisa'
-                        ? 'Pay Via EasyPaisa'
-                        : confirmedOrder.paymentMethod === 'jazzcash'
-                        ? 'Pay Via JazzCash'
-                        : confirmedOrder.paymentMethod === 'bank'
-                        ? 'International Bank / Raast'
-                        : 'Crypto / Binance'}
-                    </span>
-                  </div>
-
-                  {confirmedOrder.transactionId && (
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-medium text-zinc-500">
-                        <Hash className="w-3.5 h-3.5 opacity-60" />
-                        <span>Transaction ID (TID):</span>
-                      </span>
-                      <span className="font-sans font-bold text-[#660000]">
-                        {confirmedOrder.transactionId}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="pt-2.5 border-t border-[#e8e1e1] flex items-center justify-between text-sm">
-                    <span className="font-bold text-zinc-800">
-                      Total Amount:
-                    </span>
-                    <span className="text-lg sm:text-xl font-black font-sans text-[#660000]">
-                      {formatPrice(confirmedOrder.totalPKR, confirmedOrder.totalUSD || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 4. Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <Link
-                  href="/"
-                  className="py-3.5 px-6 rounded-full border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-xs bg-white border-[#e8e1e1] hover:bg-[#faf8f8] text-[#1f2937] active:scale-95"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Continue Shopping</span>
-                </Link>
-
-                <a
-                  href={`https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                    `Assalam o Alaikum! I just placed Order #${String(confirmedOrder.id).replace(/^[#%23]+/, '')} on YT Tools Store. Please confirm delivery and activation instructions.`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="py-3.5 px-6 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/25 active:scale-95 cursor-pointer"
-                >
-                  <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
-                  <span>WhatsApp Us</span>
-                </a>
-              </div>
-
-              {/* 5. Official Warranty Line */}
-              <p className="text-[11px] flex items-center justify-center gap-1.5 text-zinc-500 pt-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Official 100% Replacement Warranty &amp; WhatsApp Support</span>
-              </p>
-            </div>
-          </div>
-        ) : selectedCartItems.length === 0 ? (
+        {selectedCartItems.length === 0 ? (
+          /* Empty Checkout Fallback */
           /* Empty Checkout Fallback */
           <div className="p-8 sm:p-14 rounded-3xl bg-white border border-[#e8e1e1] text-center max-w-md mx-auto shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)]">
             <div className="w-16 h-16 rounded-2xl bg-[#660000]/8 text-[#660000] flex items-center justify-center mx-auto mb-4">

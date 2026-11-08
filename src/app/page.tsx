@@ -11,6 +11,7 @@ import ReviewsSection from '@/components/ReviewsSection';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import Footer from '@/components/Footer';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
+import BufferingLoader from '@/components/BufferingLoader';
 import { Product } from '@/lib/types';
 import { Sparkles, PackageX, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
@@ -100,11 +101,20 @@ export default function HomePage() {
     }, 120);
   }, []);
 
-  // Single-pass Category switch (Zero double-renders)
+  const [isTabBuffering, setIsTabBuffering] = useState(false);
+
+  // Single-pass Category switch with instant buffering indicator
   const handleCategoryChange = useCallback((cat: string) => {
-    setActiveCategory(cat);
-    setCurrentPage(1);
-  }, []);
+    if (cat === activeCategory) return;
+    setIsTabBuffering(true);
+    setTimeout(() => {
+      setActiveCategory(cat);
+      setCurrentPage(1);
+      setTimeout(() => {
+        setIsTabBuffering(false);
+      }, 150);
+    }, 50);
+  }, [activeCategory]);
 
   // Reset to page 1 whenever user searches
   useEffect(() => {
@@ -181,6 +191,12 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#1f2937] transition-colors duration-150 relative z-10">
+      <BufferingLoader
+        show={isTabBuffering}
+        message={activeCategory === 'Tools' ? 'Loading Services & Solutions...' : 'Loading Tools & Subscriptions...'}
+        subtitle="Updating digital catalog..."
+      />
+
       {/* Top Bar Announcement */}
       <AnnouncementBar />
 
