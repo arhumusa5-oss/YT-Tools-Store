@@ -467,7 +467,7 @@ export default function CheckoutPage() {
                         <input
                           type="tel"
                           required
-                          placeholder="e.g. +92 331 5280821 or 0300 1234567"
+                          placeholder="e.g. +92 12345678910 or 0300 1234567"
                           value={customerWhatsApp}
                           onChange={(e) => {
                             setCustomerWhatsApp(e.target.value);
