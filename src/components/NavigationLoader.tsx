@@ -28,31 +28,33 @@ export default function NavigationLoader() {
   }, [pathname, isNavigating]);
 
   useEffect(() => {
-    const triggerNavigation = (cleanHref: string) => {
-      let msg = 'Loading...';
-      let sub = 'Please wait a moment...';
+    const triggerNavigation = (cleanHref: string, customMsg?: string, customSub?: string) => {
+      let msg = customMsg || 'Loading...';
+      let sub = customSub || 'Please wait a moment...';
 
-      if (cleanHref === '/cart') {
-        msg = 'Loading Shopping Cart...';
-        sub = 'Reviewing your selected creator tools...';
-      } else if (cleanHref === '/checkout') {
-        msg = 'Preparing Checkout...';
-        sub = 'Setting up secure checkout & payment...';
-      } else if (cleanHref.startsWith('/track-order') || cleanHref.startsWith('/track')) {
-        msg = 'Loading Order Tracker...';
-        sub = 'Connecting to real-time order tracking...';
-      } else if (cleanHref === '/') {
-        msg = 'Loading Store Catalog...';
-        sub = 'Returning to creator subscriptions & tools...';
-      } else if (cleanHref.startsWith('/bundle')) {
-        msg = 'Loading Creator Bundles...';
-        sub = 'Preparing custom software bundles...';
-      } else if (cleanHref.startsWith('/order-success')) {
-        msg = 'Loading Order Receipt...';
-        sub = 'Verifying confirmed order details...';
-      } else if (cleanHref.startsWith('/pay/')) {
-        msg = 'Loading Official Invoice...';
-        sub = 'Retrieving secure payment details...';
+      if (!customMsg) {
+        if (cleanHref === '/cart') {
+          msg = 'Loading Shopping Cart...';
+          sub = 'Reviewing your selected creator tools...';
+        } else if (cleanHref === '/checkout') {
+          msg = 'Preparing Checkout...';
+          sub = 'Setting up secure checkout & payment...';
+        } else if (cleanHref.startsWith('/track-order') || cleanHref.startsWith('/track')) {
+          msg = 'Loading Order Tracker...';
+          sub = 'Connecting to real-time order tracking...';
+        } else if (cleanHref === '/') {
+          msg = 'Loading Store Catalog...';
+          sub = 'Returning to creator subscriptions & tools...';
+        } else if (cleanHref.startsWith('/bundle')) {
+          msg = 'Loading Creator Bundles...';
+          sub = 'Preparing custom software bundles...';
+        } else if (cleanHref.startsWith('/order-success')) {
+          msg = 'Loading Order Receipt...';
+          sub = 'Verifying confirmed order details...';
+        } else if (cleanHref.startsWith('/pay/')) {
+          msg = 'Loading Official Invoice...';
+          sub = 'Retrieving secure payment details...';
+        }
       }
 
       setNavMessage(msg);
@@ -63,7 +65,7 @@ export default function NavigationLoader() {
       // Safety timeout so it never hangs indefinitely
       const timer = setTimeout(() => {
         setIsNavigating(false);
-      }, 3500);
+      }, 4000);
 
       return timer;
     };
@@ -96,6 +98,13 @@ export default function NavigationLoader() {
       }
     };
 
+    // Support programmatic navigation event
+    const handleCustomNav = (e: Event) => {
+      const customEvent = e as CustomEvent<{ href: string; message?: string; subtitle?: string }>;
+      const cleanHref = (customEvent.detail?.href || '/').split('?')[0].split('#')[0];
+      triggerNavigation(cleanHref, customEvent.detail?.message, customEvent.detail?.subtitle);
+    };
+
     // Also support browser back/forward buttons
     const handlePopState = () => {
       triggerNavigation(window.location.pathname);
@@ -103,10 +112,12 @@ export default function NavigationLoader() {
 
     document.addEventListener('click', handleLinkClick, { capture: true });
     window.addEventListener('popstate', handlePopState);
+    window.addEventListener('yt-nav-start', handleCustomNav);
 
     return () => {
       document.removeEventListener('click', handleLinkClick, { capture: true });
       window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('yt-nav-start', handleCustomNav);
     };
   }, [pathname]);
 

@@ -323,6 +323,18 @@ export default function CheckoutPage() {
         // ignore
       }
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('yt-nav-start', {
+            detail: {
+              href: `/order-success/${cleanId}`,
+              message: 'Generating Order Receipt...',
+              subtitle: 'Verifying confirmed order details...',
+            },
+          })
+        );
+      }
+
       // Route to verified order success page
       router.push(`/order-success/${cleanId}`);
     } catch (err: unknown) {

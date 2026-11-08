@@ -106,9 +106,20 @@ export default function CartPage() {
     } catch {
       // ignore
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('yt-nav-start', {
+          detail: {
+            href: '/checkout',
+            message: 'Preparing Checkout...',
+            subtitle: 'Setting up secure checkout & payment...',
+          },
+        })
+      );
+    }
     setTimeout(() => {
       router.push('/checkout');
-    }, 200);
+    }, 150);
   };
 
   return (

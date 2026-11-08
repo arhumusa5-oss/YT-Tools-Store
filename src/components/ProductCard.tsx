@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
@@ -397,16 +398,29 @@ function ProductCard({ product }: ProductCardProps) {
                 </button>
               </div>
 
-              {/* Primary: Proceed to Checkout Button (Redirects directly to /cart - No WhatsApp Logo) */}
-              <button
-                type="button"
-                onClick={handleProceedToCart}
+              {/* Primary: Proceed to Checkout Button (Redirects directly to /cart with smooth buffering loader) */}
+              <Link
+                href="/cart"
+                onClick={() => {
+                  addToCart(product, currentQty);
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(
+                      new CustomEvent('yt-nav-start', {
+                        detail: {
+                          href: '/cart',
+                          message: 'Loading Shopping Cart...',
+                          subtitle: 'Taking you to your order summary...',
+                        },
+                      })
+                    );
+                  }
+                }}
                 className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
                 title="Proceed to Checkout"
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-              </button>
+              </Link>
             </>
           )}
         </div>

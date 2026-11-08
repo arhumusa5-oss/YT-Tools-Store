@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -429,13 +430,22 @@ export default function ProductModal() {
                     </span>
                   </button>
 
-                  <button
-                    type="button"
+                  <Link
+                    href="/cart"
                     onClick={() => {
                       addToCart(product, currentQty);
                       handleClose();
-                      setIsNavigating(true);
-                      router.push('/cart');
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(
+                          new CustomEvent('yt-nav-start', {
+                            detail: {
+                              href: '/cart',
+                              message: 'Loading Shopping Cart...',
+                              subtitle: 'Taking you to your order summary...',
+                            },
+                          })
+                        );
+                      }
                     }}
                     className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
                   >
@@ -443,7 +453,7 @@ export default function ProductModal() {
                       Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
                     </span>
                     <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>
