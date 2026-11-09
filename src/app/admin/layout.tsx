@@ -42,9 +42,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.push('/admin/login');
     } else {
       setAuthorized(true);
+      try {
+        document.cookie = `yt_admin_session=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+      } catch (e) {}
     }
     setChecking(false);
   }, [pathname, router]);
+
+  // Client-side fetch interceptor: Automatically attach admin token to all admin dashboard API calls
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const originalFetch = window.fetch;
+      window.fetch = async function (input, init) {
+        const token = localStorage.getItem('yt_admin_token');
+        if (token && typeof input === 'string' && input.startsWith('/api/')) {
+          init = init || {};
+          const headers = new Headers(init.headers || {});
+          if (!headers.has('x-admin-token')) {
+            headers.set('x-admin-token', token);
+          }
+          init.headers = headers;
+        }
+        return originalFetch(input, init);
+      };
+    }
+  }, []);
 
   const handleLogout = async () => {
     localStorage.removeItem('yt_admin_token');

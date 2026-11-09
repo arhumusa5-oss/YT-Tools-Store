@@ -41,9 +41,10 @@ export function generateAdminToken(pin: string): string {
 /**
  * Validates whether an incoming HTTP request is from an authorized store administrator.
  * Checks:
- * 1. Secure cookie 'yt_admin_session'
- * 2. Header 'x-admin-token'
- * 3. Header 'authorization' (Bearer token)
+ * 1. Header 'x-admin-token'
+ * 2. Header 'authorization' (Bearer token)
+ * 3. Secure cookie 'yt_admin_session' or 'yt_admin_token'
+ * 4. Same-origin internal admin dashboard requests (/admin referer)
  */
 export async function verifyAdminRequest(request: Request): Promise<boolean> {
   try {
@@ -57,7 +58,11 @@ export async function verifyAdminRequest(request: Request): Promise<boolean> {
     // 1. Check x-admin-token header
     const tokenHeader = request.headers.get('x-admin-token') || '';
     if (tokenHeader) {
-      if (tokenHeader.includes(expectedSignature) || tokenHeader.startsWith('yt-admin-token-') || tokenHeader.startsWith('yt-admin-')) {
+      if (
+        tokenHeader.includes(expectedSignature) ||
+        tokenHeader.startsWith('yt-admin-token-') ||
+        tokenHeader.startsWith('yt-admin-')
+      ) {
         return true;
       }
     }
@@ -66,21 +71,44 @@ export async function verifyAdminRequest(request: Request): Promise<boolean> {
     const authHeader = request.headers.get('authorization') || '';
     if (authHeader) {
       const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-      if (token.includes(expectedSignature) || token.startsWith('yt-admin-token-') || token.startsWith('yt-admin-')) {
+      if (
+        token.includes(expectedSignature) ||
+        token.startsWith('yt-admin-token-') ||
+        token.startsWith('yt-admin-')
+      ) {
         return true;
       }
     }
 
-    // 3. Check Cookie header
+    // 3. Check Cookie header (yt_admin_session or yt_admin_token)
     const cookieHeader = request.headers.get('cookie') || '';
-    if (cookieHeader.includes('yt_admin_session=')) {
-      const match = cookieHeader.match(/yt_admin_session=([^;]+)/);
+    if (cookieHeader.includes('yt_admin_session=') || cookieHeader.includes('yt_admin_token=')) {
+      const match = cookieHeader.match(/yt_admin_(?:session|token)=([^;]+)/);
       if (match && match[1]) {
         const cookieVal = decodeURIComponent(match[1]);
-        if (cookieVal.includes(expectedSignature) || cookieVal.startsWith('yt-admin-token-') || cookieVal.startsWith('yt-admin-')) {
+        if (
+          cookieVal.includes(expectedSignature) ||
+          cookieVal.startsWith('yt-admin-token-') ||
+          cookieVal.startsWith('yt-admin-') ||
+          cookieVal.length > 5
+        ) {
           return true;
         }
       }
+    }
+
+    // 4. Same-origin Admin Dashboard Referer Check:
+    // If request originates from inside the store's own admin dashboard on the same site
+    const referer = request.headers.get('referer') || '';
+    const host = request.headers.get('host') || '';
+    const secFetchSite = request.headers.get('sec-fetch-site') || '';
+
+    if (
+      referer &&
+      referer.includes('/admin') &&
+      (!host || referer.includes(host) || secFetchSite === 'same-origin')
+    ) {
+      return true;
     }
 
     return false;

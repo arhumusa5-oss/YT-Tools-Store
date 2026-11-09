@@ -164,7 +164,7 @@ function Navbar({ onSearchClick }: NavbarProps) {
           ) : (
             <Link
               href="/signin"
-              className="flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#660000] hover:text-white dark:hover:bg-[#660000] dark:hover:text-white text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 py-2 px-3 sm:px-4 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#660000] hover:text-white dark:hover:bg-[#660000] dark:hover:text-white text-[#1f2937] dark:text-zinc-200 border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all active:scale-95 shadow-sm cursor-pointer whitespace-nowrap"
               title="Sign In to Your Account"
             >
               <UserIcon className="w-3.5 h-3.5" />
