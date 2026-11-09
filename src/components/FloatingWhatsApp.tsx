@@ -63,11 +63,11 @@ function FloatingWhatsApp() {
   return (
     <aside
       aria-label="WhatsApp Support"
-      className="fixed bottom-6 right-6 z-40 flex flex-col sm:flex-row items-end sm:items-center gap-3"
+      className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 flex flex-col sm:flex-row items-end sm:items-center gap-3"
     >
-      {/* Dynamic Rotating Popup Message */}
+      {/* Dynamic Rotating Popup Message (Desktop only to prevent obstructing mobile search/cards) */}
       {showPopup && !isDismissed && (
-        <div className="animate-pop-fade-in relative max-w-xs p-4 rounded-2xl bg-white/98 dark:bg-[#0e0e16]/98 backdrop-blur-xl border border-[#e8e1e1] dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/60 text-left transition-all">
+        <div className="hidden sm:block animate-pop-fade-in relative max-w-xs p-4 rounded-2xl bg-white/98 dark:bg-[#0e0e16]/98 backdrop-blur-xl border border-[#e8e1e1] dark:border-white/10 shadow-2xl shadow-black/10 dark:shadow-black/60 text-left transition-all">
           {/* Close button */}
           <button
             onClick={(e) => {

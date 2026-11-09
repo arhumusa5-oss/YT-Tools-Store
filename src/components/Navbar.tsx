@@ -21,44 +21,26 @@ function Navbar({ onSearchClick }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/95 dark:bg-[#060608]/95 border-b border-[#e8e1e1] dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] transition-colors duration-200">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-3 sm:gap-4">
-        {/* Left Section: Cart Button (at arrow position) + Logo */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Cart Icon Button - Directly opens the full window /cart page */}
-          <Link
-            href="/cart"
-            className="relative p-2 sm:p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer flex items-center justify-center group"
-            aria-label="Open Shopping Cart"
-            title="Shopping Cart"
-          >
-            <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-5 px-1 rounded-full bg-[#660000] text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center shadow-md animate-pulse">
-                {cartCount > 99 ? '99+' : cartCount}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-2 sm:gap-4">
+        {/* Left Section: Logo */}
+        <Link href="/" className="flex items-center gap-2 sm:gap-3 group shrink-0">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-lg shadow-[#660000]/25 group-hover:scale-105 group-hover:shadow-[#660000]/40 transition-all duration-300 shrink-0">
+            <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white ml-0.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-extrabold text-lg sm:text-xl tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors">
+                YT Tools
               </span>
-            )}
-          </Link>
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-lg shadow-[#660000]/25 group-hover:scale-105 group-hover:shadow-[#660000]/40 transition-all duration-300 shrink-0">
-              <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white fill-white ml-0.5" />
+              <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-black tracking-widest bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 uppercase">
+                STORE
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold text-lg sm:text-xl tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors">
-                  YT Tools
-                </span>
-                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-black tracking-widest bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 uppercase">
-                  STORE
-                </span>
-              </div>
-              <p className="text-[10px] font-medium text-[#6b7280] dark:text-zinc-400 hidden sm:block tracking-normal">
-                Official Creator Subscriptions & Digital Assets
-              </p>
-            </div>
-          </Link>
-        </div>
+            <p className="text-[10px] font-medium text-[#6b7280] dark:text-zinc-400 hidden sm:block tracking-normal">
+              Official Creator Subscriptions &amp; Digital Assets
+            </p>
+          </div>
+        </Link>
 
         {/* Desktop Nav Links */}
         <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-bold text-[#1f2937] dark:text-zinc-200">
@@ -95,7 +77,7 @@ function Navbar({ onSearchClick }: NavbarProps) {
         </nav>
 
         {/* Actions Right */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* WhatsApp Quick Chat */}
           <a
             href={whatsappHref}
@@ -117,12 +99,12 @@ function Navbar({ onSearchClick }: NavbarProps) {
               <button
                 type="button"
                 onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] border border-[#e8e1e1] dark:border-white/10 text-xs font-bold text-[#1f2937] dark:text-zinc-200 transition active:scale-95 cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 sm:gap-2 py-1.5 px-2 sm:px-3 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] border border-[#e8e1e1] dark:border-white/10 text-xs font-bold text-[#1f2937] dark:text-zinc-200 transition active:scale-95 cursor-pointer shadow-sm"
               >
                 <div className="w-6 h-6 rounded-full bg-[#660000] text-white flex items-center justify-center text-[10px] font-black uppercase shadow-sm">
                   {user.name.charAt(0)}
                 </div>
-                <span className="hidden sm:inline max-w-[85px] truncate">{user.name.split(' ')[0]}</span>
+                <span className="hidden md:inline max-w-[85px] truncate">{user.name.split(' ')[0]}</span>
               </button>
 
               {/* User Dropdown */}
@@ -189,6 +171,21 @@ function Navbar({ onSearchClick }: NavbarProps) {
               <span>Sign In</span>
             </Link>
           )}
+
+          {/* Cart Icon Button - Prominently on top-right */}
+          <Link
+            href="/cart"
+            className="relative p-2 sm:p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer flex items-center justify-center group shrink-0"
+            aria-label="Open Shopping Cart"
+            title="Shopping Cart"
+          >
+            <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-5 px-1 rounded-full bg-[#660000] text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center shadow-md animate-pulse">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            )}
+          </Link>
 
           {/* Header Primary CTA */}
           <Link

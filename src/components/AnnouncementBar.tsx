@@ -13,16 +13,20 @@ function AnnouncementBar() {
     return null;
   }
 
+  const phone = (settings.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+
   return (
-    <div className="relative bg-gradient-to-r from-[#4d0000] via-[#660000] to-[#4d0000] text-white text-[11px] sm:text-xs py-2 px-4 shadow-[0_2px_10px_rgba(102,0,0,0.25)] border-b border-[#660000]/40 z-50">
-      <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-center flex-1">
-        <span className="flex h-1.5 w-1.5 rounded-full bg-red-300 animate-ping hidden sm:inline-block" />
-        <span className="font-semibold tracking-wide text-white">{settings.announcementText}</span>
+    <div className="relative bg-gradient-to-r from-[#4d0000] via-[#660000] to-[#4d0000] text-white text-[11px] sm:text-xs py-2 px-3 sm:px-4 pr-10 shadow-[0_2px_10px_rgba(102,0,0,0.25)] border-b border-[#660000]/40 z-50">
+      <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-center">
+        <span className="flex h-1.5 w-1.5 rounded-full bg-red-300 animate-ping hidden sm:inline-block shrink-0" />
+        <span className="font-semibold tracking-wide text-white leading-tight">
+          {settings.announcementText}
+        </span>
         <a
-          href={`https://wa.me/${(settings.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20have%20an%20inquiry.`}
+          href={`https://wa.me/${phone}?text=Hi%20YT%20Tools%20Store%2C%20I%20have%20an%20inquiry.`}
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-2 px-3 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold inline-flex items-center gap-1.5 border border-white/25 transition-all text-[11px] hover:scale-105 shadow-sm"
+          className="hidden md:inline-flex ml-2 px-3 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-bold items-center gap-1.5 border border-white/25 transition-all text-[11px] hover:scale-105 shadow-sm shrink-0"
         >
           <WhatsAppIcon className="w-3 h-3 fill-current text-[#25d366]" />
           <span>Chat on WhatsApp</span>
@@ -31,7 +35,7 @@ function AnnouncementBar() {
       <button
         type="button"
         onClick={() => setClosed(true)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-1 rounded-full hover:bg-white/15 transition cursor-pointer"
+        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/15 transition cursor-pointer"
         aria-label="Close Announcement"
       >
         <X className="w-3.5 h-3.5" />

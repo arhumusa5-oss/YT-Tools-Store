@@ -221,7 +221,7 @@ function Hero({
         </div>
 
         {/* Main Headline with Editorial Serif Italic Accent */}
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0a0a0a] dark:text-white max-w-4xl mx-auto leading-[1.15]">
+        <h1 className="text-2xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0a0a0a] dark:text-white max-w-4xl mx-auto leading-[1.2] px-1">
           Power Up Your Content With <br className="hidden sm:inline" />
           <span className="font-serif italic font-bold bg-gradient-to-r from-[#660000] via-[#880000] to-[#b31217] dark:from-[#b31217] dark:via-[#ff4d4d] dark:to-[#ff7575] bg-clip-text text-transparent">
             Premium Digital Tools
@@ -229,7 +229,7 @@ function Hero({
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-4 text-base sm:text-lg text-[#4b5563] dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed font-normal">
+        <p className="mt-3 sm:mt-4 text-xs sm:text-lg text-[#4b5563] dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed font-normal px-2">
           Get authentic access to video editing software, AI creators, and subscriptions with replacement warranty and instant WhatsApp delivery.
         </p>
 
