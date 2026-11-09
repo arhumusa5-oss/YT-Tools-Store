@@ -25,66 +25,54 @@ function ProductCard({ product }: ProductCardProps) {
   } = useCart();
   const { user } = useAuth();
 
-  const [quantity, setQuantity] = useState<number | string>(1);
   const [added, setAdded] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-
-  const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
 
   React.useEffect(() => {
     router.prefetch('/cart');
   }, [router]);
 
-  const handleAddToCart = () => {
-    addToCart(product, currentQty);
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToCart(product, 1);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
 
-  const handleProceedToCart = () => {
-    addToCart(product, currentQty);
+  const handleProceedToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToCart(product, 1);
     setIsNavigating(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('yt-nav-start', {
+          detail: {
+            href: '/cart',
+            message: 'Loading Shopping Cart...',
+            subtitle: 'Taking you to your order summary...',
+          },
+        })
+      );
+    }
     setTimeout(() => {
       router.push('/cart');
     }, 150);
   };
 
   const isService = (product.category || '').toLowerCase().includes('service');
-  const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
 
-  const currentSinglePrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
-  const originalSinglePrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
-
-  const currentPrice = currentSinglePrice * (product.allowQuantity ? currentQty : 1);
-  const originalPrice = originalSinglePrice * (product.allowQuantity ? currentQty : 1);
-  const totalPKR = product.pricePKR * (product.allowQuantity ? currentQty : 1);
-  const totalUSD = product.priceUSD * (product.allowQuantity ? currentQty : 1);
+  const currentPrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
+  const originalPrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
 
   const discountPercent = useMemo(() => {
-    return originalSinglePrice > currentSinglePrice
-      ? Math.round(((originalSinglePrice - currentSinglePrice) / originalSinglePrice) * 100)
+    return originalPrice > currentPrice
+      ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
       : 0;
-  }, [originalSinglePrice, currentSinglePrice]);
+  }, [originalPrice, currentPrice]);
 
   const targetWhatsApp = useMemo(() => {
     return (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   }, [settings?.whatsappNumber]);
-
-  const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
-  const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
-  const actionPhrase = isQuery ? 'inquire about' : 'order';
-  const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
-
-  const whatsappUrl = useMemo(() => {
-    const customerLine = user ? ` (Customer: ${user.name} - ${user.whatsappNumber})` : '';
-    const whatsappMessage = encodeURIComponent(
-      `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
-        totalPKR,
-        totalUSD
-      )})${customerLine} from YT Tools Store.`
-    );
-    return `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
-  }, [actionPhrase, qtyPrefix, product.title, formatPrice, totalPKR, totalUSD, targetWhatsApp, user]);
 
   const dailyRateWhatsAppUrl = useMemo(() => {
     const text = encodeURIComponent(
@@ -115,100 +103,33 @@ function ProductCard({ product }: ProductCardProps) {
     return '100% genuine verified tool with instant access and replacement warranty.';
   }, [product.shortDescription, product.fullDescription]);
 
-  const displayFeatures = useMemo(() => {
+  const firstFeature = useMemo(() => {
     if (product.keyFeatures && product.keyFeatures.length > 0) {
-      return product.keyFeatures.slice(0, 3);
+      return product.keyFeatures[0];
     }
     if (product.fullDescription) {
-      const bullets = product.fullDescription
+      const bullet = product.fullDescription
         .split('\n')
         .map((l) => l.trim())
-        .filter(
+        .find(
           (l) =>
             l.startsWith('-') ||
             l.startsWith('*') ||
             l.startsWith('•') ||
             l.startsWith('✓')
-        )
-        .map((l) => l.replace(/^[-*•✓]\s*/, '').trim())
-        .filter((l) => l.length > 0);
-      if (bullets.length > 0) return bullets.slice(0, 3);
+        );
+      if (bullet) return bullet.replace(/^[-*•✓]\s*/, '').trim();
     }
-    if (!isService) {
-      return ['Instant Access'];
-    }
-    return [];
+    return !isService ? 'Instant WhatsApp Access' : 'Verified Digital Solution';
   }, [product.keyFeatures, product.fullDescription, isService]);
-
-  const getBadgeStyle = (badge: string) => {
-    const b = badge.toUpperCase();
-    if (b === 'HOT') {
-      return 'bg-[#660000] text-white border-[#660000]';
-    }
-    if (b === 'SALE') {
-      return 'bg-[#880000] text-white border-[#880000]';
-    }
-    if (b === 'INSTANT' || b === 'INSTANT DELIVERY') {
-      return 'bg-emerald-600 text-white border-emerald-500';
-    }
-    if (b === 'BEST SELLER') {
-      return 'bg-amber-500 text-white border-amber-400';
-    }
-    return 'bg-[#1f2937] dark:bg-zinc-800 text-white border-zinc-700';
-  };
 
   return (
     <div
-      style={{ transform: 'translateZ(0)' }}
-      className="group relative flex flex-col rounded-3xl bg-white dark:bg-[#0e0e16] hover:bg-[#faf8f8] dark:hover:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#990000] transition-transform duration-200 ease-out transition-shadow duration-200 transition-colors duration-150 will-change-transform overflow-hidden shadow-[0_8px_30px_-6px_rgba(0,0,0,0.05),0_2px_8px_-2px_rgba(0,0,0,0.02)] dark:shadow-[0_10px_35px_-8px_rgba(0,0,0,0.7)] hover:-translate-y-1 hover:shadow-[0_16px_36px_-8px_rgba(102,0,0,0.15)] dark:hover:shadow-[0_16px_36px_-8px_rgba(102,0,0,0.4)]"
+      onClick={() => setActiveProductModal(product)}
+      className="group relative flex flex-col rounded-2xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/70 transition-all duration-200 overflow-hidden shadow-lg shadow-black/40 hover:-translate-y-1 hover:shadow-orange-950/20 cursor-pointer"
     >
-      {/* Top Badges */}
-      <div className="absolute top-3.5 left-3.5 right-3.5 z-10 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {product.isSoldOut ? (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black/90 text-white shadow-md">
-              Sold Out
-            </span>
-          ) : product.badge ? (
-            <span
-              className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md border ${getBadgeStyle(
-                product.badge
-              )}`}
-            >
-              {product.badge}
-            </span>
-          ) : null}
-
-          {product.isDailyRate && !product.isSoldOut && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black shadow-md flex items-center gap-1">
-              <Zap className="w-3 h-3 fill-black text-black" />
-              Daily Rate
-            </span>
-          )}
-
-          {discountPercent > 0 && !product.isSoldOut && (
-            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-white/95 dark:bg-[#111118]/95 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 dark:border-[#660000]/40 shadow-md flex items-center gap-1">
-              <span className="text-[#660000] dark:text-[#ff6b6b] font-black">{discountPercent}%</span>
-              <span>OFF</span>
-            </span>
-          )}
-        </div>
-
-        {/* Quick View Button */}
-        <button
-          onClick={() => setActiveProductModal(product)}
-          className="pointer-events-auto p-2 rounded-full bg-white/90 dark:bg-[#161622]/90 hover:bg-[#660000] dark:hover:bg-[#660000] text-[#1f2937] dark:text-zinc-200 hover:text-white border border-[#e8e1e1] dark:border-white/10 shadow-md transition-all opacity-0 group-hover:opacity-100 active:scale-90 cursor-pointer"
-          title="Quick View Details"
-        >
-          <Eye className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Image Thumbnail */}
-      <div
-        onClick={() => setActiveProductModal(product)}
-        className="relative w-full h-52 bg-[#f4efef] dark:bg-[#161622] overflow-hidden cursor-pointer"
-      >
+      {/* Image Thumbnail with Single Smart Badge & Quick View */}
+      <div className="relative w-full aspect-[16/10] bg-black/60 overflow-hidden">
         <img
           src={
             product.images[0] ||
@@ -216,247 +137,155 @@ function ProductCard({ product }: ProductCardProps) {
           }
           alt={product.title}
           decoding="async"
-          className={`w-full h-full object-cover transition-transform duration-300 ease-out will-change-transform group-hover:scale-105 ${
-            product.isSoldOut ? 'grayscale opacity-60' : ''
+          className={`w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105 ${
+            product.isSoldOut ? 'grayscale opacity-50' : ''
           }`}
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 dark:from-black/60 via-transparent to-transparent opacity-60 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+
+        {/* Single Smart Badge (Top Left - No Clutter!) */}
+        <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+          {product.isSoldOut ? (
+            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-black/90 text-red-400 border border-red-500/30 shadow-md">
+              Sold Out
+            </span>
+          ) : product.isDailyRate ? (
+            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black shadow-md flex items-center gap-1">
+              <Zap className="w-3 h-3 fill-black text-black" />
+              Daily Rate
+            </span>
+          ) : product.badge ? (
+            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white shadow-md">
+              {product.badge}
+            </span>
+          ) : discountPercent > 0 ? (
+            <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-emerald-500 text-black shadow-md">
+              {discountPercent}% OFF
+            </span>
+          ) : null}
+        </div>
+
+        {/* Quick View Button (Top Right) */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveProductModal(product);
+          }}
+          className="absolute top-2.5 right-2.5 z-10 p-2 rounded-xl bg-black/60 backdrop-blur-md text-zinc-300 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 shadow-md"
+          title="Quick View Details"
+        >
+          <Eye className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Card Content */}
-      <div className="flex flex-col flex-1 p-5 sm:p-6 bg-white dark:bg-[#0e0e16]">
-        {/* Category & Verified Tag */}
-        <div className="flex items-center justify-between text-xs mb-3">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#660000]/[0.08] dark:bg-[#660000]/25 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 dark:border-[#660000]/30">
-            {product.category}
-          </span>
-          {product.reviewsCount > 0 ? (
-            <div className="flex items-center gap-1 text-amber-500 font-extrabold text-xs">
-              <Star className="w-3.5 h-3.5 fill-amber-500" />
-              <span>{product.rating ? product.rating.toFixed(1) : '5.0'}</span>
-              <span className="text-[#6b7280] dark:text-zinc-500 text-[11px] font-normal">({product.reviewsCount})</span>
-            </div>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              {verifiedTagText}
+      <div className="p-4 sm:p-4.5 flex flex-col flex-1 justify-between gap-3">
+        <div>
+          {/* Category & Status */}
+          <div className="flex items-center justify-between text-xs mb-1.5">
+            <span className="text-[10px] font-extrabold text-[#FF5500] uppercase tracking-wider">
+              {product.category}
             </span>
+            {product.reviewsCount > 0 ? (
+              <div className="flex items-center gap-1 text-amber-400 text-[11px] font-bold">
+                <Star className="w-3 h-3 fill-amber-400" />
+                <span>{product.rating ? product.rating.toFixed(1) : '5.0'}</span>
+              </div>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Verified
+              </span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-[#FF5500] transition-colors line-clamp-1 leading-snug">
+            {product.title}
+          </h3>
+
+          {/* Clean 1-Line Description */}
+          <p className="mt-1 text-xs text-zinc-400 line-clamp-1 leading-relaxed">
+            {displayDescription}
+          </p>
+
+          {/* Single Highlight Feature */}
+          {firstFeature && (
+            <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-zinc-300 truncate">
+              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 stroke-[2.5]" />
+              <span className="truncate">{firstFeature}</span>
+            </div>
           )}
         </div>
 
-        {/* Title */}
-        <h3
-          onClick={() => setActiveProductModal(product)}
-          className="text-base sm:text-lg font-black tracking-tight text-[#0a0a0a] dark:text-white group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors cursor-pointer line-clamp-1 leading-snug mt-1.5"
-        >
-          {product.title}
-        </h3>
-
-        {/* Short Description */}
-        <p className="mt-1.5 text-xs text-[#4b5563] dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[32px] font-normal">
-          {displayDescription}
-        </p>
-
-        {/* Key Features Bullet List */}
-        {displayFeatures.length > 0 && (
-          <div className="mt-4 space-y-2 pt-3.5 border-t border-[#f0ebeb] dark:border-white/10">
-            {displayFeatures.map((feat, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2.5 text-xs font-semibold text-[#1f2937] dark:text-zinc-300"
-              >
-                <div className="w-4 h-4 rounded-full bg-emerald-500/15 dark:bg-emerald-500/25 flex items-center justify-center shrink-0">
-                  <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
-                </div>
-                <span className="truncate">{feat}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Spacer */}
-        <div className="flex-1 min-h-3" />
-
-        {/* Quantity Selector (if enabled by admin) */}
-        {product.allowQuantity && !product.isSoldOut && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="mt-3 mb-2 flex items-center justify-between px-3 py-2 rounded-2xl bg-[#f9f7f7] dark:bg-[#141420] border border-[#f0ebeb] dark:border-white/10"
-          >
-            <span className="text-[11px] font-bold text-[#6b7280] dark:text-zinc-400">
-              Quantity:
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setQuantity(Math.max(1, currentQty - 1));
-                }}
-                disabled={currentQty <= 1}
-                className="w-7 h-7 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
-                title="Decrease quantity"
-              >
-                –
-              </button>
-              <input
-                type="number"
-                min="1"
-                max="9999"
-                value={quantity}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '') {
-                    setQuantity('');
-                  } else {
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed)) {
-                      setQuantity(Math.min(9999, Math.max(1, parsed)));
-                    }
-                  }
-                }}
-                onBlur={() => {
-                  if (!quantity || Number(quantity) < 1) {
-                    setQuantity(1);
-                  }
-                }}
-                className="w-12 h-7 text-center font-black text-xs text-[#0a0a0a] dark:text-white bg-white dark:bg-[#1a1a26] border border-[#e8e1e1] dark:border-white/10 rounded-xl focus:border-[#660000] dark:focus:border-[#ff4d4d] focus:outline-none transition-all shadow-inner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none select-text"
-                aria-label="Quantity"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setQuantity(Math.min(9999, currentQty + 1));
-                }}
-                className="w-7 h-7 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
-                title="Increase quantity"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Price Section */}
-        <div className="pt-3 border-t border-[#f0ebeb] dark:border-white/10 flex items-end justify-between">
-          <div>
-            <div className="flex items-baseline gap-2 flex-wrap items-center">
-              <span className="text-2xl sm:text-3xl font-black text-[#660000] dark:text-[#ff4d4d] tracking-tight">
-                {formatPrice(totalPKR, totalUSD)}
+        {/* Price & Action Section */}
+        <div className="pt-3 border-t border-[#1F1F26] flex items-center justify-between gap-2">
+          {/* Price */}
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-lg sm:text-xl font-black text-white tracking-tight">
+                {formatPrice(product.pricePKR, product.priceUSD)}
               </span>
               {originalPrice > currentPrice && (
-                <span className="text-xs font-bold text-[#9ca3af] dark:text-zinc-500 line-through">
-                  {formatPrice(originalPrice, currency === 'USD' ? product.originalPriceUSD * (product.allowQuantity ? currentQty : 1) : product.originalPricePKR * (product.allowQuantity ? currentQty : 1))}
-                </span>
-              )}
-              {product.isDailyRate && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                  <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
-                  Daily Live Rate
+                <span className="text-[11px] text-zinc-500 line-through">
+                  {formatPrice(product.originalPricePKR, product.originalPriceUSD)}
                 </span>
               )}
             </div>
-            {product.allowQuantity && currentQty > 1 && (
-              <p className="text-[10px] text-[#6b7280] dark:text-zinc-400 font-medium">
-                ({formatPrice(product.pricePKR, product.priceUSD)} each)
-              </p>
-            )}
-            {!isService && (
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                <span>Instant Access</span>
-              </div>
+            {product.isDailyRate && (
+              <span className="text-[10px] text-amber-400 font-bold block -mt-0.5">
+                ⚡ Live Market Rate
+              </span>
             )}
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="mt-4 space-y-2">
-          {product.isSoldOut ? (
-            <button
-              disabled
-              className="w-full py-3 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] text-[#9ca3af] dark:text-zinc-500 font-bold text-xs cursor-not-allowed border border-[#e8e1e1] dark:border-white/10"
-            >
-              Temporarily Sold Out
-            </button>
-          ) : (
-            <>
-              {/* Primary Actions: Add to Cart + Details */}
-              <div className="flex gap-2">
+          {/* Actions */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {product.isSoldOut ? (
+              <span className="px-3 py-1.5 rounded-xl bg-[#1A1A20] text-zinc-500 font-bold text-xs border border-[#222228]">
+                Sold Out
+              </span>
+            ) : product.isDailyRate ? (
+              <a
+                href={dailyRateWhatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="h-9 px-3.5 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/40 transition-all active:scale-95"
+                title="Check Today's Rate on WhatsApp"
+              >
+                <WhatsAppIcon className="w-3.5 h-3.5 fill-white" />
+                <span>Check Rate</span>
+              </a>
+            ) : (
+              <>
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className={`flex-1 py-2.5 px-3 rounded-full text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer ${
+                  className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all active:scale-95 border ${
                     added
-                      ? 'bg-emerald-600 shadow-emerald-500/30'
-                      : 'bg-[#660000] hover:bg-[#520000] shadow-[#660000]/25 hover:shadow-[#660000]/40'
+                      ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                      : 'bg-[#181820] hover:bg-[#22222C] border-[#2A2A34] text-zinc-300 hover:text-white'
                   }`}
-                  title="Add to Shopping Cart"
+                  title="Add to Cart"
                 >
-                  {added ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Added!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="w-3.5 h-3.5" />
-                      <span>Add to Cart</span>
-                    </>
-                  )}
+                  {added ? <Check className="w-4 h-4 stroke-[3]" /> : <ShoppingCart className="w-4 h-4" />}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setActiveProductModal(product)}
-                  className="px-4 py-2.5 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#660000] dark:hover:bg-[#660000] text-[#1f2937] dark:text-zinc-200 hover:text-white border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] text-xs font-bold transition-all duration-150 active:scale-95 shadow-sm cursor-pointer"
-                  title="View Full Details"
-                >
-                  Details
-                </button>
-              </div>
-
-              {/* Primary Action Button */}
-              {product.isDailyRate ? (
-                <a
-                  href={dailyRateWhatsAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
-                  title="Check Today's Rate on WhatsApp"
-                >
-                  <WhatsAppIcon className="w-4 h-4 fill-white shrink-0" />
-                  <span>Check Today&apos;s Rate on WhatsApp</span>
-                </a>
-              ) : (
-                <Link
-                  href="/cart"
-                  onClick={() => {
-                    addToCart(product, currentQty);
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(
-                        new CustomEvent('yt-nav-start', {
-                          detail: {
-                            href: '/cart',
-                            message: 'Loading Shopping Cart...',
-                            subtitle: 'Taking you to your order summary...',
-                          },
-                        })
-                      );
-                    }
-                  }}
-                  className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
+                  onClick={handleProceedToCart}
+                  className="h-9 px-3.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:brightness-110 text-white font-bold text-xs flex items-center gap-1 shadow-md shadow-orange-500/20 transition-all active:scale-95"
                   title="Proceed to Checkout"
                 >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-                </Link>
-              )}
-            </>
-          )}
+                  <span>Order</span>
+                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

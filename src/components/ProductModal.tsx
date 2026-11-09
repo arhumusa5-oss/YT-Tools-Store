@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap, ArrowRight } from 'lucide-react';
+import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
 import BufferingLoader from './BufferingLoader';
 import { Product } from '@/lib/types';
@@ -23,176 +23,148 @@ export default function ProductModal() {
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [quantity, setQuantity] = useState<number | string>(1);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [added, setAdded] = useState(false);
 
-  useEffect(() => {
-    router.prefetch('/cart');
-  }, [router]);
-
-  useEffect(() => {
-    if (activeProductModal) {
-      setCurrentProduct(activeProductModal);
-      setIsClosing(false);
-      setActiveImageIndex(0);
-      setCopiedLink(false);
-      setQuantity(1);
-      document.body.style.overflow = 'hidden';
-
-      // Synchronize URL with ?product=... parameter
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        const targetParam = activeProductModal.slug || activeProductModal.id;
-        if (url.searchParams.get('product') !== targetParam) {
-          url.searchParams.set('product', targetParam);
-          window.history.pushState({ modalOpen: true }, '', url.toString());
-        }
-      }
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [activeProductModal]);
+  const product = activeProductModal;
 
   const handleClose = useCallback(() => {
-    if (isClosing) return;
     setIsClosing(true);
-
-    // Revert URL query parameter cleanly without reloading
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (url.searchParams.has('product')) {
-        url.searchParams.delete('product');
-        const cleanPath = url.pathname + (url.search ? url.search : '') + (url.hash || '');
-        window.history.replaceState(null, '', cleanPath);
-      }
-    }
-
     setTimeout(() => {
       setActiveProductModal(null);
       setIsClosing(false);
       setActiveImageIndex(0);
-      setCurrentProduct(null);
-      setCopiedLink(false);
+      setQuantity(1);
     }, 200);
-  }, [isClosing, setActiveProductModal]);
-
-  // Handle browser Back button closing modal
-  useEffect(() => {
-    const handlePopState = () => {
-      if (activeProductModal && !isClosing) {
-        handleClose();
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeProductModal, isClosing, handleClose]);
+  }, [setActiveProductModal]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && activeProductModal && !isClosing) {
+      if (e.key === 'Escape') {
         handleClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeProductModal, isClosing, handleClose]);
+    if (activeProductModal) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeProductModal, handleClose]);
 
-  if (!activeProductModal && !isClosing) return null;
-  const product = currentProduct || activeProductModal;
   if (!product) return null;
-
-  const handleCopyLink = () => {
-    if (typeof window === 'undefined' || !product) return;
-    const shareParam = product.slug || product.id;
-    const directUrl = `${window.location.origin}/?product=${encodeURIComponent(shareParam)}`;
-    navigator.clipboard.writeText(directUrl);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2200);
-  };
-
-  const isService = (product.category || '').toLowerCase().includes('service');
-  const verifiedTagText = isService ? 'Verified Services' : 'Verified Tool';
 
   const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
   const totalPKR = product.pricePKR * (product.allowQuantity ? currentQty : 1);
   const totalUSD = product.priceUSD * (product.allowQuantity ? currentQty : 1);
-  const totalOriginalPKR = product.originalPricePKR * (product.allowQuantity ? currentQty : 1);
-  const totalOriginalUSD = product.originalPriceUSD * (product.allowQuantity ? currentQty : 1);
+  const totalOriginalPKR = (product.originalPricePKR || 0) * (product.allowQuantity ? currentQty : 1);
+  const totalOriginalUSD = (product.originalPriceUSD || 0) * (product.allowQuantity ? currentQty : 1);
 
-  const buttonLabel = product.buttonText?.trim() || 'Order on WhatsApp';
-  const isQuery = buttonLabel.toLowerCase().includes('inquire') || buttonLabel.toLowerCase().includes('contact') || buttonLabel.toLowerCase().includes('chat');
-  const actionPhrase = isQuery ? 'inquire about' : 'order';
-  const qtyPrefix = product.allowQuantity && currentQty > 1 ? `${currentQty}x ` : '';
-  const customerLine = user ? ` (Customer: ${user.name} - ${user.whatsappNumber})` : '';
-  const whatsappMessage = encodeURIComponent(
-    `Assalam o Alaikum! I want to ${actionPhrase} ${qtyPrefix}"${product.title}" (Total: ${formatPrice(
-      totalPKR,
-      totalUSD
-    )})${customerLine} from YT Tools Store.`
-  );
+  const discountPercent =
+    totalOriginalPKR > totalPKR
+      ? Math.round(((totalOriginalPKR - totalPKR) / totalOriginalPKR) * 100)
+      : 0;
+
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
-  const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
+
   const dailyRateWhatsAppUrl = `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(
     `Assalam o Alaikum! Mujhe ${product.title} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
   )}`;
 
+  const handleCopyLink = () => {
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin}/product/${product.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    });
+  };
+
+  const handleAddToCart = () => {
+    addToCart(product, currentQty);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
+  const handleProceedToCart = () => {
+    addToCart(product, currentQty);
+    setIsNavigating(true);
+    handleClose();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('yt-nav-start', {
+          detail: {
+            href: '/cart',
+            message: 'Loading Shopping Cart...',
+            subtitle: 'Taking you to your order summary...',
+          },
+        })
+      );
+    }
+    setTimeout(() => {
+      router.push('/cart');
+    }, 150);
+  };
+
+  const isService = (product.category || '').toLowerCase().includes('service');
+
   return (
     <div
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          handleClose();
-        }
+        if (e.target === e.currentTarget) handleClose();
       }}
-      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/40 backdrop-blur-sm dark:bg-black/60 overflow-y-auto cursor-pointer ${
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto ${
         isClosing ? 'animate-backdrop-out' : 'animate-backdrop-in'
       }`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-3xl my-8 bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-black/20 dark:shadow-black/70 transition-colors duration-150 cursor-default ${
+        className={`relative w-full max-w-2xl sm:max-w-3xl my-6 bg-[#0E0E12] border border-[#222228] rounded-3xl overflow-hidden shadow-2xl shadow-black/80 transition-all ${
           isClosing ? 'animate-modal-card-out' : 'animate-modal-card-in'
         }`}
       >
-        {/* Top-Right Modal Toolbar: Copy Direct Link & Close */}
+        {/* Top-Right Toolbar (Clean, non-intrusive) */}
         <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
           <button
+            type="button"
             onClick={handleCopyLink}
-            title="Copy Direct Link to this product"
-            className="px-3 py-2 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff6b6b] border border-[#e8e1e1] dark:border-white/10 transition active:scale-95 shadow-sm cursor-pointer flex items-center gap-1.5"
+            title="Copy Direct Link"
+            className="h-8 px-2.5 rounded-xl bg-[#1A1A22] hover:bg-[#252530] text-zinc-300 hover:text-white border border-[#2D2D38] transition active:scale-95 flex items-center gap-1.5 text-xs font-semibold"
           >
             {copiedLink ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
-                <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">Link Copied!</span>
+                <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                <span className="text-[11px] text-emerald-400 font-bold">Copied!</span>
               </>
             ) : (
               <>
-                <Share2 className="w-3.5 h-3.5 text-[#660000] dark:text-[#ff4d4d]" />
-                <span className="text-[11px] font-bold hidden sm:inline-block">Copy Direct Link</span>
+                <Share2 className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-[11px] hidden sm:inline">Share</span>
               </>
             )}
           </button>
 
           <button
+            type="button"
             onClick={handleClose}
-            className="p-2.5 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff6b6b] border border-[#e8e1e1] dark:border-white/10 transition active:scale-90 shadow-sm cursor-pointer"
-            aria-label="Close modal"
+            className="h-8 w-8 rounded-xl bg-[#1A1A22] hover:bg-[#252530] text-zinc-400 hover:text-white border border-[#2D2D38] transition active:scale-95 flex items-center justify-center"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 max-h-[85vh] overflow-y-auto">
-          {/* Left Column: Image & Badges */}
-          <div className="p-6 sm:p-7 bg-[#fcfbfb] dark:bg-[#09090e] flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#f0ebeb] dark:border-white/10">
+        {/* Modal Body Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 max-h-[88vh] overflow-y-auto">
+          {/* Left Column: Image & Guarantees */}
+          <div className="p-5 sm:p-6 bg-[#09090C] border-b md:border-b-0 md:border-r border-[#1C1C24] flex flex-col justify-between">
             <div>
-              {/* Main Image */}
-              <div className="relative aspect-video sm:aspect-square w-full rounded-2xl overflow-hidden bg-[#f4efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 shadow-inner">
+              {/* Product Image */}
+              <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-black/60 border border-[#222228]">
                 <img
                   src={product.images[activeImageIndex] || product.images[0]}
                   alt={product.title}
@@ -200,22 +172,24 @@ export default function ProductModal() {
                 />
                 {product.isSoldOut && (
                   <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex items-center justify-center">
-                    <span className="px-4 py-2 bg-red-600 text-white font-extrabold text-xs uppercase rounded-xl tracking-wider shadow-lg">
-                      Temporarily Sold Out
+                    <span className="px-3 py-1.5 bg-red-600/90 text-white font-extrabold text-xs uppercase rounded-xl tracking-wider">
+                      Sold Out
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Thumbnails if multiple */}
+              {/* Thumbnails */}
               {product.images.length > 1 && (
-                <div className="mt-3 flex gap-2">
+                <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1">
                   {product.images.map((img, i) => (
                     <button
                       key={i}
                       onClick={() => setActiveImageIndex(i)}
-                      className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
-                        activeImageIndex === i ? 'border-[#660000] dark:border-[#ff4d4d] shadow-sm' : 'border-transparent opacity-60 hover:opacity-100'
+                      className={`relative w-14 h-14 rounded-xl overflow-hidden border-2 transition shrink-0 ${
+                        activeImageIndex === i
+                          ? 'border-[#FF5500] shadow-sm'
+                          : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="thumb" className="w-full h-full object-cover" />
@@ -225,193 +199,120 @@ export default function ProductModal() {
               )}
             </div>
 
-            {/* Quick Guarantees */}
-            <div className="mt-6 pt-6 border-t border-[#f0ebeb] dark:border-white/10 space-y-2.5">
-              {!isService && (
-                <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
-                  <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Delivery: Instant Access</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
-                <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>Private & Secure Delivery</span>
+            {/* Quick Guarantees (Clean, subtle) */}
+            <div className="mt-5 pt-4 border-t border-[#1C1C24] grid grid-cols-2 gap-2 text-[11px] text-zinc-400">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Instant Delivery</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>100% Verified</span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Details & Key Features */}
-          <div className="p-6 sm:p-7 md:pt-[72px] bg-white dark:bg-[#0e0e16] flex flex-col justify-between">
-            <div>
-              {/* Category & Badge Row */}
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#660000]/[0.08] dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 dark:border-[#660000]/40">
+          {/* Right Column: Information, Pricing, & Actions */}
+          <div className="p-5 sm:p-6 flex flex-col justify-between">
+            <div className="space-y-4">
+              {/* Category, Rating & Live Rate Badge */}
+              <div className="flex items-center gap-2 flex-wrap pr-16 sm:pr-0">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-orange-500/15 text-[#FF5500] border border-orange-500/30">
                   {product.category}
                 </span>
-                {product.badge && !product.isSoldOut && (
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${
-                      product.badge.toUpperCase() === 'HOT'
-                        ? 'bg-[#660000] text-white'
-                        : product.badge.toUpperCase() === 'SALE'
-                        ? 'bg-[#880000] text-white'
-                        : product.badge.toUpperCase() === 'INSTANT'
-                        ? 'bg-emerald-600 text-white'
-                        : product.badge.toUpperCase() === 'BEST SELLER'
-                        ? 'bg-amber-500 text-white font-black'
-                        : 'bg-[#1f2937] text-white'
-                    }`}
-                  >
-                    {product.badge}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                  {verifiedTagText}
-                </span>
-              </div>
 
-              {/* Title */}
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#0a0a0a] dark:text-white leading-snug tracking-tight mt-1.5">
-                {product.title}
-              </h2>
-
-              {/* Rating if available */}
-              {product.reviewsCount > 0 && (
-                <div className="mt-2 flex items-center gap-2 text-xs">
-                  <div className="flex items-center gap-1 text-amber-500 font-semibold">
-                    <Star className="w-4 h-4 fill-amber-500" />
-                    <span>{product.rating ? product.rating.toFixed(1) : '5.0'}</span>
-                  </div>
-                  <span className="text-[#6b7280] dark:text-zinc-400">({product.reviewsCount} customer reviews)</span>
-                </div>
-              )}
-
-              {/* Price */}
-              <div className="mt-4 flex items-baseline gap-3 flex-wrap items-center">
-                <span className="text-3xl font-black text-[#660000] dark:text-[#ff4d4d] tracking-tight">
-                  {formatPrice(totalPKR, totalUSD)}
-                </span>
-                {totalOriginalPKR > totalPKR && (
-                  <span className="text-sm text-[#9ca3af] dark:text-zinc-500 line-through font-normal">
-                    {formatPrice(totalOriginalPKR, totalOriginalUSD)}
-                  </span>
-                )}
                 {product.isDailyRate && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-500 border border-amber-500/30">
-                    <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1">
+                    <Zap className="w-3 h-3 fill-amber-400" />
                     Daily Live Rate
                   </span>
                 )}
-                {product.allowQuantity && currentQty > 1 && (
-                  <span className="text-xs text-[#6b7280] dark:text-zinc-400 font-medium">
-                    ({formatPrice(product.pricePKR, product.priceUSD)} each)
+
+                {product.reviewsCount > 0 && (
+                  <div className="flex items-center gap-1 text-amber-400 text-xs font-bold ml-auto">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <span>{product.rating ? product.rating.toFixed(1) : '5.0'}</span>
+                    <span className="text-zinc-500 text-[10px]">({product.reviewsCount})</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Title */}
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                {product.title}
+              </h2>
+
+              {/* Price Row (Clean & Bold) */}
+              <div className="flex items-baseline gap-2.5 flex-wrap">
+                <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  {formatPrice(totalPKR, totalUSD)}
+                </span>
+                {totalOriginalPKR > totalPKR && (
+                  <span className="text-xs text-zinc-500 line-through">
+                    {formatPrice(totalOriginalPKR, totalOriginalUSD)}
+                  </span>
+                )}
+                {discountPercent > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[11px] font-bold">
+                    {discountPercent}% OFF
                   </span>
                 )}
               </div>
 
-              {/* Full Description with preserved line breaks */}
-              <div className="mt-4">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#6b7280] dark:text-zinc-400 mb-1.5">
-                  Description
-                </h4>
-                <div className="text-xs sm:text-sm text-[#1f2937] dark:text-zinc-300 leading-relaxed whitespace-pre-line bg-[#f9f7f7] dark:bg-[#14141e] p-4 rounded-2xl border border-[#f0ebeb] dark:border-white/10">
-                  {product.fullDescription || product.shortDescription || '100% genuine verified tool with instant access.'}
-                </div>
+              {/* Natural Description (No chunky boxes!) */}
+              <div className="text-xs sm:text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+                {product.fullDescription || product.shortDescription || '100% genuine verified tool with instant access and replacement warranty.'}
               </div>
 
               {/* Key Features Bullet List */}
-              {((product.keyFeatures && product.keyFeatures.length > 0) ||
-                (product.fullDescription &&
-                  product.fullDescription.split('\n').some((l) =>
-                    l.trim().match(/^[-*•✓]/)
-                  ))) && (
-                <div className="mt-5">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#660000] dark:text-[#ff6b6b]">
-                    Key Features & What You Get:
-                  </h4>
-                  <ul className="mt-2.5 space-y-2">
-                    {((product.keyFeatures && product.keyFeatures.length > 0)
-                      ? product.keyFeatures
-                      : product.fullDescription
-                          .split('\n')
-                          .map((l) => l.trim())
-                          .filter((l) => l.match(/^[-*•✓]/))
-                          .map((l) => l.replace(/^[-*•✓]\s*/, '').trim())
-                          .filter(Boolean)
-                    ).map((feat, idx) => (
-                      <li key={idx} className="flex items-start gap-2.5 text-xs text-[#1f2937] dark:text-zinc-300 font-semibold">
-                        <div className="w-4 h-4 rounded-full bg-emerald-500/15 dark:bg-emerald-500/25 flex items-center justify-center shrink-0 mt-0.5">
-                          <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 stroke-[3]" />
-                        </div>
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
+              {product.keyFeatures && product.keyFeatures.length > 0 && (
+                <div className="pt-2 space-y-1.5">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                    What You Get:
+                  </span>
+                  {product.keyFeatures.map((feat, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs text-zinc-200">
+                      <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                        <Check className="w-2.5 h-2.5 text-emerald-400 stroke-[3]" />
+                      </div>
+                      <span>{feat}</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Delivery Details note */}
+              {/* Delivery Note (Subtle callout) */}
               {product.deliveryNotes && (
-                <div className="mt-5 p-3.5 rounded-2xl bg-[#660000]/[0.05] dark:bg-[#660000]/25 border border-[#660000]/20 dark:border-[#660000]/40 text-xs text-[#1f2937] dark:text-zinc-300">
-                  <strong className="text-[#660000] dark:text-[#ff6b6b] block mb-0.5 font-bold">How Delivery Works:</strong>
-                  {product.deliveryNotes}
+                <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-xs text-zinc-300 flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-[#FF5500] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-white block font-bold text-[11px]">Delivery Time:</strong>
+                    <span>{product.deliveryNotes}</span>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Modal Actions */}
-            <div className="mt-6 pt-4 border-t border-[#f0ebeb] dark:border-white/10 space-y-3">
-              {/* Quantity selector in modal if enabled by admin */}
+            {/* Bottom Actions Area */}
+            <div className="mt-5 pt-4 border-t border-[#1C1C24] space-y-3">
+              {/* Quantity Stepper (if enabled) */}
               {product.allowQuantity && !product.isSoldOut && (
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-[#f9f7f7] dark:bg-[#141420] border border-[#f0ebeb] dark:border-white/10">
-                  <div>
-                    <span className="text-xs font-bold text-[#0a0a0a] dark:text-white block">
-                      Select Quantity
-                    </span>
-                    <span className="text-[11px] text-[#6b7280] dark:text-zinc-400">
-                      Total: <strong className="text-[#660000] dark:text-[#ff4d4d]">{formatPrice(totalPKR, totalUSD)}</strong>
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#14141A] border border-[#222228]">
+                  <span className="text-xs font-bold text-zinc-300">Quantity</span>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, currentQty - 1))}
                       disabled={currentQty <= 1}
-                      className="w-8 h-8 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
-                      title="Decrease quantity"
+                      className="w-7 h-7 rounded-lg bg-[#202028] text-white hover:bg-[#282834] text-xs font-bold flex items-center justify-center disabled:opacity-30"
                     >
                       –
                     </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max="9999"
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') {
-                          setQuantity('');
-                        } else {
-                          const parsed = parseInt(val, 10);
-                          if (!isNaN(parsed)) {
-                            setQuantity(Math.min(9999, Math.max(1, parsed)));
-                          }
-                        }
-                      }}
-                      onBlur={() => {
-                        if (!quantity || Number(quantity) < 1) {
-                          setQuantity(1);
-                        }
-                      }}
-                      className="w-12 h-8 text-center font-black text-sm text-[#0a0a0a] dark:text-white bg-white dark:bg-[#1a1a26] border border-[#e8e1e1] dark:border-white/10 rounded-xl focus:border-[#660000] dark:focus:border-[#ff4d4d] focus:outline-none transition-all shadow-inner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none select-text"
-                      aria-label="Quantity"
-                    />
+                    <span className="w-8 text-center text-xs font-black text-white">{currentQty}</span>
                     <button
                       type="button"
-                      onClick={() => setQuantity(Math.min(9999, currentQty + 1))}
-                      className="w-8 h-8 rounded-xl bg-white dark:bg-[#1f1f2e] border border-[#e8e1e1] dark:border-white/10 text-xs font-black flex items-center justify-center hover:bg-[#660000] hover:text-white dark:hover:bg-[#ff4d4d] transition active:scale-90 cursor-pointer shadow-sm text-[#1f2937] dark:text-white"
-                      title="Increase quantity"
+                      onClick={() => setQuantity(currentQty + 1)}
+                      className="w-7 h-7 rounded-lg bg-[#202028] text-white hover:bg-[#282834] text-xs font-bold flex items-center justify-center"
                     >
                       +
                     </button>
@@ -419,62 +320,59 @@ export default function ProductModal() {
                 </div>
               )}
 
+              {/* Button Bar */}
               {product.isSoldOut ? (
-                <div className="text-center py-3.5 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] text-[#6b7280] dark:text-zinc-400 font-bold text-xs uppercase tracking-wider border border-[#e8e1e1] dark:border-white/10">
-                  This item is currently sold out. Please contact us on WhatsApp for restock updates.
+                <div className="text-center py-3 rounded-xl bg-[#14141A] text-zinc-500 font-bold text-xs border border-[#222228]">
+                  Currently Sold Out — Contact on WhatsApp for restock updates.
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  {/* Add to Cart Button */}
                   <button
                     type="button"
-                    onClick={() => {
-                      addToCart(product, currentQty);
-                      handleClose();
-                    }}
-                    className="flex-1 py-3.5 px-4 rounded-full bg-[#660000] hover:bg-[#520000] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#660000]/25 transition active:scale-[0.99] cursor-pointer"
+                    onClick={handleAddToCart}
+                    className={`h-11 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 border ${
+                      added
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 flex-1'
+                        : 'bg-[#181820] hover:bg-[#202028] text-zinc-200 hover:text-white border-[#2A2A34] flex-1'
+                    }`}
+                    title="Add to Cart"
                   >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>
-                      Add to Cart {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
-                    </span>
+                    {added ? (
+                      <>
+                        <Check className="w-4 h-4 stroke-[3]" />
+                        <span>Added!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                      </>
+                    )}
                   </button>
 
+                  {/* Primary Checkout or WhatsApp Inquire Button */}
                   {product.isDailyRate ? (
                     <a
                       href={dailyRateWhatsAppUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                      className="h-11 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition active:scale-95 flex-[1.4]"
                       title="Check Today's Rate on WhatsApp"
                     >
-                      <WhatsAppIcon className="w-5 h-5 fill-white shrink-0" />
-                      <span>Check Today&apos;s Rate on WhatsApp</span>
+                      <WhatsAppIcon className="w-4 h-4 fill-white shrink-0" />
+                      <span>Check Rate on WhatsApp</span>
                     </a>
                   ) : (
-                    <Link
-                      href="/cart"
-                      onClick={() => {
-                        addToCart(product, currentQty);
-                        handleClose();
-                        if (typeof window !== 'undefined') {
-                          window.dispatchEvent(
-                            new CustomEvent('yt-nav-start', {
-                              detail: {
-                                href: '/cart',
-                                message: 'Loading Shopping Cart...',
-                                subtitle: 'Taking you to your order summary...',
-                              },
-                            })
-                          );
-                        }
-                      }}
-                      className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                    <button
+                      type="button"
+                      onClick={handleProceedToCart}
+                      className="h-11 px-4 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition active:scale-95 flex-[1.4]"
+                      title="Proceed to Checkout"
                     >
-                      <span>
-                        Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
-                      </span>
+                      <span>Proceed to Checkout</span>
                       <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                    </Link>
+                    </button>
                   )}
                 </div>
               )}
