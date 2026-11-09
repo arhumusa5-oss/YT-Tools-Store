@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Zap,
   ArrowLeft,
+  X,
 } from 'lucide-react';
 
 export default function CartPage() {
@@ -32,6 +33,7 @@ export default function CartPage() {
   } = useCart();
 
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   // Selection state (defaults to all selected)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -345,12 +347,8 @@ export default function CartPage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm('Are you sure you want to clear your entire cart?')) {
-                      clearCart();
-                    }
-                  }}
-                  className="px-6 py-3 rounded-full border text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-xs cursor-pointer bg-white border-[#e8e1e1] hover:border-rose-300 text-zinc-600 hover:text-rose-600"
+                  onClick={() => setIsClearModalOpen(true)}
+                  className="px-6 py-3 rounded-full border text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-xs cursor-pointer bg-white border-[#e8e1e1] hover:border-rose-300 text-zinc-600 hover:text-rose-600 active:scale-95"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Clear Cart</span>
@@ -396,6 +394,69 @@ export default function CartPage() {
           </div>
         )}
       </div>
+
+      {/* Store Branded Clear Cart Confirmation Modal */}
+      {isClearModalOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsClearModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-sm sm:max-w-md bg-white dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 rounded-3xl p-6 sm:p-7 text-center shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+          >
+            {/* Top decorative accent */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#660000] via-rose-600 to-[#660000]" />
+
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setIsClearModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#1c1c28] transition cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Trash Icon Badge */}
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/20 flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <Trash2 className="w-7 h-7 stroke-[2]" />
+            </div>
+
+            <h3 className="text-lg sm:text-xl font-black text-[#0a0a0a] dark:text-white tracking-tight">
+              Clear Shopping Cart?
+            </h3>
+
+            <p className="mt-2 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-300 leading-relaxed max-w-xs mx-auto">
+              Are you sure you want to remove all items from your cart? You can re-add them anytime from our tools catalog.
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(false)}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl font-bold text-xs bg-zinc-100 hover:bg-zinc-200 dark:bg-[#1c1c28] dark:hover:bg-[#252538] text-zinc-700 dark:text-zinc-200 transition cursor-pointer active:scale-95"
+              >
+                Keep Items
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  clearCart();
+                  setIsClearModalOpen(false);
+                }}
+                className="w-full sm:flex-1 py-3 px-4 rounded-xl font-black text-xs bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:opacity-95 text-white shadow-lg shadow-[#660000]/25 transition cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Yes, Clear Cart</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
       <FloatingWhatsApp />

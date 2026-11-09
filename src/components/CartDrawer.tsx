@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +23,7 @@ export default function CartDrawer() {
     settings,
   } = useCart();
   const { user } = useAuth();
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
   // Lock body scroll when cart is open
   useEffect(() => {
@@ -111,7 +112,7 @@ export default function CartDrawer() {
               {cart.length > 0 && (
                 <button
                   type="button"
-                  onClick={clearCart}
+                  onClick={() => setIsClearConfirmOpen((prev) => !prev)}
                   className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
                   title="Remove all items from cart"
                 >
@@ -130,6 +131,35 @@ export default function CartDrawer() {
               </button>
             </div>
           </div>
+
+          {/* Inline Clear Cart Confirmation Bar */}
+          {isClearConfirmOpen && cart.length > 0 && (
+            <div className="px-4 py-3 bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900/50 flex items-center justify-between gap-2 animate-in fade-in">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 dark:text-rose-300">
+                <Trash2 className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>Remove all {cart.length} items?</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsClearConfirmOpen(false)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-[#1a1a26] text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-white/10 hover:bg-zinc-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearCart();
+                    setIsClearConfirmOpen(false);
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition cursor-pointer"
+                >
+                  Yes, Clear
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Cart Items List */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar">
