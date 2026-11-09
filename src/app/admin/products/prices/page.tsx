@@ -28,6 +28,7 @@ interface RowDraft {
   costPKR: number;
   originalPricePKR: number;
   isSoldOut: boolean;
+  isDailyRate: boolean;
   vendorName: string;
 }
 
@@ -42,7 +43,7 @@ export default function QuickBulkPriceEditorPage() {
   // Filters
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeFilterTab, setActiveFilterTab] = useState<'all' | 'modified' | 'nocost' | 'lowmargin' | 'soldout'>('all');
+  const [activeFilterTab, setActiveFilterTab] = useState<'all' | 'modified' | 'dailyrate' | 'nocost' | 'lowmargin' | 'soldout'>('all');
 
   // Quick Markup Modal / Bar
   const [showMarkupTool, setShowMarkupTool] = useState(false);
@@ -66,6 +67,7 @@ export default function QuickBulkPriceEditorPage() {
             costPKR: p.costPKR ?? 0,
             originalPricePKR: p.originalPricePKR ?? (p.pricePKR ? Math.round(p.pricePKR * 1.5) : 0),
             isSoldOut: Boolean(p.isSoldOut),
+            isDailyRate: Boolean(p.isDailyRate),
             vendorName: p.vendorName || '',
           };
         });
@@ -108,6 +110,7 @@ export default function QuickBulkPriceEditorPage() {
     const origCost = prod.costPKR ?? 0;
     const origOrigPrice = prod.originalPricePKR ?? 0;
     const origSoldOut = Boolean(prod.isSoldOut);
+    const origDailyRate = Boolean(prod.isDailyRate);
     const origVendor = prod.vendorName || '';
 
     return (
@@ -115,6 +118,7 @@ export default function QuickBulkPriceEditorPage() {
       draft.costPKR !== origCost ||
       draft.originalPricePKR !== origOrigPrice ||
       draft.isSoldOut !== origSoldOut ||
+      draft.isDailyRate !== origDailyRate ||
       draft.vendorName !== origVendor
     );
   };
@@ -134,6 +138,7 @@ export default function QuickBulkPriceEditorPage() {
           costPKR: 0,
           originalPricePKR: 0,
           isSoldOut: false,
+          isDailyRate: false,
           vendorName: '',
         }),
         ...patch,
@@ -150,6 +155,7 @@ export default function QuickBulkPriceEditorPage() {
         costPKR: prod.costPKR ?? 0,
         originalPricePKR: prod.originalPricePKR ?? 0,
         isSoldOut: Boolean(prod.isSoldOut),
+        isDailyRate: Boolean(prod.isDailyRate),
         vendorName: prod.vendorName || '',
       },
     }));
@@ -165,6 +171,7 @@ export default function QuickBulkPriceEditorPage() {
         costPKR: p.costPKR ?? 0,
         originalPricePKR: p.originalPricePKR ?? 0,
         isSoldOut: Boolean(p.isSoldOut),
+        isDailyRate: Boolean(p.isDailyRate),
         vendorName: p.vendorName || '',
       };
     });
@@ -187,6 +194,7 @@ export default function QuickBulkPriceEditorPage() {
           costPKR: Number(draft.costPKR) || 0,
           originalPricePKR: Number(draft.originalPricePKR) || 0,
           isSoldOut: Boolean(draft.isSoldOut),
+          isDailyRate: Boolean(draft.isDailyRate),
           vendorName: draft.vendorName.trim() || undefined,
         }),
       });
@@ -219,6 +227,7 @@ export default function QuickBulkPriceEditorPage() {
           costPKR: Number(d.costPKR) || 0,
           originalPricePKR: Number(d.originalPricePKR) || 0,
           isSoldOut: Boolean(d.isSoldOut),
+          isDailyRate: Boolean(d.isDailyRate),
           vendorName: d.vendorName.trim() || undefined,
         };
       });
@@ -339,6 +348,9 @@ export default function QuickBulkPriceEditorPage() {
 
       if (activeFilterTab === 'modified') {
         return isRowModified(prod);
+      }
+      if (activeFilterTab === 'dailyrate') {
+        return draft ? draft.isDailyRate : Boolean(prod.isDailyRate);
       }
       if (activeFilterTab === 'nocost') {
         return costPrice <= 0;
@@ -568,6 +580,20 @@ export default function QuickBulkPriceEditorPage() {
             )}
           </button>
           <button
+            onClick={() => setActiveFilterTab('dailyrate')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+              activeFilterTab === 'dailyrate'
+                ? 'bg-amber-500 text-black font-bold shadow-md shadow-amber-500/20'
+                : 'bg-[#141418] text-zinc-400 hover:text-white'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 fill-current" />
+            <span>Daily Live Rate</span>
+            <span className="text-[10px] opacity-80">
+              ({products.filter((p) => drafts[p.id]?.isDailyRate ?? p.isDailyRate).length})
+            </span>
+          </button>
+          <button
             onClick={() => setActiveFilterTab('nocost')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
               activeFilterTab === 'nocost'
@@ -690,6 +716,12 @@ export default function QuickBulkPriceEditorPage() {
                             Unsaved
                           </span>
                         )}
+                        {draft.isDailyRate && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                            <Zap className="w-2.5 h-2.5 fill-amber-400" />
+                            Daily Rate
+                          </span>
+                        )}
                         <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#1C1C24] text-zinc-400 font-medium">
                           {prod.category}
                         </span>
@@ -785,6 +817,26 @@ export default function QuickBulkPriceEditorPage() {
                           }`}
                         />
                         <span>{!draft.isSoldOut ? 'In Stock' : 'Sold Out'}</span>
+                      </button>
+                    </div>
+
+                    {/* Daily Live Rate Toggle Pill */}
+                    <div className="pt-4 sm:pt-0 self-end sm:self-auto">
+                      <label className="block text-[10px] text-zinc-400 font-bold mb-1 uppercase tracking-wider hidden sm:block">
+                        Daily Rate
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => updateDraft(prod.id, { isDailyRate: !draft.isDailyRate })}
+                        className={`h-[38px] px-3 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                          draft.isDailyRate
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 hover:bg-amber-500/30 shadow-sm shadow-amber-500/20'
+                            : 'bg-[#141418] text-zinc-500 border border-[#222228] hover:text-zinc-300'
+                        }`}
+                        title="Toggle '⚡ Daily Live Rate' badge and WhatsApp button on store"
+                      >
+                        <Zap className={`w-3.5 h-3.5 ${draft.isDailyRate ? 'fill-amber-400 text-amber-400' : 'text-zinc-600'}`} />
+                        <span>{draft.isDailyRate ? 'Daily Rate' : 'Standard'}</span>
                       </button>
                     </div>
 

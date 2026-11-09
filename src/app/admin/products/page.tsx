@@ -309,6 +309,12 @@ export default function AdminProductsPage() {
                                 {prod.badge}
                               </span>
                             )}
+                            {prod.isDailyRate && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
+                                <Zap className="w-2.5 h-2.5 fill-amber-400" />
+                                Daily Rate
+                              </span>
+                            )}
                           </div>
                           <p className="text-[11px] text-zinc-400 truncate mt-0.5">
                             {getDescriptionPreview(prod)}

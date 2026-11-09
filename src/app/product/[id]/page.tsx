@@ -10,7 +10,7 @@ import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import ProductModal from '@/components/ProductModal';
 import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
-import { Check, Star, Clock, ArrowLeft, Mail } from 'lucide-react';
+import { Check, Star, Clock, ArrowLeft, Mail, Zap } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 
 export default function ProductDetailPage() {
@@ -85,6 +85,9 @@ export default function ProductDetailPage() {
   );
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
+  const dailyRateWhatsAppUrl = `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(
+    `Assalam o Alaikum! Mujhe ${product.title} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
+  )}`;
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-zinc-900 dark:text-white transition-colors duration-150 relative z-10">
@@ -179,13 +182,19 @@ export default function ProductDetailPage() {
               )}
 
               {/* Price */}
-              <div className="mt-5 flex items-baseline gap-3">
+              <div className="mt-5 flex items-baseline gap-3 flex-wrap items-center">
                 <span className="text-3xl sm:text-4xl font-black text-white">
                   {formatPrice(product.pricePKR, product.priceUSD)}
                 </span>
                 {product.originalPricePKR > product.pricePKR && (
                   <span className="text-base text-zinc-500 line-through">
                     {formatPrice(product.originalPricePKR, product.originalPriceUSD)}
+                  </span>
+                )}
+                {product.isDailyRate && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    Daily Live Rate
                   </span>
                 )}
               </div>
@@ -246,6 +255,17 @@ export default function ProductDetailPage() {
                 <div className="p-4 rounded-2xl bg-white/[0.05] text-zinc-400 text-center font-bold text-sm border border-white/[0.06]">
                   This tool is currently sold out. Message on WhatsApp for restock notification.
                 </div>
+              ) : product.isDailyRate ? (
+                <a
+                  href={dailyRateWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#25D366] to-[#20BA5A] hover:from-[#22c35e] hover:to-[#1ca650] text-white font-bold text-base flex items-center justify-center gap-2.5 shadow-xl shadow-emerald-950/20 transition active:scale-[0.99]"
+                  title="Check Today's Rate on WhatsApp"
+                >
+                  <WhatsAppIcon className="w-5 h-5 fill-current text-white" />
+                  <span>Check Today&apos;s Rate on WhatsApp</span>
+                </a>
               ) : (
                 <a
                   href={whatsappUrl}

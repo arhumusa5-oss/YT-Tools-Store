@@ -44,6 +44,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
   const [costPKR, setCostPKR] = useState(initialProduct?.costPKR !== undefined ? initialProduct.costPKR.toString() : '');
   const [vendorName, setVendorName] = useState(initialProduct?.vendorName || '');
 
+  const [isDailyRate, setIsDailyRate] = useState(initialProduct?.isDailyRate || false);
   const [isSoldOut, setIsSoldOut] = useState(initialProduct?.isSoldOut || false);
   const [allowQuantity, setAllowQuantity] = useState(initialProduct?.allowQuantity || false);
   const [badge, setBadge] = useState<Product['badge']>(initialProduct?.badge || '');
@@ -191,6 +192,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         originalPriceUSD: Number(originalPriceUSD) || (Number(pricePKR) / 280) * 1.5,
         costPKR: costPKR !== '' && !isNaN(Number(costPKR)) ? Math.max(0, Number(costPKR)) : undefined,
         vendorName: vendorName.trim() || undefined,
+        isDailyRate,
         isSoldOut,
         allowQuantity,
         badge,
@@ -443,6 +445,29 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
               Auto-fills the vendor column in Google Sheets & Admin Finances.
             </p>
           </div>
+        </div>
+
+        {/* Daily Live Rate Toggle */}
+        <div className="pt-2">
+          <label className="relative flex items-center gap-3 p-4 rounded-xl bg-black border border-[#222228] cursor-pointer hover:border-amber-500/40 transition">
+            <input
+              type="checkbox"
+              checked={isDailyRate}
+              onChange={(e) => setIsDailyRate(e.target.checked)}
+              className="w-5 h-5 rounded accent-amber-500"
+            />
+            <div>
+              <span className="font-bold text-white text-xs flex items-center gap-1.5">
+                <span>⚡ Enable &quot;Daily Live Rate&quot; Badge &amp; WhatsApp Inquire</span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  Fluctuating Tools
+                </span>
+              </span>
+              <span className="text-[11px] text-zinc-400 block mt-0.5">
+                Shows &quot;⚡ Daily Live Rate&quot; on product card and adds &quot;Check Today&apos;s Rate on WhatsApp&quot; button with automatic pre-filled query for ChatGPT, Private Accounts, etc.
+              </span>
+            </div>
+          </label>
         </div>
 
         {/* Sold Out Toggle */}

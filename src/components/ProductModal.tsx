@@ -137,6 +137,9 @@ export default function ProductModal() {
   );
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
   const whatsappUrl = `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
+  const dailyRateWhatsAppUrl = `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(
+    `Assalam o Alaikum! Mujhe ${product.title} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
+  )}`;
 
   return (
     <div
@@ -285,13 +288,19 @@ export default function ProductModal() {
               )}
 
               {/* Price */}
-              <div className="mt-4 flex items-baseline gap-3 flex-wrap">
+              <div className="mt-4 flex items-baseline gap-3 flex-wrap items-center">
                 <span className="text-3xl font-black text-[#660000] dark:text-[#ff4d4d] tracking-tight">
                   {formatPrice(totalPKR, totalUSD)}
                 </span>
                 {totalOriginalPKR > totalPKR && (
                   <span className="text-sm text-[#9ca3af] dark:text-zinc-500 line-through font-normal">
                     {formatPrice(totalOriginalPKR, totalOriginalUSD)}
+                  </span>
+                )}
+                {product.isDailyRate && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                    <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    Daily Live Rate
                   </span>
                 )}
                 {product.allowQuantity && currentQty > 1 && (
@@ -430,30 +439,43 @@ export default function ProductModal() {
                     </span>
                   </button>
 
-                  <Link
-                    href="/cart"
-                    onClick={() => {
-                      addToCart(product, currentQty);
-                      handleClose();
-                      if (typeof window !== 'undefined') {
-                        window.dispatchEvent(
-                          new CustomEvent('yt-nav-start', {
-                            detail: {
-                              href: '/cart',
-                              message: 'Loading Shopping Cart...',
-                              subtitle: 'Taking you to your order summary...',
-                            },
-                          })
-                        );
-                      }
-                    }}
-                    className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
-                  >
-                    <span>
-                      Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
-                    </span>
-                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                  </Link>
+                  {product.isDailyRate ? (
+                    <a
+                      href={dailyRateWhatsAppUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                      title="Check Today's Rate on WhatsApp"
+                    >
+                      <WhatsAppIcon className="w-5 h-5 fill-white shrink-0" />
+                      <span>Check Today&apos;s Rate on WhatsApp</span>
+                    </a>
+                  ) : (
+                    <Link
+                      href="/cart"
+                      onClick={() => {
+                        addToCart(product, currentQty);
+                        handleClose();
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(
+                            new CustomEvent('yt-nav-start', {
+                              detail: {
+                                href: '/cart',
+                                message: 'Loading Shopping Cart...',
+                                subtitle: 'Taking you to your order summary...',
+                              },
+                            })
+                          );
+                        }
+                      }}
+                      className="flex-1 py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] tracking-tight cursor-pointer"
+                    >
+                      <span>
+                        Proceed to Checkout {product.allowQuantity && currentQty > 1 ? `(${currentQty})` : ''}
+                      </span>
+                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

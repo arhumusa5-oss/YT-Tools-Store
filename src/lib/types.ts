@@ -12,6 +12,7 @@ export interface Product {
   originalPriceUSD: number;
   costPKR?: number; // Default supplier / cost price
   vendorName?: string; // Preferred vendor / supplier name
+  isDailyRate?: boolean; // When true, shows 'Daily Live Rate' badge & 'Check Today's Rate on WhatsApp' button
   isSoldOut: boolean;
   allowQuantity?: boolean;
   badge: 'HOT' | 'BEST SELLER' | 'SALE' | 'INSTANT' | 'TRENDING' | 'POPULAR' | '';

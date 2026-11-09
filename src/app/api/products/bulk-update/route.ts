@@ -33,6 +33,7 @@ export async function POST(request: Request) {
           originalPricePKR?: number;
           priceUSD?: number;
           isSoldOut?: boolean;
+          isDailyRate?: boolean;
           vendorName?: string;
         } = { id: u.id };
 
@@ -59,6 +60,9 @@ export async function POST(request: Request) {
         }
         if (u.isSoldOut !== undefined) {
           item.isSoldOut = Boolean(u.isSoldOut);
+        }
+        if (u.isDailyRate !== undefined) {
+          item.isDailyRate = Boolean(u.isDailyRate);
         }
         if (u.vendorName !== undefined) {
           item.vendorName = String(u.vendorName).trim();

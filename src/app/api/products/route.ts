@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       originalPriceUSD: Number(body.originalPriceUSD) || (Number(body.priceUSD) * 1.5),
       costPKR: body.costPKR !== undefined && body.costPKR !== null && body.costPKR !== '' ? Number(body.costPKR) : undefined,
       vendorName: body.vendorName ? String(body.vendorName).trim() : undefined,
+      isDailyRate: Boolean(body.isDailyRate),
       isSoldOut: Boolean(body.isSoldOut),
       allowQuantity: Boolean(body.allowQuantity),
       badge: body.badge || '',

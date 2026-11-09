@@ -8,6 +8,7 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Star, Eye, ShoppingCart, Zap, ArrowRight } from 'lucide-react';
 import BufferingLoader from './BufferingLoader';
+import WhatsAppIcon from './WhatsAppIcon';
 
 interface ProductCardProps {
   product: Product;
@@ -84,6 +85,13 @@ function ProductCard({ product }: ProductCardProps) {
     );
     return `https://wa.me/${targetWhatsApp}?text=${whatsappMessage}`;
   }, [actionPhrase, qtyPrefix, product.title, formatPrice, totalPKR, totalUSD, targetWhatsApp, user]);
+
+  const dailyRateWhatsAppUrl = useMemo(() => {
+    const text = encodeURIComponent(
+      `Assalam o Alaikum! Mujhe ${product.title} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
+    );
+    return `https://wa.me/${targetWhatsApp}?text=${text}`;
+  }, [product.title, targetWhatsApp]);
 
   const displayDescription = useMemo(() => {
     if (product.shortDescription?.trim()) {
@@ -170,6 +178,13 @@ function ProductCard({ product }: ProductCardProps) {
               {product.badge}
             </span>
           ) : null}
+
+          {product.isDailyRate && !product.isSoldOut && (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black shadow-md flex items-center gap-1">
+              <Zap className="w-3 h-3 fill-black text-black" />
+              Daily Rate
+            </span>
+          )}
 
           {discountPercent > 0 && !product.isSoldOut && (
             <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-white/95 dark:bg-[#111118]/95 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/25 dark:border-[#660000]/40 shadow-md flex items-center gap-1">
@@ -328,13 +343,19 @@ function ProductCard({ product }: ProductCardProps) {
         {/* Price Section */}
         <div className="pt-3 border-t border-[#f0ebeb] dark:border-white/10 flex items-end justify-between">
           <div>
-            <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="flex items-baseline gap-2 flex-wrap items-center">
               <span className="text-2xl sm:text-3xl font-black text-[#660000] dark:text-[#ff4d4d] tracking-tight">
                 {formatPrice(totalPKR, totalUSD)}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-xs font-bold text-[#9ca3af] dark:text-zinc-500 line-through">
                   {formatPrice(originalPrice, currency === 'USD' ? product.originalPriceUSD * (product.allowQuantity ? currentQty : 1) : product.originalPricePKR * (product.allowQuantity ? currentQty : 1))}
+                </span>
+              )}
+              {product.isDailyRate && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-500 border border-amber-500/30">
+                  <Zap className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  Daily Live Rate
                 </span>
               )}
             </div>
@@ -398,29 +419,42 @@ function ProductCard({ product }: ProductCardProps) {
                 </button>
               </div>
 
-              {/* Primary: Proceed to Checkout Button (Redirects directly to /cart with smooth buffering loader) */}
-              <Link
-                href="/cart"
-                onClick={() => {
-                  addToCart(product, currentQty);
-                  if (typeof window !== 'undefined') {
-                    window.dispatchEvent(
-                      new CustomEvent('yt-nav-start', {
-                        detail: {
-                          href: '/cart',
-                          message: 'Loading Shopping Cart...',
-                          subtitle: 'Taking you to your order summary...',
-                        },
-                      })
-                    );
-                  }
-                }}
-                className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
-                title="Proceed to Checkout"
-              >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-              </Link>
+              {/* Primary Action Button */}
+              {product.isDailyRate ? (
+                <a
+                  href={dailyRateWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
+                  title="Check Today's Rate on WhatsApp"
+                >
+                  <WhatsAppIcon className="w-4 h-4 fill-white shrink-0" />
+                  <span>Check Today&apos;s Rate on WhatsApp</span>
+                </a>
+              ) : (
+                <Link
+                  href="/cart"
+                  onClick={() => {
+                    addToCart(product, currentQty);
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(
+                        new CustomEvent('yt-nav-start', {
+                          detail: {
+                            href: '/cart',
+                            message: 'Loading Shopping Cart...',
+                            subtitle: 'Taking you to your order summary...',
+                          },
+                        })
+                      );
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/25 transition-all active:scale-95 cursor-pointer tracking-tight"
+                  title="Proceed to Checkout"
+                >
+                  <span>Proceed to Checkout</span>
+                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                </Link>
+              )}
             </>
           )}
         </div>
