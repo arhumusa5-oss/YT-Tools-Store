@@ -51,9 +51,19 @@ function TrackOrderContent() {
     setEmailErrorMsg('');
     setOrder(null);
 
+    const startTime = Date.now();
+
     try {
       const res = await fetch(`/api/orders/${encodeURIComponent(term)}`);
       const data = await res.json();
+
+      // Smooth display time to eliminate abrupt animation flicker / glitch
+      const elapsed = Date.now() - startTime;
+      const minDuration = 600;
+      if (elapsed < minDuration) {
+        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
+      }
+
       if (data.success && data.order) {
         setOrder(data.order);
         setEmailInput(data.order.customerEmail || '');
