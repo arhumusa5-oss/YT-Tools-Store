@@ -30,10 +30,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#060608' },
-  ],
+  themeColor: '#070709',
 };
 
 export const metadata: Metadata = {
@@ -113,12 +110,14 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('yt_theme');
-                  if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                  } else {
+                  if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
+                  } else {
+                    document.documentElement.classList.add('dark');
                   }
-                } catch (e) {}
+                } catch (e) {
+                  document.documentElement.classList.add('dark');
+                }
 
                 // Anti-drag & text selection protection (Nexcore style)
                 document.addEventListener('selectstart', function(e) {
@@ -143,7 +142,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${fontSans.variable} ${fontSerif.variable} font-sans min-h-screen bg-white dark:bg-[#060608] text-[#1f2937] dark:text-[#e5e7eb] antialiased relative transition-colors duration-200 select-none`}>
+      <body className={`${fontSans.variable} ${fontSerif.variable} font-sans min-h-screen bg-[#070709] text-[#e5e7eb] antialiased relative transition-colors duration-200 select-none`}>
         {/* Geometric Grid Background Pattern */}
         <div className="bg-grid-pattern" />
 

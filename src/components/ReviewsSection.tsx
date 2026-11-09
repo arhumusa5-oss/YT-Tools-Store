@@ -157,19 +157,19 @@ export default function ReviewsSection() {
   };
 
   return (
-    <section id="reviews" className="py-16 sm:py-24 border-b border-[#e8e1e1] dark:border-white/10 bg-[#f9f7f7]/70 dark:bg-[#07070b]/60 transition-colors duration-200">
+    <section id="reviews" className="py-16 sm:py-24 border-b border-[#222228] bg-[#070709] transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
           <div>
-            <span className="inline-block text-[11px] font-extrabold uppercase tracking-widest text-[#660000] dark:text-[#ff6b6b] mb-2">
+            <span className="inline-block text-[11px] font-extrabold uppercase tracking-widest text-[#FF5500] mb-2">
               PROVEN SATISFACTION &amp; TRUST
             </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-[#0a0a0a] dark:text-white tracking-tight">
-              Verified Customer <span className="font-serif italic font-bold bg-gradient-to-r from-[#660000] to-[#a00000] dark:from-[#ff4d4d] dark:to-[#ff8080] bg-clip-text text-transparent">Reviews &amp; Feedback</span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+              Verified Customer <span className="font-serif italic font-bold bg-gradient-to-r from-[#FF5500] via-[#FF7733] to-[#FFAA66] bg-clip-text text-transparent">Reviews &amp; Feedback</span>
             </h2>
-            <p className="mt-2 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-400 max-w-xl font-normal">
+            <p className="mt-2 text-xs sm:text-sm text-zinc-400 max-w-xl font-normal">
               Real feedback from creators, editors, and digital agencies using our tools.
             </p>
           </div>
@@ -177,7 +177,7 @@ export default function ReviewsSection() {
           <button
             type="button"
             onClick={handleOpenModal}
-            className="self-start sm:self-auto px-5 py-2.5 rounded-full bg-[#660000] hover:bg-[#800000] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#660000]/25 transition active:scale-95 cursor-pointer"
+            className="self-start sm:self-auto px-5 py-2.5 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#FF5500]/25 transition active:scale-95 cursor-pointer"
           >
             <Star className="w-3.5 h-3.5 fill-current text-amber-300" />
             <span>Write a Customer Review</span>
@@ -186,17 +186,17 @@ export default function ReviewsSection() {
 
         {/* Reviews Cards Grid */}
         {loading ? (
-          <div className="py-12 text-center text-xs text-[#6b7280]">Loading verified reviews...</div>
+          <div className="py-12 text-center text-xs text-zinc-400">Loading verified reviews...</div>
         ) : reviews.length === 0 ? (
-          <div className="p-10 rounded-3xl bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 text-center max-w-md mx-auto space-y-3">
-            <MessageSquareQuote className="w-8 h-8 text-[#660000] dark:text-[#ff6b6b] mx-auto opacity-70" />
-            <h3 className="text-sm font-bold text-[#0a0a0a] dark:text-white">Be the first to leave a review!</h3>
-            <p className="text-xs text-[#6b7280] dark:text-zinc-400">
+          <div className="p-10 rounded-3xl bg-[#0C0C0E] border border-[#222228] text-center max-w-md mx-auto space-y-3">
+            <MessageSquareQuote className="w-8 h-8 text-[#FF5500] mx-auto opacity-70" />
+            <h3 className="text-sm font-bold text-white">Be the first to leave a review!</h3>
+            <p className="text-xs text-zinc-400">
               Share your experience with our digital tools and fast delivery.
             </p>
             <button
               onClick={handleOpenModal}
-              className="mt-2 px-4 py-2 rounded-full bg-[#660000] text-white text-xs font-bold"
+              className="mt-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold cursor-pointer"
             >
               Write First Review
             </button>
@@ -206,7 +206,7 @@ export default function ReviewsSection() {
             {reviews.map((rev) => (
               <div
                 key={rev.id}
-                className="p-6 rounded-3xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#ff4d4d] transition-all duration-300 shadow-sm dark:shadow-none hover:shadow-[0_12px_30px_rgba(102,0,0,0.1)] hover:-translate-y-1 flex flex-col justify-between"
+                className="p-6 rounded-3xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/40 transition-all duration-300 shadow-sm hover:shadow-[0_12px_30px_rgba(255,85,0,0.1)] hover:-translate-y-1 flex flex-col justify-between"
               >
                 <div>
                   {/* Stars */}
@@ -217,14 +217,14 @@ export default function ReviewsSection() {
                         className={`w-4 h-4 ${
                           i < rev.rating
                             ? 'text-amber-500 fill-amber-500'
-                            : 'text-[#e2d9d9] dark:text-zinc-700'
+                            : 'text-zinc-700'
                         }`}
                       />
                     ))}
                   </div>
 
                   {/* Comment */}
-                  <p className="text-xs sm:text-sm text-[#1f2937] dark:text-zinc-300 leading-relaxed italic">
+                  <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed italic">
                     &ldquo;{rev.comment}&rdquo;
                   </p>
 
@@ -234,7 +234,7 @@ export default function ReviewsSection() {
                       <button
                         type="button"
                         onClick={() => setPreviewImage(rev.imageUrl!)}
-                        className="group/img relative inline-block rounded-xl overflow-hidden border border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#ff4d4d] transition-all cursor-pointer shadow-sm"
+                        className="group/img relative inline-block rounded-xl overflow-hidden border border-[#222228] hover:border-[#FF5500] transition-all cursor-pointer shadow-sm"
                         title="Click to view full image"
                       >
                         <img
@@ -252,7 +252,7 @@ export default function ReviewsSection() {
                 </div>
 
                 {/* Author & Verification */}
-                <div className="mt-5 pt-4 border-t border-[#f0ebeb] dark:border-white/10 flex items-center justify-between">
+                <div className="mt-5 pt-4 border-t border-[#222228] flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-bold text-xs text-[#0a0a0a] dark:text-white">
@@ -283,26 +283,26 @@ export default function ReviewsSection() {
             onClick={(e) => {
               if (e.target === e.currentTarget) setModalOpen(false);
             }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm dark:bg-black/60 overflow-y-auto animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200"
           >
-            <div className="relative w-full max-w-md bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
-              <div className="flex items-center justify-between pb-3 border-b border-[#f0ebeb] dark:border-white/10 mb-4">
+            <div className="relative w-full max-w-md bg-[#0C0C0E] border border-[#222228] rounded-3xl p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-[#222228] mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#660000]/10 text-[#660000] dark:text-[#ff6b6b] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-orange-500/15 text-[#FF5500] flex items-center justify-center">
                     <Star className="w-4 h-4 fill-current" />
                   </div>
                   <div>
-                    <h3 className="font-black text-[#0a0a0a] dark:text-white text-base">
+                    <h3 className="font-black text-white text-base">
                       Write a Customer Review
                     </h3>
-                    <p className="text-[11px] text-[#6b7280] dark:text-zinc-400">
+                    <p className="text-[11px] text-zinc-400">
                       Share your experience with our products
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="p-1 rounded-lg text-[#6b7280] hover:text-[#0a0a0a] dark:hover:text-white cursor-pointer"
+                  className="p-1 rounded-lg text-zinc-400 hover:text-white cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -311,19 +311,19 @@ export default function ReviewsSection() {
               {submitSuccess ? (
                 /* Success Notice */
                 <div className="text-center py-6 space-y-4 animate-in fade-in">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-7 h-7 stroke-[2.5]" />
                   </div>
-                  <h4 className="text-lg font-black text-[#0a0a0a] dark:text-white">
+                  <h4 className="text-lg font-black text-white">
                     Thank You For Your Review!
                   </h4>
-                  <p className="text-xs text-[#4b5563] dark:text-zinc-300 leading-relaxed max-w-xs mx-auto">
+                  <p className="text-xs text-zinc-300 leading-relaxed max-w-xs mx-auto">
                     Your feedback has been submitted to our moderation team. It will appear live on the store once approved.
                   </p>
                   <button
                     type="button"
                     onClick={() => setModalOpen(false)}
-                    className="w-full py-3 rounded-full bg-[#660000] hover:bg-[#800000] text-white text-xs font-bold transition shadow-md"
+                    className="w-full py-3 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:from-[#E64A00] hover:to-[#CC4200] text-white text-xs font-bold transition shadow-lg shadow-orange-950/40"
                   >
                     Done
                   </button>
@@ -348,18 +348,18 @@ export default function ReviewsSection() {
                       placeholder="e.g. Hamza Tariq"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white focus:outline-none focus:border-[#660000] dark:focus:border-[#ff4d4d]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#222228] text-xs text-white focus:outline-none focus:border-[#FF5500]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1f2937] dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
                       Product / Tool Used
                     </label>
                     <select
                       value={productTitle}
                       onChange={(e) => setProductTitle(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white focus:outline-none focus:border-[#660000] dark:focus:border-[#ff4d4d] cursor-pointer"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#222228] text-xs text-white focus:outline-none focus:border-[#FF5500] cursor-pointer"
                     >
                       <option value="General Store Review">General Store Review (All Tools)</option>
                       {products.map((p) => (
@@ -376,13 +376,13 @@ export default function ReviewsSection() {
                         placeholder="Enter the product or tool name"
                         value={customProductTitle}
                         onChange={(e) => setCustomProductTitle(e.target.value)}
-                        className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white focus:outline-none focus:border-[#660000]"
+                        className="w-full mt-2 px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#222228] text-xs text-white focus:outline-none focus:border-[#FF5500]"
                       />
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1f2937] dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
                       Your Rating (1 to 5 Stars)
                     </label>
                     <div className="flex items-center gap-2">
@@ -397,7 +397,7 @@ export default function ReviewsSection() {
                             className={`w-6 h-6 ${
                               star <= rating
                                 ? 'text-amber-500 fill-amber-500'
-                                : 'text-[#e8e1e1] dark:text-zinc-700'
+                                : 'text-zinc-700'
                             }`}
                           />
                         </button>
@@ -407,7 +407,7 @@ export default function ReviewsSection() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#1f2937] dark:text-zinc-300 mb-1">
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
                       Your Review / Experience <span className="text-red-500">*</span>
                     </label>
                     <textarea
@@ -416,18 +416,18 @@ export default function ReviewsSection() {
                       placeholder="Share what you liked, activation speed, customer service, etc."
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#faf8f8] dark:bg-[#14141e] border border-[#e8e1e1] dark:border-white/10 text-xs text-[#0a0a0a] dark:text-white focus:outline-none focus:border-[#660000] dark:focus:border-[#ff4d4d]"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#141418] border border-[#222228] text-xs text-white focus:outline-none focus:border-[#FF5500]"
                     />
                   </div>
 
                   {/* Optional Image / Screenshot Proof Upload */}
                   <div>
-                    <label className="block text-xs font-bold text-[#1f2937] dark:text-zinc-300 mb-1">
-                      Attach Screenshot / Photo Proof <span className="text-[#6b7280] font-normal text-[11px]">(Optional)</span>
+                    <label className="block text-xs font-bold text-zinc-300 mb-1">
+                      Attach Screenshot / Photo Proof <span className="text-zinc-500 font-normal text-[11px]">(Optional)</span>
                     </label>
 
                     {imageUrl ? (
-                      <div className="relative inline-block rounded-xl overflow-hidden border border-[#e8e1e1] dark:border-white/10 p-1 bg-white dark:bg-[#161622]">
+                      <div className="relative inline-block rounded-xl overflow-hidden border border-[#222228] p-1 bg-[#141418]">
                         <img
                           src={imageUrl}
                           alt="Review attachment preview"
@@ -443,7 +443,7 @@ export default function ReviewsSection() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-[#e8e1e1] dark:border-white/10 hover:border-[#660000] dark:hover:border-[#ff4d4d] rounded-2xl cursor-pointer bg-[#faf8f8] dark:bg-[#14141e] transition-colors group">
+                      <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-[#222228] hover:border-[#FF5500] rounded-2xl cursor-pointer bg-[#141418] transition-colors group">
                         <input
                           type="file"
                           accept="image/*"
@@ -452,17 +452,17 @@ export default function ReviewsSection() {
                           className="hidden"
                         />
                         {uploadingImage ? (
-                          <div className="flex items-center gap-2 text-xs text-[#660000] dark:text-[#ff6b6b] font-bold">
+                          <div className="flex items-center gap-2 text-xs text-[#FF5500] font-bold">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Uploading photo...</span>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-1 text-center">
-                            <Upload className="w-5 h-5 text-[#6b7280] group-hover:text-[#660000] dark:group-hover:text-[#ff4d4d] transition-colors" />
-                            <span className="text-xs font-bold text-[#1f2937] dark:text-zinc-200">
+                            <Upload className="w-5 h-5 text-zinc-500 group-hover:text-[#FF5500] transition-colors" />
+                            <span className="text-xs font-bold text-zinc-200">
                               Upload Proof Screenshot / Image
                             </span>
-                            <span className="text-[10px] text-[#6b7280]">
+                            <span className="text-[10px] text-zinc-500">
                               JPG, PNG, WebP up to 10MB
                             </span>
                           </div>
@@ -475,7 +475,7 @@ export default function ReviewsSection() {
                     <button
                       type="submit"
                       disabled={submitting || uploadingImage}
-                      className="w-full py-3.5 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-black text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-[#660000]/25 disabled:opacity-50 cursor-pointer active:scale-95"
+                      className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white font-black text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-[#FF5500]/25 disabled:opacity-50 cursor-pointer active:scale-95"
                     >
                       {submitting ? (
                         <>

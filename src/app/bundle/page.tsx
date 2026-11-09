@@ -204,29 +204,29 @@ function BundleContent() {
 
       {loading ? (
         <div className="text-center py-24 space-y-3">
-          <div className="w-16 h-16 rounded-full border-[3.5px] border-[#e8e1e1] dark:border-white/15 mx-auto relative flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#660000] border-r-[#990000] dark:border-t-[#ff4d4d] dark:border-r-[#ff8080] animate-spin" />
+          <div className="w-16 h-16 rounded-full border-[3.5px] border-[#222228] mx-auto relative flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#FF5500] border-r-[#FFAA66] animate-spin" />
           </div>
-          <p className="text-xs text-[#111827] dark:text-zinc-300 font-bold">
+          <p className="text-xs text-zinc-400 font-bold">
             Loading your customized tools bundle...
           </p>
         </div>
       ) : bundleEntries.length === 0 ? (
         /* Empty / Invalid Bundle */
-        <div className="text-center py-16 px-4 bg-[#faf8f8] dark:bg-[#0c0c12] border border-[#d1c7c7] dark:border-white/10 rounded-3xl max-w-md mx-auto shadow-sm space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#660000]/10 dark:bg-[#660000]/25 text-[#660000] dark:text-[#ff6b6b] flex items-center justify-center mx-auto">
+        <div className="text-center py-16 px-4 bg-[#0C0C0E] border border-[#222228] rounded-3xl max-w-md mx-auto shadow-2xl space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-orange-500/10 text-[#FF5500] flex items-center justify-center mx-auto border border-orange-500/20">
             <Package className="w-8 h-8" />
           </div>
-          <h2 className="text-xl font-black text-[#0a0a0a] dark:text-white">
+          <h2 className="text-xl font-black text-white">
             No Tools Found in This Bundle
           </h2>
-          <p className="text-xs text-[#111827] dark:text-zinc-300 font-medium max-w-xs mx-auto">
+          <p className="text-xs text-zinc-400 font-medium max-w-xs mx-auto">
             This bundle link may be invalid or the selected products are no longer available.
           </p>
           <div className="pt-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-bold text-xs transition shadow-md shadow-[#660000]/25"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:from-[#E64A00] hover:to-[#CC4200] text-white font-bold text-xs transition shadow-lg shadow-orange-950/40"
             >
               <Store className="w-4 h-4" />
               <span>Browse All Digital Tools</span>
@@ -237,15 +237,15 @@ function BundleContent() {
         /* Valid Bundle Content */
         <div className="space-y-8 animate-in fade-in duration-200">
           {/* Header Banner */}
-          <div className="text-center space-y-3 pb-6 border-b border-[#e8e1e1] dark:border-white/10">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#660000]/10 dark:bg-[#660000]/30 text-[#660000] dark:text-[#ff6b6b] text-xs font-black uppercase tracking-wider border border-[#660000]/20">
+          <div className="text-center space-y-3 pb-6 border-b border-[#222228]">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/15 text-[#FF5500] text-xs font-black uppercase tracking-wider border border-orange-500/30">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Exclusive Multi-Tool Package &bull; {bundleEntries.length} Items</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-[#0a0a0a] dark:text-white tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
               {displayTitle}
             </h1>
-            <p className="text-xs sm:text-sm text-[#111827] dark:text-zinc-200 max-w-xl mx-auto font-medium">
+            <p className="text-xs sm:text-sm text-zinc-400 max-w-xl mx-auto font-medium">
               Review your requested digital tools below. Both tools are bundled together with verified credentials, instant activation, and 100% genuine replacement warranty.
             </p>
           </div>
@@ -254,11 +254,11 @@ function BundleContent() {
             {/* Left 2 Cols: Stacked Product Cards */}
             <div className="lg:col-span-2 space-y-5">
               <div className="flex items-center justify-between pb-1">
-                <span className="text-xs font-black uppercase tracking-wider text-[#0a0a0a] dark:text-white flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-[#660000] dark:text-[#ff6b6b]" />
+                <span className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-[#FF5500]" />
                   <span>Package Products ({bundleEntries.length})</span>
                 </span>
-                <span className="text-xs text-[#111827] dark:text-zinc-300 font-bold">
+                <span className="text-xs text-zinc-400 font-bold">
                   All included in 1 single order
                 </span>
               </div>
@@ -271,70 +271,70 @@ function BundleContent() {
                 return (
                   <div
                     key={prod.id}
-                    className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#0c0c12] border-2 border-[#d1c7c7] dark:border-white/10 shadow-lg hover:shadow-xl transition-all space-y-4"
+                    className="p-5 sm:p-6 rounded-3xl bg-[#0C0C0E] border border-[#222228] shadow-xl hover:border-zinc-700 transition-all space-y-4"
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                       {/* Product Thumbnail & Title */}
                       <div className="flex items-center gap-3.5">
-                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-black/5 dark:bg-white/5 border border-[#d1c7c7] dark:border-white/10 shrink-0">
+                        <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-black/40 border border-[#222228] shrink-0">
                           <img
                             src={prod.images?.[0] || '/images/default-tool.png'}
                             alt={prod.title}
                             className="w-full h-full object-cover"
                           />
                           {prod.badge && (
-                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-[#660000] text-white text-[9px] font-black uppercase shadow-sm">
+                            <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-[#FF5500] text-white text-[9px] font-black uppercase shadow-sm">
                               {prod.badge}
                             </span>
                           )}
                         </div>
 
                         <div>
-                          <span className="text-[10px] uppercase font-black tracking-wider text-[#660000] dark:text-[#ff6b6b] block">
+                          <span className="text-[10px] uppercase font-black tracking-wider text-[#FF5500] block">
                             {prod.category} &bull; Item #{idx + 1}
                           </span>
-                          <h3 className="text-base sm:text-lg font-black text-[#0a0a0a] dark:text-white leading-snug">
+                          <h3 className="text-base sm:text-lg font-black text-white leading-snug">
                             {prod.title}
                           </h3>
-                          <p className="text-xs text-[#111827] dark:text-zinc-300 font-medium line-clamp-1 mt-0.5">
+                          <p className="text-xs text-zinc-400 font-medium line-clamp-1 mt-0.5">
                             {prod.shortDescription || prod.fullDescription?.slice(0, 75)}
                           </p>
                         </div>
                       </div>
 
                       {/* Pricing & Quantity Controls */}
-                      <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#f0ebeb] dark:border-white/10 gap-2 shrink-0">
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-[#222228] gap-2 shrink-0">
                         <div className="text-left sm:text-right">
-                          <span className="text-base sm:text-xl font-black text-[#660000] dark:text-[#ff6b6b] block">
+                          <span className="text-base sm:text-xl font-black text-[#FF5500] block">
                             Rs {subtotal.toLocaleString()}
                           </span>
                           {qty > 1 && (
-                            <span className="text-[11px] text-[#111827] dark:text-zinc-300 font-semibold block">
+                            <span className="text-[11px] text-zinc-400 font-semibold block">
                               Rs {prod.pricePKR.toLocaleString()} each
                             </span>
                           )}
                         </div>
 
                         {/* Quantity Stepper */}
-                        <div className="flex items-center gap-1.5 bg-[#faf8f8] dark:bg-[#161622] p-1.5 rounded-xl border border-[#d1c7c7] dark:border-white/10">
-                          <span className="text-[10px] text-[#111827] dark:text-zinc-300 font-bold uppercase px-1">
+                        <div className="flex items-center gap-1.5 bg-[#141418] p-1.5 rounded-xl border border-[#222228]">
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase px-1">
                             Qty:
                           </span>
                           <button
                             type="button"
                             onClick={() => updateQuantity(prod.id, -1)}
-                            className="w-6 h-6 rounded-lg bg-white dark:bg-[#20202c] hover:bg-[#eae4e4] dark:hover:bg-[#2e2e42] text-[#0a0a0a] dark:text-white flex items-center justify-center font-bold text-xs shadow-sm transition cursor-pointer active:scale-95"
+                            className="w-6 h-6 rounded-lg bg-[#1E1E24] hover:bg-[#2A2A32] text-white flex items-center justify-center font-bold text-xs shadow-sm transition cursor-pointer active:scale-95"
                             title="Decrease quantity"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="text-xs font-mono font-black text-[#0a0a0a] dark:text-white px-2 min-w-[20px] text-center">
+                          <span className="text-xs font-mono font-black text-white px-2 min-w-[20px] text-center">
                             {qty}
                           </span>
                           <button
                             type="button"
                             onClick={() => updateQuantity(prod.id, 1)}
-                            className="w-6 h-6 rounded-lg bg-white dark:bg-[#20202c] hover:bg-[#eae4e4] dark:hover:bg-[#2e2e42] text-[#0a0a0a] dark:text-white flex items-center justify-center font-bold text-xs shadow-sm transition cursor-pointer active:scale-95"
+                            className="w-6 h-6 rounded-lg bg-[#1E1E24] hover:bg-[#2A2A32] text-white flex items-center justify-center font-bold text-xs shadow-sm transition cursor-pointer active:scale-95"
                             title="Increase quantity"
                           >
                             <Plus className="w-3 h-3" />
@@ -345,15 +345,15 @@ function BundleContent() {
 
                     {/* Key Features Bullet Points */}
                     {prod.keyFeatures && prod.keyFeatures.length > 0 && (
-                      <div className="p-3.5 rounded-2xl bg-[#faf8f8] dark:bg-[#12121a] border border-[#e8e1e1] dark:border-white/10 space-y-1.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#111827] dark:text-zinc-300 block">
+                      <div className="p-3.5 rounded-2xl bg-[#141418] border border-[#222228] space-y-1.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 block">
                           Included Features &amp; Specifications:
                         </span>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                           {prod.keyFeatures.map((feat, fIdx) => (
                             <div key={fIdx} className="flex items-start gap-1.5 text-xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                              <span className="text-[#111827] dark:text-zinc-200 font-medium">{feat}</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                              <span className="text-zinc-200 font-medium">{feat}</span>
                             </div>
                           ))}
                         </div>
@@ -361,12 +361,12 @@ function BundleContent() {
                     )}
 
                     {/* Warranty & Delivery Footer */}
-                    <div className="flex flex-wrap items-center justify-between text-[11px] text-[#111827] dark:text-zinc-300 font-semibold gap-2 pt-1 border-t border-[#f5efef] dark:border-white/10">
-                      <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-zinc-400 font-semibold gap-2 pt-1 border-t border-[#222228]">
+                      <span className="flex items-center gap-1 text-emerald-400">
                         <ShieldCheck className="w-3.5 h-3.5" />
                         <span>100% Genuine Replacement Warranty</span>
                       </span>
-                      <span className="flex items-center gap-1 text-blue-700 dark:text-blue-400">
+                      <span className="flex items-center gap-1 text-blue-400">
                         <Clock className="w-3.5 h-3.5" />
                         <span>Instant Delivery via WhatsApp / Email</span>
                       </span>
@@ -378,12 +378,12 @@ function BundleContent() {
 
             {/* Right Col: Sticky Summary & Checkout Card */}
             <div className="space-y-4">
-              <div className="sticky top-24 p-6 rounded-3xl bg-white dark:bg-[#0c0c12] border-2 border-[#d1c7c7] dark:border-white/10 shadow-2xl space-y-5">
-                <div className="border-b border-[#f0ebeb] dark:border-white/10 pb-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#660000] dark:text-[#ff6b6b] block">
+              <div className="sticky top-24 p-6 rounded-3xl bg-[#0C0C0E] border border-[#222228] shadow-2xl space-y-5">
+                <div className="border-b border-[#222228] pb-4">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF5500] block">
                     Order Summary
                   </span>
-                  <h2 className="text-xl font-black text-[#0a0a0a] dark:text-white">
+                  <h2 className="text-xl font-black text-white">
                     Package Total
                   </h2>
                 </div>
@@ -392,32 +392,32 @@ function BundleContent() {
                 <div className="space-y-2 text-xs">
                   {bundleEntries.map((entry) => (
                     <div key={entry.product.id} className="flex items-center justify-between">
-                      <span className="text-[#111827] dark:text-zinc-200 font-bold truncate max-w-[170px]">
-                        {entry.product.title} <span className="text-[#6b7280] font-semibold">x{entry.quantity}</span>
+                      <span className="text-zinc-200 font-bold truncate max-w-[170px]">
+                        {entry.product.title} <span className="text-zinc-500 font-semibold">x{entry.quantity}</span>
                       </span>
-                      <span className="font-extrabold text-[#0a0a0a] dark:text-white">
+                      <span className="font-extrabold text-white">
                         Rs {(entry.product.pricePKR * entry.quantity).toLocaleString()}
                       </span>
                     </div>
                   ))}
 
                   {savingsPKR > 0 && (
-                    <div className="flex items-center justify-between pt-2 border-t border-[#f0ebeb] dark:border-white/10 text-emerald-700 dark:text-emerald-400 font-bold">
+                    <div className="flex items-center justify-between pt-2 border-t border-[#222228] text-emerald-400 font-bold">
                       <span>Bundle Savings:</span>
                       <span>-Rs {savingsPKR.toLocaleString()}</span>
                     </div>
                   )}
 
-                  <div className="pt-3 border-t border-[#d1c7c7] dark:border-white/10 flex items-center justify-between">
+                  <div className="pt-3 border-t border-[#222228] flex items-center justify-between">
                     <div>
-                      <span className="text-xs font-black uppercase text-[#0a0a0a] dark:text-white block">
+                      <span className="text-xs font-black uppercase text-white block">
                         Grand Total:
                       </span>
-                      <span className="text-[10px] text-[#111827] dark:text-zinc-400 font-semibold">
+                      <span className="text-[10px] text-zinc-400 font-semibold">
                         (All {bundleEntries.reduce((s, i) => s + i.quantity, 0)} items included)
                       </span>
                     </div>
-                    <span className="text-2xl font-black text-[#660000] dark:text-[#ff6b6b]">
+                    <span className="text-2xl font-black text-[#FF5500]">
                       Rs {totalPKR.toLocaleString()}
                     </span>
                   </div>
@@ -429,7 +429,7 @@ function BundleContent() {
                   <button
                     type="button"
                     onClick={handleProceedToCheckout}
-                    className="w-full py-4 px-4 rounded-full bg-[#660000] hover:bg-[#800000] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-[#660000]/25 transition active:scale-98 cursor-pointer"
+                    className="w-full py-4 px-4 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:from-[#E64A00] hover:to-[#CC4200] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-orange-950/40 transition active:scale-98 cursor-pointer"
                   >
                     <Zap className="w-4 h-4 fill-current text-amber-300" />
                     <span>Buy Both / Proceed to Checkout</span>
@@ -440,7 +440,7 @@ function BundleContent() {
                     href={whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3.5 px-4 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-98 cursor-pointer"
+                    className="w-full py-3.5 px-4 rounded-full bg-[#10B981] hover:bg-[#059669] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition active:scale-98 cursor-pointer"
                   >
                     <WhatsAppIcon className="w-4 h-4" />
                     <span>Order Package on WhatsApp</span>
@@ -450,17 +450,17 @@ function BundleContent() {
                   <button
                     type="button"
                     onClick={handleAddAllToCart}
-                    className="w-full py-3 px-4 rounded-full bg-[#faf8f8] dark:bg-[#161622] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#111827] dark:text-zinc-200 text-xs font-bold border border-[#d1c7c7] dark:border-white/10 transition flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-full bg-[#141418] hover:bg-[#1E1E24] text-zinc-200 text-xs font-bold border border-[#222228] transition flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <ShoppingBag className="w-3.5 h-3.5 text-[#660000] dark:text-[#ff6b6b]" />
+                    <ShoppingBag className="w-3.5 h-3.5 text-[#FF5500]" />
                     <span>{addedToCartToast ? 'Added to Cart!' : 'Add All to Shopping Cart'}</span>
                   </button>
                 </div>
 
                 {/* Trust Badges */}
-                <div className="pt-2 border-t border-[#f0ebeb] dark:border-white/10 space-y-1.5 text-[10px] text-[#111827] dark:text-zinc-300 font-semibold text-center">
+                <div className="pt-2 border-t border-[#222228] space-y-1.5 text-[10px] text-zinc-400 font-semibold text-center">
                   <div className="flex items-center justify-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                     <span>EasyPaisa &bull; JazzCash &bull; Bank Transfer &bull; Binance</span>
                   </div>
                   <p className="text-zinc-500 text-[9px]">
@@ -478,12 +478,12 @@ function BundleContent() {
 
 export default function BundlePage() {
   return (
-    <main className="min-h-screen flex flex-col bg-transparent text-[#0a0a0a] dark:text-white transition-colors relative z-10">
+    <main className="min-h-screen flex flex-col bg-[#070709] text-white transition-colors relative z-10">
       <Navbar />
       <Suspense
         fallback={
           <div className="text-center py-24">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#660000]" />
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#FF5500]" />
           </div>
         }
       >
