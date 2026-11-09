@@ -46,8 +46,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setChecking(false);
   }, [pathname, router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem('yt_admin_token');
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     router.push('/admin/login');
   };
 

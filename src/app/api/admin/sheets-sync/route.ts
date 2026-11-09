@@ -3,11 +3,16 @@ import { db } from '@/lib/db';
 import {
   testGoogleSheetsConnection,
   syncAllOrdersToGoogleSheet,
-  syncOrderToGoogleSheet,
   GOOGLE_APPS_SCRIPT_TEMPLATE,
 } from '@/lib/googleSheetsService';
+import { verifyAdminRequest } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const isAdmin = await verifyAdminRequest(req);
+  if (!isAdmin) {
+    return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+  }
+
   return NextResponse.json({
     success: true,
     scriptTemplate: GOOGLE_APPS_SCRIPT_TEMPLATE,
@@ -16,8 +21,13 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const isAdmin = await verifyAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
-    const { action, webhookUrl, orderId } = body;
+    const { action, webhookUrl } = body;
 
     if (action === 'test') {
       const targetUrl = webhookUrl?.trim();
@@ -48,38 +58,25 @@ export async function POST(req: NextRequest) {
 
       const syncResult = await syncAllOrdersToGoogleSheet(sortedOrders, webhookUrl);
       if (syncResult.success) {
-        // Record last synced timestamp in settings
-        try {
-          const settings = await db.getSettings();
-          await db.updateSettings({
-            googleSheetsSync: {
-              ...settings?.googleSheetsSync,
-              lastSyncedAt: new Date().toISOString(),
-            },
-          });
-        } catch {
-          // ignore
-        }
+        await db.updateSettings({
+          googleSheetsSync: {
+            webhookUrl: webhookUrl || (await db.getSettings()).googleSheetsSync?.webhookUrl,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
       }
-
       return NextResponse.json(syncResult);
     }
 
-    if (action === 'sync_single') {
-      if (!orderId) {
-        return NextResponse.json({ success: false, error: 'Missing orderId' }, { status: 400 });
-      }
-      const order = await db.getOrderById(orderId);
-      if (!order) {
-        return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
-      }
-      const syncResult = await syncOrderToGoogleSheet(order, webhookUrl);
-      return NextResponse.json(syncResult);
-    }
-
-    return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: `Invalid action: ${action}` },
+      { status: 400 }
+    );
+  } catch (err) {
+    console.error('Sheets sync error:', err);
+    return NextResponse.json(
+      { success: false, error: (err as Error).message },
+      { status: 500 }
+    );
   }
 }

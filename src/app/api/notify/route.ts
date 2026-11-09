@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmailNotification, sendTestEmail, EmailNotificationPayload } from '@/lib/emailService';
+import { verifyAdminRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,6 +8,11 @@ export async function POST(req: NextRequest) {
 
     // Check if it's a test email trigger from admin dashboard
     if (body.action === 'test') {
+      const isAdmin = await verifyAdminRequest(req);
+      if (!isAdmin) {
+        return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+      }
+
       const { recipientEmail, service, credentials } = body;
       if (!recipientEmail) {
         return NextResponse.json({ success: false, error: 'Recipient email is required.' }, { status: 400 });

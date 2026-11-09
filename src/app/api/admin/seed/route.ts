@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { verifyAdminRequest } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
+    const isAdmin = await verifyAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+    }
+
     const url = new URL(req.url);
-    const force = url.searchParams.get('force') !== 'false'; // default force=true for explicit admin requests
+    const force = url.searchParams.get('force') !== 'false';
     const updated = await db.seedInitialData(force);
     return NextResponse.json({
       success: true,
@@ -21,8 +27,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const isAdmin = await verifyAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+    }
+
     const updated = await db.seedInitialData(false);
     return NextResponse.json({
       success: true,

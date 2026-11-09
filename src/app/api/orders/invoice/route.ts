@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { OrderItem } from '@/lib/types';
 import { syncOrderToGoogleSheet } from '@/lib/googleSheetsService';
+import { verifyAdminRequest } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const isAdmin = await verifyAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin access required to create custom invoices.' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const {
       customerName,

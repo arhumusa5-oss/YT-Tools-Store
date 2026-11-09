@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { verifyAdminRequest } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const isAdmin = await verifyAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+    }
+
     const users = await db.getUsers();
     // Sanitize users so password hashes are never exposed
     const sanitized = users.map((u) => ({
@@ -21,6 +27,11 @@ export async function GET() {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const isAdmin = await verifyAdminRequest(req);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {

@@ -2,15 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendCustomerOrderStatusNotification, sendEmailNotification } from '@/lib/emailService';
 import { syncOrderToGoogleSheet, deleteOrderFromGoogleSheet } from '@/lib/googleSheetsService';
-
-function isAuthorizedAdmin(request: Request, body?: any): boolean {
-  if (body?.isAdminRequest === true) return true;
-  const authHeader =
-    request.headers.get('x-admin-token') ||
-    request.headers.get('authorization') ||
-    '';
-  return authHeader.includes('yt-admin-token-');
-}
+import { verifyAdminRequest } from '@/lib/auth';
 
 function sanitizeOrderForPublic(order: any) {
   return {
@@ -40,7 +32,8 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
 
-    if (isAuthorizedAdmin(request)) {
+    const isAdmin = await verifyAdminRequest(request);
+    if (isAdmin) {
       return NextResponse.json({ success: true, order });
     }
 
@@ -63,19 +56,40 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
 
+    const isAdmin = await verifyAdminRequest(request);
+
     // Guard: Prevent customer payment submissions on cancelled orders
     if (
       existingOrder.status === 'cancelled' &&
-      (body.paymentStatus === 'paid' || body.transactionId || body.paymentProofUrl || body.advanceTID || body.balanceTID) &&
-      body.status !== 'cancelled' &&
-      body.isAdminRequest !== true &&
-      body.adminNotes === undefined &&
-      body.costPKR === undefined
+      !isAdmin &&
+      (body.paymentStatus === 'paid' || body.transactionId || body.paymentProofUrl || body.advanceTID || body.balanceTID)
     ) {
       return NextResponse.json(
         { success: false, error: 'This order has been cancelled by the store and cannot accept payment submissions.' },
         { status: 400 }
       );
+    }
+
+    // Security Guard: Non-admin users cannot tamper with prices, items, vendor info, or order status
+    if (!isAdmin) {
+      if (
+        body.costPKR !== undefined ||
+        body.profitPKR !== undefined ||
+        body.vendorName !== undefined ||
+        body.vendorPaymentStatus !== undefined ||
+        body.vendorNotes !== undefined ||
+        body.adminNotes !== undefined ||
+        body.newOrderId !== undefined ||
+        body.items !== undefined ||
+        body.totalPKR !== undefined ||
+        body.totalUSD !== undefined ||
+        (body.status !== undefined && body.status !== existingOrder.status)
+      ) {
+        return NextResponse.json(
+          { success: false, error: 'Unauthorized: Customers cannot modify store pricing, order items, or admin status.' },
+          { status: 403 }
+        );
+      }
     }
 
     const {
@@ -294,7 +308,7 @@ export async function PUT(
       console.error('[GoogleSheetSync] Order update sync error:', err)
     );
 
-    const returnedOrder = isAuthorizedAdmin(request, body)
+    const returnedOrder = isAdmin
       ? updated
       : sanitizeOrderForPublic(updated);
 
@@ -309,6 +323,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const isAdmin = await verifyAdminRequest(request);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin access required to delete order.' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const deleted = await db.deleteOrder(id);
     if (!deleted) {

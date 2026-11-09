@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { verifyAdminRequest } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,8 +35,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Default status: 'pending' if submitted by user, or 'approved' if explicitly specified by admin
-    const finalStatus = status || 'pending';
+    const isAdmin = await verifyAdminRequest(req);
+    // Public user reviews are strictly 'pending' until store admin reviews and approves them
+    const finalStatus = isAdmin && status ? status : 'pending';
 
     const newReview = await db.createReview({
       customerName: customerName.trim(),

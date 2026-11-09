@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { generateAdminToken } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
@@ -12,11 +13,24 @@ export async function POST(request: Request) {
 
     const validPin = settings.adminPin || '12388127';
     if (pin === validPin) {
-      return NextResponse.json({
+      const token = generateAdminToken(validPin);
+
+      const response = NextResponse.json({
         success: true,
-        token: 'yt-admin-token-' + Buffer.from(Date.now().toString()).toString('base64'),
+        token,
         message: 'Admin authenticated successfully',
       });
+
+      // Secure HTTP-Only Cookie so all admin API calls automatically authenticate
+      response.cookies.set('yt_admin_session', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+
+      return response;
     }
 
     return NextResponse.json({ success: false, error: 'Incorrect Admin PIN / Password' }, { status: 401 });

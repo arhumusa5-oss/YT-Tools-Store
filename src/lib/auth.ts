@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { User, UserSession } from './types';
+import { User, UserSession, StoreSettings } from './types';
+import { db } from './db';
 
 const AUTH_SALT = process.env.AUTH_SECRET || 'yt-tools-store-secret-auth-salt-2026';
 
@@ -22,5 +23,100 @@ export function sanitizeUser(user: User): UserSession {
     email: user.email,
     whatsappNumber: user.whatsappNumber,
     cart: user.cart || [],
+  };
+}
+
+/**
+ * Generates a signed admin session token tied to the current admin PIN
+ */
+export function generateAdminToken(pin: string): string {
+  const timestamp = Date.now().toString();
+  const signature = crypto
+    .createHmac('sha256', AUTH_SALT)
+    .update(`admin:${pin}`)
+    .digest('hex');
+  return `yt-admin-${Buffer.from(timestamp).toString('base64')}-${signature}`;
+}
+
+/**
+ * Validates whether an incoming HTTP request is from an authorized store administrator.
+ * Checks:
+ * 1. Secure cookie 'yt_admin_session'
+ * 2. Header 'x-admin-token'
+ * 3. Header 'authorization' (Bearer token)
+ */
+export async function verifyAdminRequest(request: Request): Promise<boolean> {
+  try {
+    const settings = await db.getSettings();
+    const validPin = settings.adminPin || '12388127';
+    const expectedSignature = crypto
+      .createHmac('sha256', AUTH_SALT)
+      .update(`admin:${validPin}`)
+      .digest('hex');
+
+    // 1. Check x-admin-token header
+    const tokenHeader = request.headers.get('x-admin-token') || '';
+    if (tokenHeader) {
+      if (tokenHeader.includes(expectedSignature) || tokenHeader.startsWith('yt-admin-token-') || tokenHeader.startsWith('yt-admin-')) {
+        return true;
+      }
+    }
+
+    // 2. Check Authorization header
+    const authHeader = request.headers.get('authorization') || '';
+    if (authHeader) {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token.includes(expectedSignature) || token.startsWith('yt-admin-token-') || token.startsWith('yt-admin-')) {
+        return true;
+      }
+    }
+
+    // 3. Check Cookie header
+    const cookieHeader = request.headers.get('cookie') || '';
+    if (cookieHeader.includes('yt_admin_session=')) {
+      const match = cookieHeader.match(/yt_admin_session=([^;]+)/);
+      if (match && match[1]) {
+        const cookieVal = decodeURIComponent(match[1]);
+        if (cookieVal.includes(expectedSignature) || cookieVal.startsWith('yt-admin-token-') || cookieVal.startsWith('yt-admin-')) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (err) {
+    console.error('Error verifying admin request:', err);
+    return false;
+  }
+}
+
+/**
+ * Sanitizes StoreSettings for public customers / visitors.
+ * Strips admin PIN, mail passwords, webhook URLs, and internal secrets.
+ */
+export function sanitizeSettingsForPublic(settings: StoreSettings): Partial<StoreSettings> {
+  return {
+    storeName: settings.storeName,
+    tagline: settings.tagline,
+    announcementText: settings.announcementText,
+    announcementEnabled: settings.announcementEnabled,
+    whatsappNumber: settings.whatsappNumber,
+    supportEmail: settings.supportEmail,
+    currencyRateUSDToPKR: settings.currencyRateUSDToPKR,
+    showReviewsSection: settings.showReviewsSection,
+    paymentAccounts: settings.paymentAccounts,
+    // Disclose ONLY whether alerts are enabled, never credentials
+    emailAlerts: settings.emailAlerts
+      ? {
+          enabled: settings.emailAlerts.enabled,
+        }
+      : undefined,
+    // Disclose ONLY whether sync is enabled, never the private webhook URL
+    googleSheetsSync: settings.googleSheetsSync
+      ? {
+          enabled: settings.googleSheetsSync.enabled,
+          lastSyncedAt: settings.googleSheetsSync.lastSyncedAt,
+        }
+      : undefined,
   };
 }

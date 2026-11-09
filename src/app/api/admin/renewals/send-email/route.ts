@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendRenewalReminderEmail } from '@/lib/emailService';
+import { verifyAdminRequest } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
+    const isAdmin = await verifyAdminRequest(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin access required.' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       orderId,

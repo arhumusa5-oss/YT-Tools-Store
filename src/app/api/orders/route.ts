@@ -2,9 +2,18 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendEmailNotification } from '@/lib/emailService';
 import { syncOrderToGoogleSheet } from '@/lib/googleSheetsService';
+import { verifyAdminRequest } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const isAdmin = await verifyAdminRequest(request);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin access required to view store orders.' },
+        { status: 401 }
+      );
+    }
+
     const orders = await db.getOrders();
     return NextResponse.json({ success: true, orders });
   } catch (error) {
@@ -58,33 +67,27 @@ export async function POST(request: Request) {
       subscriptionExpiryDate: body.subscriptionExpiryDate ? String(body.subscriptionExpiryDate).trim() : undefined,
       renewalStatus: body.renewalStatus || undefined,
       renewalNotes: body.renewalNotes ? String(body.renewalNotes).trim() : undefined,
-      isSplitPayment: body.isSplitPayment ? true : false,
+      isSplitPayment: Boolean(body.isSplitPayment),
       advanceAmountPKR: body.advanceAmountPKR !== undefined ? Number(body.advanceAmountPKR) : undefined,
       balanceAmountPKR: body.balanceAmountPKR !== undefined ? Number(body.balanceAmountPKR) : undefined,
       advancePaidPKR: body.advancePaidPKR !== undefined ? Number(body.advancePaidPKR) : undefined,
       balancePaidPKR: body.balancePaidPKR !== undefined ? Number(body.balancePaidPKR) : undefined,
-      advanceTID: body.advanceTID ? String(body.advanceTID).trim() : undefined,
-      balanceTID: body.balanceTID ? String(body.balanceTID).trim() : undefined,
-      advanceProofUrl: body.advanceProofUrl ? String(body.advanceProofUrl).trim() : undefined,
-      balanceProofUrl: body.balanceProofUrl ? String(body.balanceProofUrl).trim() : undefined,
-      advancePaymentMethod: body.advancePaymentMethod ? String(body.advancePaymentMethod).trim() : undefined,
-      balancePaymentMethod: body.balancePaymentMethod ? String(body.balancePaymentMethod).trim() : undefined,
+      advanceTID: body.advanceTID || undefined,
+      advanceProofUrl: body.advanceProofUrl || undefined,
+      advancePaymentMethod: body.advancePaymentMethod || undefined,
+      balanceTID: body.balanceTID || undefined,
+      balanceProofUrl: body.balanceProofUrl || undefined,
+      balancePaymentMethod: body.balancePaymentMethod || undefined,
       splitPaymentStatus: body.splitPaymentStatus || undefined,
     });
 
     // Send instant email notification to store owner in background ONLY if not a manual admin entry
-    if (!body.isManualOrder) {
+    if (!body.isAdminManualEntry) {
       try {
         sendEmailNotification({
           type: 'order',
           orderId: newOrder.id,
-          items: newOrder.items.map((i) => ({
-            title: i.title,
-            quantity: i.quantity,
-            pricePKR: i.pricePKR,
-            priceUSD: i.priceUSD,
-            image: i.image,
-          })),
+          items: newOrder.items,
           totalPKR: newOrder.totalPKR,
           customerName: newOrder.customerName,
           customerWhatsApp: newOrder.customerWhatsApp,
@@ -110,8 +113,16 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
+    const isAdmin = await verifyAdminRequest(request);
+    if (!isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: Admin access required to delete orders.' },
+        { status: 401 }
+      );
+    }
+
     const deletedCount = await db.deleteAllOrders();
     return NextResponse.json({
       success: true,
