@@ -41,6 +41,8 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
   const [originalPriceUSD, setOriginalPriceUSD] = useState(
     initialProduct?.originalPriceUSD?.toString() || '11.0'
   );
+  const [costPKR, setCostPKR] = useState(initialProduct?.costPKR !== undefined ? initialProduct.costPKR.toString() : '');
+  const [vendorName, setVendorName] = useState(initialProduct?.vendorName || '');
 
   const [isSoldOut, setIsSoldOut] = useState(initialProduct?.isSoldOut || false);
   const [allowQuantity, setAllowQuantity] = useState(initialProduct?.allowQuantity || false);
@@ -187,6 +189,8 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         originalPricePKR: Number(originalPricePKR) || Number(pricePKR) * 1.5,
         priceUSD: Number(priceUSD) || Number(pricePKR) / 280,
         originalPriceUSD: Number(originalPriceUSD) || (Number(pricePKR) / 280) * 1.5,
+        costPKR: costPKR !== '' && !isNaN(Number(costPKR)) ? Math.max(0, Number(costPKR)) : undefined,
+        vendorName: vendorName.trim() || undefined,
         isSoldOut,
         allowQuantity,
         badge,
@@ -386,6 +390,58 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
               placeholder="e.g. 3000"
               className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
             />
+          </div>
+        </div>
+
+        {/* Supplier Cost & Preferred Vendor */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-zinc-300">
+                Supplier Cost (PKR) <span className="text-zinc-500">(Your Purchase Rate)</span>
+              </label>
+              {Number(pricePKR) > 0 && costPKR !== '' && !isNaN(Number(costPKR)) && (
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    Number(pricePKR) >= Number(costPKR)
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                  }`}
+                >
+                  {Number(pricePKR) >= Number(costPKR)
+                    ? `Profit: Rs ${(Number(pricePKR) - Number(costPKR)).toLocaleString()} (${Math.round(
+                        ((Number(pricePKR) - Number(costPKR)) / Number(pricePKR)) * 100
+                      )}%)`
+                    : `Loss: -Rs ${(Number(costPKR) - Number(pricePKR)).toLocaleString()}`}
+                </span>
+              )}
+            </div>
+            <input
+              type="number"
+              value={costPKR}
+              onChange={(e) => setCostPKR(e.target.value)}
+              placeholder="e.g. 1000"
+              className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
+            />
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Orders automatically log this cost and calculate net profit without manual entry.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Preferred Vendor / Supplier <span className="text-zinc-500">(Optional)</span>
+            </label>
+            <input
+              type="text"
+              value={vendorName}
+              onChange={(e) => setVendorName(e.target.value)}
+              placeholder="e.g. Hero SMS, Umair, Khan Digital"
+              className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
+            />
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Auto-fills the vendor column in Google Sheets & Admin Finances.
+            </p>
           </div>
         </div>
 

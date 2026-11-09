@@ -20,6 +20,7 @@ import {
   Wallet,
   CalendarClock,
   Activity,
+  Zap,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -91,9 +92,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Live Traffic & Analytics', href: '/admin/analytics', icon: Activity },
     { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
     { label: 'Products', href: '/admin/products', icon: Package },
+    { label: '⚡ Quick Price Editor', href: '/admin/products/prices', icon: Zap },
     { label: 'Bundle Links', href: '/admin/bundles', icon: Layers },
     { label: 'Add Product', href: '/admin/products/new', icon: PlusCircle },
-    { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
     { label: 'Renewals & Expiry', href: '/admin/renewals', icon: CalendarClock },
     { label: 'Finances & Profit', href: '/admin/finances', icon: Wallet },
     { label: 'Customers', href: '/admin/users', icon: Users },

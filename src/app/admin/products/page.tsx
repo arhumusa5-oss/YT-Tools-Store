@@ -18,6 +18,7 @@ import {
   Check,
   X,
   Save,
+  Zap,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
@@ -189,7 +190,16 @@ export default function AdminProductsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          <Link
+            href="/admin/products/prices"
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold shadow-md shadow-orange-500/25 hover:brightness-110 transition"
+            title="Open 10-second Quick Bulk Price & Supplier Cost Editor"
+          >
+            <Zap className="w-4 h-4 fill-white" />
+            <span>⚡ Quick Bulk Price Editor</span>
+          </Link>
+
           <button
             type="button"
             onClick={() => setBundleModalOpen(true)}
@@ -369,6 +379,11 @@ export default function AdminProductsPage() {
                                 Rs {prod.originalPricePKR.toLocaleString()}
                               </div>
                             )}
+                            {prod.costPKR ? (
+                              <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">
+                                Cost: Rs {prod.costPKR.toLocaleString()} (+Rs {(prod.pricePKR - prod.costPKR).toLocaleString()})
+                              </div>
+                            ) : null}
                           </div>
                           <button
                             type="button"

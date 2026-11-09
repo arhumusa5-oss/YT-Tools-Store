@@ -352,6 +352,31 @@ export const db = {
     return data.products[index];
   },
 
+  async bulkUpdateProducts(
+    updatesList: Array<{ id: string } & Partial<Product>>
+  ): Promise<Product[]> {
+    const data = await getData();
+    const updatedProducts: Product[] = [];
+    const now = new Date().toISOString();
+
+    for (const item of updatesList) {
+      const index = data.products.findIndex((p) => p.id === item.id);
+      if (index !== -1) {
+        data.products[index] = {
+          ...data.products[index],
+          ...item,
+          updatedAt: now,
+        };
+        updatedProducts.push(data.products[index]);
+      }
+    }
+
+    if (updatedProducts.length > 0) {
+      await saveData(data);
+    }
+    return updatedProducts;
+  },
+
   async deleteProduct(id: string): Promise<boolean> {
     const data = await getData();
     const prevLen = data.products.length;

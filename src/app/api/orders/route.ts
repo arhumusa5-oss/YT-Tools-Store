@@ -33,7 +33,38 @@ export async function POST(request: Request) {
     }
 
     const totalPKR = Number(body.totalPKR) || 0;
-    const costPKR = body.costPKR !== undefined ? Math.max(0, Number(body.costPKR) || 0) : undefined;
+    let costPKR = body.costPKR !== undefined && body.costPKR !== null && body.costPKR !== '' ? Math.max(0, Number(body.costPKR) || 0) : undefined;
+    let vendorName = body.vendorName ? String(body.vendorName).trim() : undefined;
+
+    // If costPKR is not provided, auto-calculate from product catalog
+    if (costPKR === undefined && Array.isArray(body.items) && body.items.length > 0) {
+      try {
+        const allProducts = await db.getProducts();
+        let calculatedCost = 0;
+        let foundAnyCost = false;
+        const vendors: string[] = [];
+
+        for (const item of body.items) {
+          const prod = allProducts.find((p) => p.id === item.productId || p.id === item.id);
+          if (prod && typeof prod.costPKR === 'number') {
+            calculatedCost += prod.costPKR * (Number(item.quantity) || 1);
+            foundAnyCost = true;
+          }
+          if (prod?.vendorName && !vendors.includes(prod.vendorName)) {
+            vendors.push(prod.vendorName);
+          }
+        }
+        if (foundAnyCost) {
+          costPKR = calculatedCost;
+        }
+        if (!vendorName && vendors.length > 0) {
+          vendorName = vendors.join(', ');
+        }
+      } catch (err) {
+        console.error('Error auto-resolving costPKR from catalog:', err);
+      }
+    }
+
     const profitPKR =
       body.profitPKR !== undefined
         ? Number(body.profitPKR)
@@ -60,7 +91,7 @@ export async function POST(request: Request) {
       adminNotes: body.adminNotes || '',
       costPKR,
       profitPKR,
-      vendorName: body.vendorName ? String(body.vendorName).trim() : undefined,
+      vendorName: vendorName || (body.vendorName ? String(body.vendorName).trim() : undefined),
       vendorPaymentStatus: body.vendorPaymentStatus || undefined,
       vendorNotes: body.vendorNotes ? String(body.vendorNotes).trim() : undefined,
       subscriptionDurationDays: body.subscriptionDurationDays ? Number(body.subscriptionDurationDays) : undefined,

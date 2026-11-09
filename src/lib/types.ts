@@ -10,6 +10,8 @@ export interface Product {
   originalPricePKR: number;
   priceUSD: number;
   originalPriceUSD: number;
+  costPKR?: number; // Default supplier / cost price
+  vendorName?: string; // Preferred vendor / supplier name
   isSoldOut: boolean;
   allowQuantity?: boolean;
   badge: 'HOT' | 'BEST SELLER' | 'SALE' | 'INSTANT' | 'TRENDING' | 'POPULAR' | '';
