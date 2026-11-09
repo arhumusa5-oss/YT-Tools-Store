@@ -16,9 +16,9 @@ function AnnouncementBar() {
   const phone = (settings.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
 
   return (
-    <div className="relative bg-gradient-to-r from-[#0C0C0E] via-[#161210] to-[#0C0C0E] text-white text-[11px] sm:text-xs py-2 px-3 sm:px-4 pr-10 shadow-lg border-b border-[#FF5500]/25 z-50">
+    <div className="relative bg-gradient-to-r from-[#4d0000] via-[#660000] to-[#4d0000] text-white text-[11px] sm:text-xs py-2 px-3 sm:px-4 pr-10 shadow-[0_2px_10px_rgba(102,0,0,0.25)] border-b border-[#660000]/40 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 text-center">
-        <span className="flex h-1.5 w-1.5 rounded-full bg-[#FF5500] animate-ping hidden sm:inline-block shrink-0" />
+        <span className="flex h-1.5 w-1.5 rounded-full bg-red-300 animate-ping hidden sm:inline-block shrink-0" />
         <span className="font-semibold tracking-wide text-white leading-tight">
           {settings.announcementText}
         </span>

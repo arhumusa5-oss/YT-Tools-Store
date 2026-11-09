@@ -237,16 +237,16 @@ export default function HomePage() {
           {/* Header & Categories */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
             <div>
-              <span className="inline-block text-[11px] font-extrabold uppercase tracking-widest text-[#FF5500] mb-2">
+              <span className="inline-block text-[11px] font-extrabold uppercase tracking-widest text-[#660000] dark:text-[#ff6b6b] mb-2">
                 DIGITAL CATALOG
               </span>
-              <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+              <h2 className="text-2xl sm:text-4xl font-extrabold text-[#0a0a0a] dark:text-white tracking-tight">
                 {activeCategory === 'Services' ? 'Available Services & ' : 'Available Tools & '}
-                <span className="font-serif italic font-bold bg-gradient-to-r from-[#FF5500] via-[#FF7733] to-[#FFAA66] bg-clip-text text-transparent">
+                <span className="font-serif italic font-bold bg-gradient-to-r from-[#660000] to-[#a00000] dark:from-[#ff4d4d] dark:to-[#ff8080] bg-clip-text text-transparent">
                   {activeCategory === 'Services' ? 'Solutions' : 'Subscriptions'}
                 </span>
               </h2>
-              <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 font-normal max-w-xl">
+              <p className="mt-1.5 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-400 font-normal max-w-xl">
                 {activeCategory === 'Services'
                   ? 'Explore professional digital services, setups, and accounts.'
                   : 'Browse our listed tools with warranty and direct activation.'}
@@ -262,20 +262,20 @@ export default function HomePage() {
 
           {/* Active Search / Filter Status */}
           {(searchQuery || activeCategory === 'Services') && (
-            <div className="mb-8 flex items-center justify-between p-4 rounded-2xl bg-[#0C0C0E] border border-[#222228] shadow-sm text-xs">
-              <span className="text-zinc-300 font-medium">
+            <div className="mb-8 flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 shadow-sm text-xs">
+              <span className="text-[#1f2937] dark:text-zinc-300 font-medium">
                 Showing{' '}
                 {activeCategory === 'Services' ? (
-                  <span className="font-extrabold text-white">&ldquo;Services&rdquo;</span>
+                  <span className="font-extrabold text-[#0a0a0a] dark:text-white">&ldquo;Services&rdquo;</span>
                 ) : (
-                  <span className="font-extrabold text-white">&ldquo;Tools&rdquo;</span>
+                  <span className="font-extrabold text-[#0a0a0a] dark:text-white">&ldquo;Tools&rdquo;</span>
                 )}
                 {searchQuery && (
                   <>
-                    {' '}matching <span className="font-extrabold text-[#FF5500]">&ldquo;{searchQuery}&rdquo;</span>
+                    {' '}matching <span className="font-extrabold text-[#660000] dark:text-[#ff4d4d]">&ldquo;{searchQuery}&rdquo;</span>
                   </>
                 )}
-                <span className="text-zinc-500 ml-2 font-normal">({sortedProducts.length} items found)</span>
+                <span className="text-[#6b7280] dark:text-zinc-400 ml-2 font-normal">({sortedProducts.length} items found)</span>
               </span>
 
               <button
@@ -284,7 +284,7 @@ export default function HomePage() {
                   setSearchQuery('');
                   handleCategoryChange('Tools');
                 }}
-                className="text-[#FF5500] hover:text-[#FFAA66] font-bold text-xs hover:underline transition cursor-pointer"
+                className="text-[#660000] dark:text-[#ff4d4d] hover:text-[#4d0000] dark:hover:text-[#ff8080] font-bold text-xs hover:underline transition cursor-pointer"
               >
                 Reset Filter
               </button>
@@ -295,23 +295,23 @@ export default function HomePage() {
           {loading ? (
             <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center">
               <div className="relative w-16 h-16 flex items-center justify-center mb-4">
-                <div className="w-16 h-16 rounded-full border-[3.5px] border-[#222228]" />
-                <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#FF5500] border-r-[#FFAA66] animate-spin" />
-                <div className="absolute w-8 h-8 rounded-full bg-gradient-to-tr from-[#FF5500] to-[#E64A00] flex items-center justify-center shadow-md shadow-[#FF5500]/30 animate-pulse">
+                <div className="w-16 h-16 rounded-full border-[3.5px] border-[#e8e1e1] dark:border-white/15" />
+                <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#660000] border-r-[#990000] dark:border-t-[#ff4d4d] dark:border-r-[#ff8080] animate-spin" />
+                <div className="absolute w-8 h-8 rounded-full bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-md shadow-[#660000]/30 animate-pulse">
                   <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
                 </div>
               </div>
-              <h4 className="text-base font-extrabold text-white">Loading Digital Catalog...</h4>
-              <p className="text-xs text-zinc-400 mt-1 font-medium">Please wait a moment...</p>
+              <h4 className="text-base font-extrabold text-[#0a0a0a] dark:text-white">Loading Digital Catalog...</h4>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Please wait a moment...</p>
             </div>
           ) : products.length === 0 ? (
             /* Clean Empty State when Admin hasn't added products yet */
-            <div className="py-20 px-4 text-center rounded-3xl bg-[#0C0C0E] border border-[#222228] max-w-2xl mx-auto shadow-sm">
-              <div className="w-16 h-16 rounded-2xl bg-[#141418] border border-[#222228] flex items-center justify-center mx-auto mb-4 text-[#FF5500]">
+            <div className="py-20 px-4 text-center rounded-3xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 max-w-2xl mx-auto shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-[#f4efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 flex items-center justify-center mx-auto mb-4 text-[#660000] dark:text-[#ff4d4d]">
                 <PackageX className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-bold text-white">Catalog Is Being Updated</h3>
-              <p className="mt-2 text-xs sm:text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
+              <h3 className="text-lg font-bold text-[#0a0a0a] dark:text-white">Catalog Is Being Updated</h3>
+              <p className="mt-2 text-xs sm:text-sm text-[#4b5563] dark:text-zinc-400 max-w-md mx-auto leading-relaxed">
                 Products will appear here once listed from the Admin Panel. If you require any tool right now, feel free to contact us directly on WhatsApp.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -326,7 +326,7 @@ export default function HomePage() {
                 </a>
                 <button
                   onClick={fetchProducts}
-                  className="w-full sm:w-auto px-5 py-3 rounded-full bg-[#141418] hover:bg-[#1c1c24] text-zinc-200 text-xs font-semibold border border-[#222228] flex items-center justify-center gap-2 transition cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-[#1f2937] dark:text-zinc-200 text-xs font-semibold border border-[#e8e1e1] dark:border-white/10 flex items-center justify-center gap-2 transition cursor-pointer"
                 >
                   <RefreshCw className="w-4 h-4" />
                   <span>Refresh Catalog</span>
@@ -335,12 +335,12 @@ export default function HomePage() {
             </div>
           ) : sortedProducts.length === 0 ? (
             /* Empty Filter / Search State */
-            <div className="py-16 text-center rounded-3xl bg-[#0C0C0E] border border-[#222228] shadow-sm">
-              <PackageX className="w-12 h-12 text-zinc-500 mx-auto mb-3" />
-              <h3 className="text-base font-bold text-white">
+            <div className="py-16 text-center rounded-3xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 shadow-sm">
+              <PackageX className="w-12 h-12 text-[#9ca3af] dark:text-zinc-500 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-[#0a0a0a] dark:text-white">
                 {activeCategory === 'Services' ? 'No services found' : 'No tools match your search'}
               </h3>
-              <p className="mt-1 text-xs text-zinc-400 max-w-sm mx-auto">
+              <p className="mt-1 text-xs text-[#6b7280] dark:text-zinc-400 max-w-sm mx-auto">
                 Try searching for a different keyword or reset filters.
               </p>
               <button
@@ -349,7 +349,7 @@ export default function HomePage() {
                   setSearchQuery('');
                   handleCategoryChange('Tools');
                 }}
-                className="mt-4 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white text-xs font-bold transition shadow-md cursor-pointer"
+                className="mt-4 px-5 py-2.5 rounded-full bg-[#660000] hover:bg-[#4d0000] text-white text-xs font-bold transition shadow-md cursor-pointer"
               >
                 Reset Search
               </button>
@@ -364,13 +364,13 @@ export default function HomePage() {
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-[#222228]">
-                  <div className="text-xs text-zinc-400 font-medium">
-                    Showing <span className="font-bold text-white">{startIndex + 1}</span>–
-                    <span className="font-bold text-white">
+                <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-[#e8e1e1] dark:border-white/10">
+                  <div className="text-xs text-[#6b7280] dark:text-zinc-400 font-medium">
+                    Showing <span className="font-bold text-[#0a0a0a] dark:text-white">{startIndex + 1}</span>–
+                    <span className="font-bold text-[#0a0a0a] dark:text-white">
                       {Math.min(startIndex + ITEMS_PER_PAGE, sortedProducts.length)}
                     </span>{' '}
-                    of <span className="font-bold text-white">{sortedProducts.length}</span> items (A–Z)
+                    of <span className="font-bold text-[#0a0a0a] dark:text-white">{sortedProducts.length}</span> items (A–Z)
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-[#0C0C0E] border-[#222228] text-zinc-200 hover:border-[#FF5500]"
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white dark:bg-[#101018] border-[#e8e1e1] dark:border-white/10 text-[#1f2937] dark:text-zinc-200 hover:border-[#660000] dark:hover:border-[#ff4d4d]"
                     >
                       <ChevronLeft className="w-4 h-4" />
                       <span>Previous</span>
@@ -396,8 +396,8 @@ export default function HomePage() {
                             onClick={() => handlePageChange(pageNum)}
                             className={`w-9 h-9 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
                               isActive
-                                ? 'bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white shadow-md shadow-[#FF5500]/25'
-                                : 'bg-[#0C0C0E] border border-[#222228] text-zinc-300 hover:border-[#FF5500]'
+                                ? 'bg-gradient-to-r from-[#660000] to-[#800000] dark:from-[#ff4d4d] dark:to-[#cc0000] text-white shadow-md shadow-[#660000]/25'
+                                : 'bg-white dark:bg-[#101018] border border-[#e8e1e1] dark:border-white/10 text-[#4b5563] dark:text-zinc-300 hover:border-[#660000] dark:hover:border-[#ff4d4d]'
                             }`}
                           >
                             {pageNum}
@@ -411,7 +411,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-[#0C0C0E] border-[#222228] text-zinc-200 hover:border-[#FF5500]"
+                      className="px-3.5 py-2 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer bg-white dark:bg-[#101018] border-[#e8e1e1] dark:border-white/10 text-[#1f2937] dark:text-zinc-200 hover:border-[#660000] dark:hover:border-[#ff4d4d]"
                     >
                       <span>Next</span>
                       <ChevronRight className="w-4 h-4" />

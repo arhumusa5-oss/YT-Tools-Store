@@ -15,7 +15,7 @@ const CATEGORIES = [
 
 function CategoryFilter({ activeCategory, setActiveCategory }: CategoryFilterProps) {
   return (
-    <div className="inline-flex w-full sm:w-auto p-1 sm:p-1.5 rounded-full bg-[#0C0C0E] border border-[#222228] shadow-inner max-w-full justify-center">
+    <div className="inline-flex w-full sm:w-auto p-1 sm:p-1.5 rounded-full bg-[#f4efef] dark:bg-[#161622] border border-[#e8e1e1] dark:border-white/10 shadow-inner max-w-full justify-center">
       {CATEGORIES.map((cat) => {
         const Icon = cat.icon;
         const isActive = activeCategory.toLowerCase() === cat.id.toLowerCase();
@@ -24,13 +24,13 @@ function CategoryFilter({ activeCategory, setActiveCategory }: CategoryFilterPro
             key={cat.id}
             type="button"
             onClick={() => setActiveCategory(cat.id)}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-7 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-150 whitespace-nowrap cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-7 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-colors duration-150 whitespace-nowrap cursor-pointer ${
               isActive
-                ? 'bg-gradient-to-r from-[#FF5500] to-[#E64A00] text-white shadow-md shadow-[#FF5500]/25'
-                : 'text-zinc-400 hover:text-white hover:bg-[#141418]'
+                ? 'bg-[#660000] text-white shadow-md shadow-[#660000]/25'
+                : 'text-[#4b5563] dark:text-zinc-400 hover:text-[#0a0a0a] dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/10'
             }`}
           >
-            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isActive ? 'text-white' : 'text-zinc-400'}`} />
+            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isActive ? 'text-white' : 'text-[#6b7280] dark:text-zinc-400'}`} />
             <span>{cat.name}</span>
           </button>
         );
