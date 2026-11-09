@@ -1115,9 +1115,16 @@ export default function AdminSettingsPage() {
             <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold">6. PROFIT (=E-D)</span>
             <span className="px-2 py-1 rounded bg-black/40 border border-zinc-800">7. Customer name</span>
             <span className="px-2 py-1 rounded bg-black/40 border border-zinc-800">8. phone number</span>
-            <span className="px-2 py-1 rounded bg-black/40 border border-zinc-800">9. order status</span>
+            <span className="px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-white font-semibold">9. order status (Auto-Colored)</span>
             <span className="px-2 py-1 rounded bg-black/40 border border-zinc-800">10. vendor name</span>
             <span className="px-2 py-1 rounded bg-black/40 border border-zinc-800">11. vendor payment status</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+            <span className="text-zinc-400 font-medium">Auto-Status Colors:</span>
+            <span className="px-2 py-0.5 rounded font-bold bg-[#16a34a] text-white">completed</span>
+            <span className="px-2 py-0.5 rounded font-bold bg-[#1e3a8a] text-white">processing</span>
+            <span className="px-2 py-0.5 rounded font-bold bg-[#dc2626] text-white">cancelled</span>
+            <span className="px-2 py-0.5 rounded font-bold bg-[#FFDAB9] text-[#431407]">pending</span>
           </div>
         </div>
 

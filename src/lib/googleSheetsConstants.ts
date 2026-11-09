@@ -6,20 +6,21 @@ export const GOOGLE_APPS_SCRIPT_TEMPLATE = `/**
  * YT Tools Store - Real-time Google Sheet Auto-Sync & Backup Script
  * ====================================================================
  * 
- * SETUP INSTRUCTIONS (2 Minutes):
- * 1. Open your Google Sheet (or create a new empty Google Sheet).
- * 2. In the top menu, click: Extensions -> Apps Script.
- * 3. Delete any default code in Code.gs, and PASTE this entire script.
- * 4. Click the "Save" icon (or Ctrl+S / Cmd+S).
- * 5. Click "Deploy" (top right) -> "New deployment".
- * 6. Click the gear icon next to "Select type" and choose "Web app".
- * 7. Set:
- *    - Description: "YT Tools Store Webhook"
- *    - Execute as: "Me" (your email)
- *    - Who has access: "Anyone"
- * 8. Click "Deploy", approve access/permissions if prompted, and COPY the Web App URL.
- * 9. Paste that URL into your YT Tools Store Admin Settings -> Google Sheets Sync.
- * 10. Done! Every order created, updated, cancelled, or refunded will auto-sync here!
+ * STATUS COLOR RULES:
+ * - completed  -> Green background (#16a34a), White bold text
+ * - processing -> Dark Blue background (#1e3a8a), White bold text
+ * - cancel     -> Red background (#dc2626), White bold text
+ * - pending    -> Peach background (#FFDAB9), Dark contrast bold text (#431407)
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Open your Google Sheet ("YT TOOLS STORE").
+ * 2. In top menu, click: Extensions -> Apps Script.
+ * 3. Delete any previous code in Code.gs, and PASTE this entire script.
+ * 4. Click the "Save" icon (or Ctrl+S).
+ * 5. Click "Deploy" (top right) -> "Manage deployments" -> Edit (pencil icon) -> Version: "New version" -> Deploy.
+ *    (Or if first time: Deploy -> New deployment -> Web app -> Anyone -> Deploy).
+ * 6. OPTIONAL (Instant color for all existing rows): Select "applyColorsToSheet" in the top function dropdown and click "Run".
+ *    OR click "Test Sheet Connection" in your YT Tools Store Admin Settings!
  */
 
 function doPost(e) {
@@ -39,9 +40,12 @@ function doPost(e) {
 
     // 1. Connection Test
     if (action === "test") {
+      setupStatusConditionalFormatting(sheet);
+      formatAllExistingRows(sheet);
+      SpreadsheetApp.flush();
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
-        message: 'Connected successfully to Google Sheet: "' + sheet.getName() + '"'
+        message: 'Connected successfully to Google Sheet: "' + sheet.getName() + '" (Status colors applied!)'
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -60,6 +64,8 @@ function doPost(e) {
       for (var i = 0; i < data.orders.length; i++) {
         syncSingleOrder(sheet, data.orders[i]);
       }
+      setupStatusConditionalFormatting(sheet);
+      formatAllExistingRows(sheet);
       SpreadsheetApp.flush();
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
@@ -71,7 +77,9 @@ function doPost(e) {
     if (action === "delete_order" && data.orderId) {
       var row = findRowByOrderId(sheet, data.orderId);
       if (row > 1) {
-        sheet.getRange(row, 9).setValue("cancelled / deleted");
+        var cell = sheet.getRange(row, 9);
+        cell.setValue("cancelled / deleted");
+        formatStatusCell(cell, "cancelled");
         SpreadsheetApp.flush();
       }
       return ContentService.createTextOutput(JSON.stringify({
@@ -118,6 +126,8 @@ function ensureHeaders(sheet) {
       formatHeaderRow(sheet);
     }
   }
+
+  setupStatusConditionalFormatting(sheet);
 }
 
 function formatHeaderRow(sheet) {
@@ -171,18 +181,135 @@ function syncSingleOrder(sheet, order) {
     sheet.appendRow(rowValues);
     var newLastRow = sheet.getLastRow();
     sheet.getRange(newLastRow, 6).setFormula(formula);
-    formatDataRow(sheet, newLastRow);
+    formatDataRow(sheet, newLastRow, order.orderStatus || "pending");
   } else {
     sheet.getRange(targetRow, 1, 1, 11).setValues([rowValues]);
     sheet.getRange(targetRow, 6).setFormula(formula);
-    formatDataRow(sheet, targetRow);
+    formatDataRow(sheet, targetRow, order.orderStatus || "pending");
   }
 }
 
-function formatDataRow(sheet, rowNum) {
+function formatStatusCell(cell, status) {
+  var s = String(status || '').trim().toLowerCase();
+  cell.setHorizontalAlignment("center");
+  cell.setFontWeight("bold");
+
+  if (s.indexOf("completed") !== -1) {
+    cell.setBackground("#16a34a"); // Green
+    cell.setFontColor("#FFFFFF");
+  } else if (s.indexOf("processing") !== -1) {
+    cell.setBackground("#1e3a8a"); // Dark Blue
+    cell.setFontColor("#FFFFFF");
+  } else if (s.indexOf("cancel") !== -1 || s.indexOf("failed") !== -1) {
+    cell.setBackground("#dc2626"); // Red
+    cell.setFontColor("#FFFFFF");
+  } else if (s.indexOf("pending") !== -1) {
+    cell.setBackground("#FFDAB9"); // Peach
+    cell.setFontColor("#431407"); // Dark contrast text
+  }
+}
+
+function formatDataRow(sheet, rowNum, status) {
   sheet.getRange(rowNum, 4, 1, 3).setNumberFormat("#,##0");
   sheet.getRange(rowNum, 2).setHorizontalAlignment("center");
-  sheet.getRange(rowNum, 9).setHorizontalAlignment("center");
+  var statusCell = sheet.getRange(rowNum, 9);
+  statusCell.setHorizontalAlignment("center");
+  if (status) {
+    formatStatusCell(statusCell, status);
+  }
+}
+
+function formatAllExistingRows(sheet) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var statusRange = sheet.getRange(2, 9, lastRow - 1, 1);
+    var values = statusRange.getValues();
+    for (var i = 0; i < values.length; i++) {
+      var rowNum = i + 2;
+      var status = values[i][0];
+      if (status) {
+        formatStatusCell(sheet.getRange(rowNum, 9), status);
+      }
+    }
+  }
+}
+
+function setupStatusConditionalFormatting(sheet) {
+  try {
+    var maxRows = Math.max(sheet.getMaxRows() || 1000, 1000);
+    var range = sheet.getRange("I2:I" + maxRows);
+    var existingRules = sheet.getConditionalFormatRules() || [];
+    var preservedRules = [];
+
+    // Keep any existing rules that don't belong to column I
+    for (var i = 0; i < existingRules.length; i++) {
+      var rRanges = existingRules[i].getRanges();
+      var affectsColI = false;
+      for (var j = 0; j < rRanges.length; j++) {
+        var a1 = rRanges[j].getA1Notation();
+        if (a1.indexOf("I") !== -1) {
+          affectsColI = true;
+          break;
+        }
+      }
+      if (!affectsColI) {
+        preservedRules.push(existingRules[i]);
+      }
+    }
+
+    // 1. Completed -> Green (#16a34a), white bold
+    var completedRule = SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains("completed")
+      .setBackground("#16a34a")
+      .setFontColor("#FFFFFF")
+      .setBold(true)
+      .setRanges([range])
+      .build();
+
+    // 2. Processing -> Dark Blue (#1e3a8a), white bold
+    var processingRule = SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains("processing")
+      .setBackground("#1e3a8a")
+      .setFontColor("#FFFFFF")
+      .setBold(true)
+      .setRanges([range])
+      .build();
+
+    // 3. Cancel / Cancelled -> Red (#dc2626), white bold
+    var cancelRule = SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains("cancel")
+      .setBackground("#dc2626")
+      .setFontColor("#FFFFFF")
+      .setBold(true)
+      .setRanges([range])
+      .build();
+
+    // 4. Pending -> Peach (#FFDAB9), dark brown bold text
+    var pendingRule = SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains("pending")
+      .setBackground("#FFDAB9")
+      .setFontColor("#431407")
+      .setBold(true)
+      .setRanges([range])
+      .build();
+
+    var updatedRules = preservedRules.concat([completedRule, processingRule, cancelRule, pendingRule]);
+    sheet.setConditionalFormatRules(updatedRules);
+  } catch (err) {
+    Logger.log("Conditional formatting setup notice: " + err);
+  }
+}
+
+/**
+ * Run this function once from the Apps Script editor (select "applyColorsToSheet" and click "Run")
+ * to instantly color all existing orders in your sheet!
+ */
+function applyColorsToSheet() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  ensureHeaders(sheet);
+  setupStatusConditionalFormatting(sheet);
+  formatAllExistingRows(sheet);
+  SpreadsheetApp.flush();
 }
 
 function doGet(e) {
