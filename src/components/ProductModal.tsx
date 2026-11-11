@@ -32,10 +32,24 @@ export default function ProductModal() {
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.pathname.startsWith('/product/')) {
+        window.history.replaceState(null, '', '/' + (url.hash || ''));
+      } else if (url.searchParams.has('product') || url.searchParams.has('tool')) {
+        url.searchParams.delete('product');
+        url.searchParams.delete('tool');
+        const cleanPath = url.pathname + (url.search ? url.search : '') + (url.hash || '');
+        window.history.replaceState(null, '', cleanPath);
+      }
+    }
+
     setTimeout(() => {
       setActiveProductModal(null);
       setIsClosing(false);
       setActiveImageIndex(0);
+      setCopiedLink(false);
       setQuantity(1);
     }, 200);
   }, [setActiveProductModal]);
@@ -51,7 +65,7 @@ export default function ProductModal() {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [activeProductModal, handleClose]);
