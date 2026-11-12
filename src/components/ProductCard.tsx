@@ -7,7 +7,6 @@ import { Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Star, Eye, ShoppingCart, Zap, ArrowRight } from 'lucide-react';
-import BufferingLoader from './BufferingLoader';
 import WhatsAppIcon from './WhatsAppIcon';
 
 interface ProductCardProps {
@@ -26,7 +25,6 @@ function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
 
   const [added, setAdded] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   React.useEffect(() => {
     router.prefetch('/cart');
@@ -42,21 +40,16 @@ function ProductCard({ product }: ProductCardProps) {
   const handleProceedToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     addToCart(product, 1);
-    setIsNavigating(true);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('yt-nav-start', {
           detail: {
             href: '/cart',
-            message: 'Loading Shopping Cart...',
-            subtitle: 'Taking you to your order summary...',
           },
         })
       );
     }
-    setTimeout(() => {
-      router.push('/cart');
-    }, 150);
+    router.push('/cart');
   };
 
   const isService = (product.category || '').toLowerCase().includes('service');
@@ -288,12 +281,6 @@ function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </div>
-
-      <BufferingLoader
-        show={isNavigating}
-        message="Loading Cart..."
-        subtitle="Taking you to your order summary..."
-      />
     </div>
   );
 }

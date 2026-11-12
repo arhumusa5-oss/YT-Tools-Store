@@ -438,7 +438,7 @@ html.dark .pulse-dot-red {
 @keyframes cards-fade-slide {
   0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.985);
+    transform: translateY(10px) scale(0.985);
   }
   100% {
     opacity: 1;
@@ -447,6 +447,118 @@ html.dark .pulse-dot-red {
 }
 
 .animate-cards-entrance {
-  animation: cards-fade-slide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: cards-fade-slide 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: transform, opacity;
+}
+
+/* Staggered Card Reveal */
+@keyframes card-stagger-in {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-stagger {
+  opacity: 0;
+  animation: card-stagger-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Skeleton Shimmer Loader */
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.35s infinite;
+}
+
+/* Cart Add Spring Bounce */
+@keyframes cart-bump {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.22) rotate(-6deg); }
+  65% { transform: scale(0.94) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.animate-cart-bump {
+  animation: cart-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Floating +1 Cart Indicator */
+@keyframes float-up-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.75);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.95);
+  }
+}
+
+.animate-float-up {
+  animation: float-up-fade 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Mobile Sheet Slide-Up Spring Animation */
+@keyframes mobile-sheet-up {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-mobile-sheet-up {
+  animation: mobile-sheet-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Toast Auto-Dismiss Countdown Line */
+@keyframes toast-progress {
+  0% { width: 100%; }
+  100% { width: 0%; }
+}
+
+.animate-toast-progress {
+  animation: toast-progress 4s linear forwards;
+}
+
+@media (max-width: 640px) {
+  .animate-modal-card-in {
+    animation: mobile-sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
 }

@@ -9,17 +9,19 @@ import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import ReviewsSection from '@/components/ReviewsSection';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
+import BackToTopButton from '@/components/BackToTopButton';
 import Footer from '@/components/Footer';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
-import BufferingLoader from '@/components/BufferingLoader';
 import { Product } from '@/lib/types';
-import { Sparkles, PackageX, RefreshCw, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { PackageX, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 const ITEMS_PER_PAGE = 8;
+const CACHE_KEY = 'yt_products_cache_v1';
 
 interface StoreHomeViewProps {
   initialProductParam?: string;
+  initialProducts?: Product[];
 }
 
 const toSlug = (text: string) =>
@@ -28,9 +30,20 @@ const toSlug = (text: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-export default function StoreHomeView({ initialProductParam }: StoreHomeViewProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+const stripPrivateFields = (p: Product): Product => {
+  const { costPKR: _cost, vendorName: _vendor, ...rest } = p;
+  void _cost;
+  void _vendor;
+  return rest;
+};
+
+export default function StoreHomeView({
+  initialProductParam,
+  initialProducts,
+}: StoreHomeViewProps) {
+  const hasServerProducts = Boolean(initialProducts && initialProducts.length > 0);
+  const [products, setProducts] = useState<Product[]>(initialProducts || []);
+  const [loading, setLoading] = useState<boolean>(!hasServerProducts);
   const [activeCategory, setActiveCategory] = useState('Tools');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,36 +52,62 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
   const productsSectionRef = useRef<HTMLDivElement>(null);
   const hasOpenedDeepLinkRef = useRef<string | null>(null);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
-      const startTime = Date.now();
+      if (!silent) setLoading(true);
       const res = await fetch('/api/products');
       const data = await res.json();
-      if (data.success) {
-        setProducts(data.products);
-      }
-      // Ensure smooth buffering roller animation duration (~1.2s minimum) so page never flashes raw
-      const elapsed = Date.now() - startTime;
-      const minDuration = 1200;
-      if (elapsed < minDuration) {
-        await new Promise((resolve) => setTimeout(resolve, minDuration - elapsed));
+      if (data.success && Array.isArray(data.products)) {
+        const sanitized = (data.products as Product[]).map(stripPrivateFields);
+        setProducts(sanitized);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(sanitized));
+        } catch {
+          // ignore storage quota errors
+        }
       }
     } catch {
-      // fallback
+      // fallback silently
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchProducts();
+    // Hydrate from session cache immediately if no server products were passed, then silently sync
+    if (!hasServerProducts) {
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached) as Product[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProducts(parsed);
+            setLoading(false);
+            fetchProducts(true);
+            return;
+          }
+        }
+      } catch {
+        // ignore cache parse errors
+      }
+      fetchProducts(false);
+    } else {
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(initialProducts));
+      } catch {
+        // ignore
+      }
+      fetchProducts(true);
+    }
+  }, [hasServerProducts, initialProducts, fetchProducts]);
+
+  useEffect(() => {
     return () => {
       setActiveProductModal(null);
     };
   }, [setActiveProductModal]);
 
-  // Deep Linking: Wait until the store website finishes loading and becomes visible, then pop up the normal ProductModal card
+  // Deep Linking: Let store website appear first, then pop open the normal ProductModal card cleanly
   useEffect(() => {
     if (loading || products.length === 0 || typeof window === 'undefined') return;
 
@@ -135,7 +174,7 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
       didFire = true;
       hasOpenedDeepLinkRef.current = queryParam;
       setActiveProductModal(matched);
-    }, 180);
+    }, 200);
 
     return () => {
       if (!didFire) {
@@ -144,45 +183,34 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
     };
   }, [loading, products, initialProductParam, setActiveProductModal]);
 
-  const [isSearching, setIsSearching] = useState(false);
-
-  // Native high-performance smooth scroll
+  // Smooth scroll to catalog on search submit / Explore CTA
   const handleSearchSubmit = useCallback(() => {
-    setIsSearching(true);
-    setTimeout(() => {
-      if (productsSectionRef.current) {
-        const yOffset = -85;
-        const targetY = Math.max(
-          0,
-          productsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
-        );
-        window.scrollTo({ top: targetY, behavior: 'smooth' });
-      }
-      setIsSearching(false);
-    }, 120);
+    if (productsSectionRef.current) {
+      const yOffset = -85;
+      const targetY = Math.max(
+        0,
+        productsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+      );
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
+    }
   }, []);
 
-  const [isTabBuffering, setIsTabBuffering] = useState(false);
-
-  // Single-pass Category switch with smooth buffering indicator
-  const handleCategoryChange = useCallback((cat: string) => {
-    if (cat === activeCategory) return;
-    setIsTabBuffering(true);
-    setTimeout(() => {
+  // Zero-delay instant category switch (animated via sliding pill & staggered card reveal)
+  const handleCategoryChange = useCallback(
+    (cat: string) => {
+      if (cat === activeCategory) return;
       setActiveCategory(cat);
       setCurrentPage(1);
-      setTimeout(() => {
-        setIsTabBuffering(false);
-      }, 700);
-    }, 150);
-  }, [activeCategory]);
+    },
+    [activeCategory]
+  );
 
   // Reset to page 1 whenever user searches
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  // Memoized Filter and Sort (Zero lag on category tab switch)
+  // Memoized Filter and Sort
   const sortedProducts = useMemo(() => {
     const isServicesCategory = activeCategory === 'Services';
     const q = searchQuery.toLowerCase().trim();
@@ -218,30 +246,35 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
     return sortedProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [sortedProducts, startIndex]);
 
-  const handlePageChange = useCallback((newPage: number) => {
-    if (newPage < 1 || newPage > totalPages) return;
-    setCurrentPage(newPage);
-    if (productsSectionRef.current) {
-      const yOffset = -85;
-      const targetY = Math.max(
-        0,
-        productsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
-      );
-      window.scrollTo({ top: targetY, behavior: 'smooth' });
-    }
-  }, [totalPages]);
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      if (newPage < 1 || newPage > totalPages) return;
+      setCurrentPage(newPage);
+      if (productsSectionRef.current) {
+        const yOffset = -85;
+        const targetY = Math.max(
+          0,
+          productsSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+        );
+        window.scrollTo({ top: targetY, behavior: 'smooth' });
+      }
+    },
+    [totalPages]
+  );
 
-  const handleSelectSuggestion = useCallback((product: Product) => {
-    setSearchQuery(product.title);
-    if ((product.category || '').toLowerCase() === 'services') {
-      setActiveCategory('Services');
-    } else {
-      setActiveCategory('Tools');
-    }
-    setCurrentPage(1);
-    // Directly open the smooth details modal popup for the selected product
-    setActiveProductModal(product);
-  }, [setActiveProductModal]);
+  const handleSelectSuggestion = useCallback(
+    (product: Product) => {
+      setSearchQuery(product.title);
+      if ((product.category || '').toLowerCase() === 'services') {
+        setActiveCategory('Services');
+      } else {
+        setActiveCategory('Tools');
+      }
+      setCurrentPage(1);
+      setActiveProductModal(product);
+    },
+    [setActiveProductModal]
+  );
 
   const whatsappInquiryUrl = useMemo(() => {
     return `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(
@@ -252,22 +285,6 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
 
   return (
     <main className="min-h-screen flex flex-col bg-transparent text-[#1f2937] transition-colors duration-150 relative z-10">
-      <BufferingLoader
-        show={loading || isTabBuffering}
-        message={
-          loading
-            ? 'Loading Store Catalog...'
-            : activeCategory === 'Tools'
-            ? 'Loading Services & Solutions...'
-            : 'Loading Tools & Subscriptions...'
-        }
-        subtitle={
-          loading
-            ? 'Fetching creator tools & digital subscriptions...'
-            : 'Updating digital catalog...'
-        }
-      />
-
       {/* Top Bar Announcement */}
       <AnnouncementBar />
 
@@ -281,7 +298,7 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
         setSearchQuery={setSearchQuery}
         onSearchSubmit={handleSearchSubmit}
         onSelectProduct={handleSelectSuggestion}
-        isSearching={isSearching}
+        isSearching={false}
         onExploreClick={handleSearchSubmit}
       />
 
@@ -307,7 +324,7 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
               </p>
             </div>
 
-            {/* Category Filter Pills (Tools vs Services) */}
+            {/* Category Filter Pills (Smooth Sliding Indicator) */}
             <CategoryFilter
               activeCategory={activeCategory}
               setActiveCategory={handleCategoryChange}
@@ -316,7 +333,7 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
 
           {/* Active Search / Filter Status */}
           {(searchQuery || activeCategory === 'Services') && (
-            <div className="mb-8 flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 shadow-sm text-xs">
+            <div className="mb-8 flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-[#0e0e16] border border-[#e8e1e1] dark:border-white/10 shadow-sm text-xs animate-pop-fade-in">
               <span className="text-[#1f2937] dark:text-zinc-300 font-medium">
                 Showing{' '}
                 {activeCategory === 'Services' ? (
@@ -329,7 +346,9 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
                     {' '}matching <span className="font-extrabold text-[#660000] dark:text-[#ff4d4d]">&ldquo;{searchQuery}&rdquo;</span>
                   </>
                 )}
-                <span className="text-[#6b7280] dark:text-zinc-400 ml-2 font-normal">({sortedProducts.length} items found)</span>
+                <span className="text-[#6b7280] dark:text-zinc-400 ml-2 font-normal">
+                  ({sortedProducts.length} items found)
+                </span>
               </span>
 
               <button
@@ -347,16 +366,31 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
 
           {/* Product Grid */}
           {loading ? (
-            <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center">
-              <div className="relative w-16 h-16 flex items-center justify-center mb-4">
-                <div className="w-16 h-16 rounded-full border-[3.5px] border-[#e8e1e1] dark:border-white/15" />
-                <div className="absolute inset-0 rounded-full border-[3.5px] border-transparent border-t-[#660000] border-r-[#990000] dark:border-t-[#ff4d4d] dark:border-r-[#ff8080] animate-spin" />
-                <div className="absolute w-8 h-8 rounded-full bg-gradient-to-tr from-[#660000] via-[#800000] to-[#990000] flex items-center justify-center shadow-md shadow-[#660000]/30 animate-pulse">
-                  <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+            /* Sleek Instant Skeleton Shimmer Cards (Zero Screen Blocker!) */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col rounded-2xl bg-[#0C0C0E] border border-[#222228] overflow-hidden shadow-lg"
+                >
+                  <div className="w-full aspect-[16/10] bg-[#16161C] animate-shimmer" />
+                  <div className="p-4 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <div className="h-2.5 w-14 rounded bg-[#1C1C24] animate-shimmer" />
+                      <div className="h-2.5 w-12 rounded bg-[#1C1C24] animate-shimmer" />
+                    </div>
+                    <div className="h-4 w-3/4 rounded bg-[#1C1C24] animate-shimmer" />
+                    <div className="h-3 w-full rounded bg-[#181820] animate-shimmer" />
+                    <div className="pt-3 border-t border-[#1F1F26] flex items-center justify-between gap-2">
+                      <div className="h-6 w-20 rounded bg-[#1C1C24] animate-shimmer" />
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-9 w-9 rounded-xl bg-[#1C1C24] animate-shimmer" />
+                        <div className="h-9 w-20 rounded-xl bg-[#1C1C24] animate-shimmer" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <h4 className="text-base font-extrabold text-[#0a0a0a] dark:text-white">Loading Digital Catalog...</h4>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">Please wait a moment...</p>
+              ))}
             </div>
           ) : products.length === 0 ? (
             /* Clean Empty State when Admin hasn't added products yet */
@@ -379,7 +413,7 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
                   <span>Inquire on WhatsApp</span>
                 </a>
                 <button
-                  onClick={fetchProducts}
+                  onClick={() => fetchProducts(false)}
                   className="w-full sm:w-auto px-5 py-3 rounded-full bg-[#f4efef] dark:bg-[#1a1a26] hover:bg-[#eae4e4] dark:hover:bg-[#252538] text-[#1f2937] dark:text-zinc-200 text-xs font-semibold border border-[#e8e1e1] dark:border-white/10 flex items-center justify-center gap-2 transition cursor-pointer"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -410,9 +444,18 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 animate-cards-entrance">
-                {paginatedProducts.map((prod) => (
-                  <ProductCard key={prod.id} product={prod} />
+              <div
+                key={`${activeCategory}-${currentPage}-${searchQuery ? 's' : 'all'}`}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+              >
+                {paginatedProducts.map((prod, idx) => (
+                  <div
+                    key={prod.id}
+                    className="animate-card-stagger flex flex-col"
+                    style={{ animationDelay: `${Math.min(idx, 7) * 35}ms` }}
+                  >
+                    <ProductCard product={prod} />
+                  </div>
                 ))}
               </div>
 
@@ -484,8 +527,9 @@ export default function StoreHomeView({ initialProductParam }: StoreHomeViewProp
       {/* Footer */}
       <Footer />
 
-      {/* Interactive Modals */}
+      {/* Interactive Modals & Floating Helpers */}
       <ProductModal />
+      <BackToTopButton />
       <FloatingWhatsApp />
     </main>
   );

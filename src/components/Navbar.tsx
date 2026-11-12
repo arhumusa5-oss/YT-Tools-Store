@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
@@ -12,10 +12,24 @@ interface NavbarProps {
 }
 
 function Navbar({ onSearchClick }: NavbarProps) {
-  const { settings, theme, toggleTheme, cartCount, setIsCartOpen } = useCart();
+  const { settings, theme, toggleTheme, cartCount, setIsCartOpen, cartNotification } = useCart();
   const { user, openAuthModal, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [isCartBumping, setIsCartBumping] = useState(false);
+  const [addedPop, setAddedPop] = useState<{ id: string; qty: number } | null>(null);
+
+  useEffect(() => {
+    if (!cartNotification) return;
+    setIsCartBumping(true);
+    setAddedPop({ id: cartNotification.id, qty: cartNotification.quantity || 1 });
+    const bumpTimer = setTimeout(() => setIsCartBumping(false), 480);
+    const popTimer = setTimeout(() => setAddedPop(null), 850);
+    return () => {
+      clearTimeout(bumpTimer);
+      clearTimeout(popTimer);
+    };
+  }, [cartNotification]);
 
   const whatsappHref = `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20want%20to%20order%20digital%20tools.`;
 
@@ -172,16 +186,26 @@ function Navbar({ onSearchClick }: NavbarProps) {
             </Link>
           )}
 
-          {/* Cart Icon Button - Prominently on top-right */}
+          {/* Cart Icon Button - Prominently on top-right with Add-to-Cart Spring Bounce */}
           <Link
             href="/cart"
-            className="relative p-2 sm:p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer flex items-center justify-center group shrink-0"
+            className={`relative p-2 sm:p-2.5 rounded-full bg-[#f4efef] dark:bg-[#161620] hover:bg-[#eae4e4] dark:hover:bg-[#20202c] text-[#1f2937] dark:text-zinc-200 hover:text-[#660000] dark:hover:text-[#ff4d4d] border border-[#e8e1e1] dark:border-white/10 transition-all active:scale-95 shadow-sm cursor-pointer flex items-center justify-center group shrink-0 ${
+              isCartBumping ? 'animate-cart-bump border-[#660000]/60 ring-2 ring-[#660000]/25' : ''
+            }`}
             aria-label="Open Shopping Cart"
             title="Shopping Cart"
           >
+            {addedPop && (
+              <span
+                key={addedPop.id}
+                className="animate-float-up pointer-events-none absolute -top-2 right-0 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black shadow-md whitespace-nowrap"
+              >
+                +{addedPop.qty}
+              </span>
+            )}
             <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-110" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-5 px-1 rounded-full bg-[#660000] text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center shadow-md animate-pulse">
+              <span className="absolute -top-1 -right-1 min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-5 px-1 rounded-full bg-[#660000] text-white text-[9px] sm:text-[10px] font-black flex items-center justify-center shadow-md transition-transform">
                 {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}

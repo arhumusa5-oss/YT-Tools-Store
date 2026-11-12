@@ -2,83 +2,78 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import BufferingLoader from './BufferingLoader';
 
 export default function NavigationLoader() {
   const pathname = usePathname();
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [navMessage, setNavMessage] = useState('Loading Store Catalog...');
-  const [navSubtitle, setNavSubtitle] = useState('Please wait a moment...');
-  const navStartTimeRef = useRef<number>(0);
+  const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
+  const finishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trickleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeRef = useRef(false);
 
-  // When pathname changes (destination page has mounted), ensure smooth minimum duration (~1.3s)
-  // so that even pages that load instantly play the smooth buffering roller instead of opening raw!
+  const clearAllTimers = () => {
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
+    if (trickleTimerRef.current) {
+      clearInterval(trickleTimerRef.current);
+      trickleTimerRef.current = null;
+    }
+    if (safetyTimerRef.current) {
+      clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = null;
+    }
+  };
+
+  const completeBar = () => {
+    if (!activeRef.current) return;
+    activeRef.current = false;
+    clearAllTimers();
+    setProgress(100);
+    finishTimerRef.current = setTimeout(() => {
+      setVisible(false);
+      setProgress(0);
+    }, 220);
+  };
+
+  // Instantly finish the slim bar as soon as the destination pathname renders
   useEffect(() => {
-    if (!isNavigating) return;
-
-    const elapsed = Date.now() - navStartTimeRef.current;
-    const minDisplayTime = 1300; // ~1.3s for smooth buffering experience
-    const remaining = Math.max(0, minDisplayTime - elapsed);
-
-    const timer = setTimeout(() => {
-      setIsNavigating(false);
-    }, remaining);
-
-    return () => clearTimeout(timer);
-  }, [pathname, isNavigating]);
+    completeBar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
-    const triggerNavigation = (cleanHref: string, customMsg?: string, customSub?: string) => {
-      let msg = customMsg || 'Loading...';
-      let sub = customSub || 'Please wait a moment...';
+    const startBar = () => {
+      clearAllTimers();
+      activeRef.current = true;
+      setVisible(true);
+      setProgress(22);
 
-      if (!customMsg) {
-        if (cleanHref === '/cart') {
-          msg = 'Loading Shopping Cart...';
-          sub = 'Reviewing your selected creator tools...';
-        } else if (cleanHref === '/checkout') {
-          msg = 'Preparing Checkout...';
-          sub = 'Setting up secure checkout & payment...';
-        } else if (cleanHref.startsWith('/track-order') || cleanHref.startsWith('/track')) {
-          msg = 'Loading Order Tracker...';
-          sub = 'Connecting to real-time order tracking...';
-        } else if (cleanHref === '/') {
-          msg = 'Loading Store Catalog...';
-          sub = 'Returning to creator subscriptions & tools...';
-        } else if (cleanHref.startsWith('/bundle')) {
-          msg = 'Loading Creator Bundles...';
-          sub = 'Preparing custom software bundles...';
-        } else if (cleanHref.startsWith('/order-success')) {
-          msg = 'Loading Order Receipt...';
-          sub = 'Verifying confirmed order details...';
-        } else if (cleanHref.startsWith('/pay/')) {
-          msg = 'Loading Official Invoice...';
-          sub = 'Retrieving secure payment details...';
-        }
-      }
+      trickleTimerRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 85) return prev;
+          const step = prev < 55 ? 12 : 4;
+          return Math.min(85, prev + step);
+        });
+      }, 140);
 
-      setNavMessage(msg);
-      setNavSubtitle(sub);
-      navStartTimeRef.current = Date.now();
-      setIsNavigating(true);
-
-      // Safety timeout so it never hangs indefinitely
-      const timer = setTimeout(() => {
-        setIsNavigating(false);
-      }, 4000);
-
-      return timer;
+      // Safety cleanup if navigation cancels or exceeds 5s
+      safetyTimerRef.current = setTimeout(() => {
+        completeBar();
+      }, 5000);
     };
 
     const handleLinkClick = (e: MouseEvent) => {
-      // Find closest anchor tag
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+
       const target = (e.target as HTMLElement)?.closest('a');
       if (!target) return;
 
       const href = target.getAttribute('href');
       const targetAttr = target.getAttribute('target');
 
-      // Only handle internal routes (not anchors like #products, not mailto/tel/wa.me, not new tab)
       if (
         href &&
         href.startsWith('/') &&
@@ -86,28 +81,19 @@ export default function NavigationLoader() {
         !href.startsWith('//') &&
         targetAttr !== '_blank'
       ) {
-        // Normalize URLs for comparison
         const cleanHref = href.split('?')[0].split('#')[0];
         const cleanPathname = pathname.split('?')[0].split('#')[0];
-
-        if (cleanHref === cleanPathname) {
-          return;
-        }
-
-        triggerNavigation(cleanHref);
+        if (cleanHref === cleanPathname) return;
+        startBar();
       }
     };
 
-    // Support programmatic navigation event
-    const handleCustomNav = (e: Event) => {
-      const customEvent = e as CustomEvent<{ href: string; message?: string; subtitle?: string }>;
-      const cleanHref = (customEvent.detail?.href || '/').split('?')[0].split('#')[0];
-      triggerNavigation(cleanHref, customEvent.detail?.message, customEvent.detail?.subtitle);
+    const handleCustomNav = () => {
+      startBar();
     };
 
-    // Also support browser back/forward buttons
     const handlePopState = () => {
-      triggerNavigation(window.location.pathname);
+      startBar();
     };
 
     document.addEventListener('click', handleLinkClick, { capture: true });
@@ -118,14 +104,22 @@ export default function NavigationLoader() {
       document.removeEventListener('click', handleLinkClick, { capture: true });
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('yt-nav-start', handleCustomNav);
+      clearAllTimers();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  if (!visible) return null;
+
   return (
-    <BufferingLoader
-      show={isNavigating}
-      message={navMessage}
-      subtitle={navSubtitle}
-    />
+    <div
+      aria-hidden="true"
+      className="fixed top-0 left-0 right-0 z-[999999] h-[3px] bg-transparent pointer-events-none"
+    >
+      <div
+        className="h-full bg-gradient-to-r from-[#660000] via-[#cc1111] to-[#ff4d4d] shadow-[0_0_12px_rgba(204,17,17,0.75)] transition-all duration-200 ease-out"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
   );
 }

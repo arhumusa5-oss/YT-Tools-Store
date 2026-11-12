@@ -415,14 +415,14 @@ export default function CheckoutModal() {
       onClick={(e) => {
         if (e.target === e.currentTarget) setIsCheckoutOpen(false);
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/40 backdrop-blur-sm dark:bg-black/60 overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/45 backdrop-blur-sm dark:bg-black/65 overflow-y-auto animate-in fade-in duration-200"
     >
       <BufferingLoader
         show={submitting}
         message="Processing Payment & Placing Order..."
         subtitle="Please wait a moment..."
       />
-      <div className="relative w-full max-w-xl my-6 bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl transition-all duration-200">
+      <div className="relative w-full max-w-xl mt-10 sm:my-6 bg-white dark:bg-[#0c0c12] border border-[#e8e1e1] dark:border-white/10 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl transition-all duration-200 animate-mobile-sheet-up sm:animate-modal-card-in">
         
         {/* ================= STAGE 1: CHOICE SCREEN ================= */}
         {stage === 'choice' ? (

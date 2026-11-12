@@ -7,7 +7,6 @@ import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
-import BufferingLoader from './BufferingLoader';
 import { Product } from '@/lib/types';
 
 export default function ProductModal() {
@@ -25,8 +24,11 @@ export default function ProductModal() {
   const [isClosing, setIsClosing] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [quantity, setQuantity] = useState<number | string>(1);
-  const [isNavigating, setIsNavigating] = useState(false);
   const [added, setAdded] = useState(false);
+
+  useEffect(() => {
+    router.prefetch('/cart');
+  }, [router]);
 
   const product = activeProductModal;
 
@@ -106,22 +108,17 @@ export default function ProductModal() {
 
   const handleProceedToCart = () => {
     addToCart(product, currentQty);
-    setIsNavigating(true);
     handleClose();
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('yt-nav-start', {
           detail: {
             href: '/cart',
-            message: 'Loading Shopping Cart...',
-            subtitle: 'Taking you to your order summary...',
           },
         })
       );
     }
-    setTimeout(() => {
-      router.push('/cart');
-    }, 150);
+    router.push('/cart');
   };
 
   const isService = (product.category || '').toLowerCase().includes('service');
@@ -396,12 +393,6 @@ export default function ProductModal() {
           </div>
         </div>
       </div>
-
-      <BufferingLoader
-        show={isNavigating}
-        message="Loading Cart..."
-        subtitle="Taking you to your order summary..."
-      />
     </div>
   );
 }

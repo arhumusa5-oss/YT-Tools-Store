@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
-import BufferingLoader from '@/components/BufferingLoader';
 import { useCart } from '@/context/CartContext';
 import {
   ShoppingBag,
@@ -32,7 +31,6 @@ export default function CartPage() {
     formatPrice,
   } = useCart();
 
-  const [isBuffering, setIsBuffering] = useState(false);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
 
   // Selection state (defaults to all selected)
@@ -95,13 +93,9 @@ export default function CartPage() {
     router.prefetch('/checkout');
   }, [router]);
 
-  // Proceed to Checkout handler with Buffering Roller
+  // Instant Proceed to Checkout handler
   const handleProceedToCheckout = () => {
-    if (selectedItems.length === 0) {
-      alert('Please select at least 1 item to proceed to checkout.');
-      return;
-    }
-    setIsBuffering(true);
+    if (selectedItems.length === 0) return;
     try {
       sessionStorage.setItem('yt_checkout_selected_ids', JSON.stringify(selectedIds));
       sessionStorage.removeItem('yt_checkout_coupon');
@@ -113,25 +107,15 @@ export default function CartPage() {
         new CustomEvent('yt-nav-start', {
           detail: {
             href: '/checkout',
-            message: 'Preparing Checkout...',
-            subtitle: 'Setting up secure checkout & payment...',
           },
         })
       );
     }
-    setTimeout(() => {
-      router.push('/checkout');
-    }, 150);
+    router.push('/checkout');
   };
 
   return (
     <main className="min-h-screen flex flex-col bg-white text-[#1f2937] relative z-20 transition-colors duration-200">
-      <BufferingLoader
-        show={isBuffering}
-        message="Preparing Checkout..."
-        subtitle="Loading your selected creator tools..."
-      />
-
       <Navbar />
 
       <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full animate-page-entrance">

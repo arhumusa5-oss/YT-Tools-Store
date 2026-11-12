@@ -49,7 +49,7 @@ export default function CartToast() {
           : '-translate-y-3 opacity-0 scale-95 pointer-events-none'
       }`}
     >
-      <div className="flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl border border-[#e8e1e1] dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_40px_-6px_rgba(0,0,0,0.8)]">
+      <div className="relative overflow-hidden flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-white/95 dark:bg-[#12121a]/95 backdrop-blur-xl border border-[#e8e1e1] dark:border-white/15 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.18)] dark:shadow-[0_16px_40px_-6px_rgba(0,0,0,0.8)]">
         {/* Product image with green check indicator */}
         <div className="relative shrink-0">
           <img
@@ -102,6 +102,13 @@ export default function CartToast() {
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Countdown Progress Bar */}
+        <span
+          key={cartNotification.id}
+          aria-hidden="true"
+          className="animate-toast-progress absolute bottom-0 left-0 h-[2.5px] bg-gradient-to-r from-emerald-500 to-teal-400"
+        />
       </div>
     </div>
   );
