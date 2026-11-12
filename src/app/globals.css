@@ -562,3 +562,119 @@ html.dark .pulse-dot-red {
     animation: mobile-sheet-up 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 }
+
+/* Order Success Self-Assembling Build Sequence (~1.1s total) */
+@keyframes order-card-frame-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-order-frame {
+  opacity: 0;
+  animation: order-card-frame-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes order-accent-sweep {
+  0% {
+    transform: scaleX(0);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+.animate-order-sweep {
+  transform-origin: center;
+  transform: scaleX(0);
+  animation: order-accent-sweep 0.44s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+}
+
+@keyframes svg-circle-draw {
+  0% {
+    stroke-dashoffset: 252;
+    opacity: 0.3;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.animate-svg-circle {
+  stroke-dasharray: 252;
+  stroke-dashoffset: 252;
+  animation: svg-circle-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.12s forwards;
+}
+
+@keyframes svg-check-draw {
+  0% {
+    stroke-dashoffset: 64;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-svg-check {
+  stroke-dasharray: 64;
+  stroke-dashoffset: 64;
+  animation: svg-check-draw 0.28s cubic-bezier(0.22, 1, 0.36, 1) 0.34s forwards;
+}
+
+@keyframes order-ring-burst {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.animate-order-burst {
+  opacity: 0;
+  animation: order-ring-burst 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.32s forwards;
+}
+
+@keyframes order-build-step {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-order-step {
+  opacity: 0;
+  animation: order-build-step 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes receipt-row-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-receipt-row {
+  opacity: 0;
+  animation: receipt-row-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

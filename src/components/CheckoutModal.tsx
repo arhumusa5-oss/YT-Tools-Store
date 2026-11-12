@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { validateEmail, validateWhatsAppNumber } from '@/lib/validation';
+import { unlockOrderAudio, playOrderSuccessSound } from '@/lib/soundEffects';
 import {
   X,
   ArrowLeft,
@@ -373,6 +374,7 @@ export default function CheckoutModal() {
       return;
     }
 
+    unlockOrderAudio();
     setSubmitting(true);
     try {
       const res = await fetch('/api/orders', {
@@ -401,6 +403,7 @@ export default function CheckoutModal() {
       clearCart();
       setIsCheckoutOpen(false);
       setOrderSuccess(data.order);
+      playOrderSuccessSound();
     } catch (err) {
       setErrorMsg((err as Error).message || 'Something went wrong. Please try again.');
     } finally {

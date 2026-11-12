@@ -93,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.removeItem('yt_user_session');
       localStorage.removeItem('yt_cart');
+      localStorage.removeItem('yt_cart_updated_at');
+      sessionStorage.removeItem('yt_cart_synced_email');
     } catch {
       // ignore
     }

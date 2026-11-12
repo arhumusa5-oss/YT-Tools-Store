@@ -11,6 +11,7 @@ import EasyPaisaLogo from '@/components/EasyPaisaLogo';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { unlockOrderAudio } from '@/lib/soundEffects';
 import {
   ShoppingBag,
   ArrowRight,
@@ -277,6 +278,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    unlockOrderAudio();
     setSubmitting(true);
     try {
       const res = await fetch('/api/orders', {

@@ -288,9 +288,9 @@ function saveLocalData(data: DatabaseSchema): void {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-async function getData(): Promise<DatabaseSchema> {
+async function getData(forceRefresh = false): Promise<DatabaseSchema> {
   if (sql) {
-    const cloud = await getCloudData();
+    const cloud = await getCloudData(forceRefresh);
     if (cloud) return cloud;
   }
   return getLocalData();
@@ -636,8 +636,8 @@ export const db = {
     return (data.users || []).find((u) => u.id === id) || null;
   },
 
-  async getUserByEmail(email: string): Promise<User | null> {
-    const data = await getData();
+  async getUserByEmail(email: string, forceRefresh = false): Promise<User | null> {
+    const data = await getData(forceRefresh);
     const cleanEmail = email.trim().toLowerCase();
     return (data.users || []).find((u) => u.email.trim().toLowerCase() === cleanEmail) || null;
   },
@@ -652,7 +652,7 @@ export const db = {
   },
 
   async createUser(userData: Omit<User, 'id' | 'createdAt'>): Promise<User> {
-    const data = await getData();
+    const data = await getData(true);
     data.users = data.users || [];
     const newUser: User = {
       ...userData,
@@ -666,7 +666,7 @@ export const db = {
   },
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
-    const data = await getData();
+    const data = await getData(true);
     data.users = data.users || [];
     const index = data.users.findIndex((u) => u.id === id);
     if (index === -1) return null;

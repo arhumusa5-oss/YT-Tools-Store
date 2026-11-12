@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Product, OrderItem, Order, StoreSettings } from '@/lib/types';
 import { useAuth } from './AuthContext';
 
@@ -44,10 +44,15 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'yt_cart';
+const CART_UPDATED_AT_KEY = 'yt_cart_updated_at';
+const CART_SERVER_SYNC_AT_KEY = 'yt_cart_synced_at';
+const CART_SYNCED_SESSION_KEY = 'yt_cart_synced_email';
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [cart, setCart] = useState<OrderItem[]>([]);
-  const [initialCartLoaded, setInitialCartLoaded] = useState(false);
+  const cartRef = useRef<OrderItem[]>([]);
   const [currency, setCurrency] = useState<'PKR' | 'USD'>('PKR');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartNotification, setCartNotification] = useState<CartNotification | null>(null);
@@ -56,14 +61,92 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [activeProductModal, setActiveProductModal] = useState<Product | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<Order | null>(null);
   const [settings, setSettings] = useState<StoreSettings | null>(null);
-
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
-  // Load initial cart, currency, and theme from localStorage
+  const getActiveEmail = useCallback((): string | null => {
+    if (user?.email) return user.email;
+    try {
+      const saved = localStorage.getItem('yt_user_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) return String(parsed.email);
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  }, [user?.email]);
+
+  const syncCartToServer = useCallback(
+    (email: string, nextCart: OrderItem[]) => {
+      fetch('/api/user/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ email, cart: nextCart }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && data?.updatedAt) {
+            try {
+              localStorage.setItem(
+                CART_SERVER_SYNC_AT_KEY,
+                String(new Date(data.updatedAt).getTime())
+              );
+            } catch {
+              // ignore
+            }
+          }
+        })
+        .catch(() => {});
+    },
+    []
+  );
+
+  // Immediately persist cart synchronously to localStorage AND sync with server using keepalive
+  const commitCartChange = useCallback(
+    (nextCart: OrderItem[]) => {
+      cartRef.current = nextCart;
+      setCart(nextCart);
+
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(nextCart));
+        localStorage.setItem(CART_UPDATED_AT_KEY, String(Date.now()));
+      } catch {
+        // ignore storage quota errors
+      }
+
+      const activeEmail = getActiveEmail();
+      if (activeEmail) {
+        syncCartToServer(activeEmail, nextCart);
+      }
+    },
+    [getActiveEmail, syncCartToServer]
+  );
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      if (data.success) {
+        setSettings(data.settings);
+      }
+    } catch {
+      // fallback
+    }
+  };
+
+  // Load initial cart, currency, and theme from localStorage ONCE on mount
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem('yt_cart');
-      if (savedCart) setCart(JSON.parse(savedCart));
+      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+      if (savedCart) {
+        const parsed = JSON.parse(savedCart);
+        if (Array.isArray(parsed)) {
+          cartRef.current = parsed;
+          setCart(parsed);
+        }
+      }
 
       const savedCurr = localStorage.getItem('yt_currency');
       if (savedCurr === 'PKR' || savedCurr === 'USD') setCurrency(savedCurr);
@@ -82,52 +165,83 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     fetchSettings();
   }, []);
 
-  // Bi-directional Server Cart Sync: Sync cart with user's Gmail account across all devices
+  // Safe Server Cart Sync: Never resurrects locally deleted items upon page refresh
   useEffect(() => {
+    if (!user?.email) return;
     let active = true;
 
     async function syncUserCartFromServer() {
-      if (!user?.email) {
-        setInitialCartLoaded(true);
-        return;
-      }
-
+      const email = user!.email;
       try {
-        const res = await fetch(`/api/user/cart?email=${encodeURIComponent(user.email)}`);
-        const data = await res.json();
-        if (active && data.success && Array.isArray(data.cart)) {
-          if (data.cart.length > 0) {
-            setCart((localCart) => {
-              // Merge any existing local items with server items
-              const merged = [...data.cart];
-              for (const item of localCart) {
-                const idx = merged.findIndex((m) => m.productId === item.productId);
-                if (idx !== -1) {
-                  merged[idx].quantity = Math.max(merged[idx].quantity, item.quantity);
-                } else {
-                  merged.push(item);
-                }
-              }
-              return merged;
-            });
-          } else {
-            // If user's account had 0 items on server but current local has items, sync them to server!
-            setCart((currentLocalCart) => {
-              if (currentLocalCart.length > 0) {
-                fetch('/api/user/cart', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ email: user.email, cart: currentLocalCart }),
-                }).catch(() => {});
-              }
-              return currentLocalCart;
-            });
+        let localCart: OrderItem[] = [];
+        try {
+          const saved = localStorage.getItem(CART_STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) localCart = parsed;
           }
+        } catch {
+          localCart = cartRef.current;
+        }
+
+        const localUpdatedAt = Number(localStorage.getItem(CART_UPDATED_AT_KEY) || '0');
+        const lastServerSyncAt = Number(localStorage.getItem(CART_SERVER_SYNC_AT_KEY) || '0');
+        const alreadySyncedThisSession =
+          sessionStorage.getItem(CART_SYNCED_SESSION_KEY) === email;
+
+        const res = await fetch(
+          `/api/user/cart?email=${encodeURIComponent(email)}&_t=${Date.now()}`,
+          { cache: 'no-store' }
+        );
+        const data = await res.json();
+        if (!active || !data.success || !Array.isArray(data.cart)) return;
+
+        const serverCart = data.cart as OrderItem[];
+        const serverUpdatedAt = data.updatedAt ? new Date(data.updatedAt).getTime() : 0;
+
+        sessionStorage.setItem(CART_SYNCED_SESSION_KEY, email);
+
+        if (alreadySyncedThisSession) {
+          // Same active session refresh: localStorage holds latest user edits/deletions
+          if (JSON.stringify(serverCart) !== JSON.stringify(localCart)) {
+            syncCartToServer(email, localCart);
+          }
+          return;
+        }
+
+        // Fresh login or new tab/device
+        if (localUpdatedAt === 0 && localCart.length === 0) {
+          // Completely fresh device with empty local cart -> pull saved server cart
+          if (serverCart.length > 0) {
+            cartRef.current = serverCart;
+            setCart(serverCart);
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(serverCart));
+            if (serverUpdatedAt) {
+              localStorage.setItem(CART_SERVER_SYNC_AT_KEY, String(serverUpdatedAt));
+            }
+          }
+          return;
+        }
+
+        // If another device genuinely updated the server MORE recently than any local action here
+        if (
+          serverUpdatedAt > lastServerSyncAt + 1000 &&
+          serverUpdatedAt > localUpdatedAt &&
+          serverCart.length > 0
+        ) {
+          cartRef.current = serverCart;
+          setCart(serverCart);
+          localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(serverCart));
+          localStorage.setItem(CART_SERVER_SYNC_AT_KEY, String(serverUpdatedAt));
+          return;
+        }
+
+        // Otherwise local changes (including deletions or empty cart) take priority -> update server
+        if (JSON.stringify(serverCart) !== JSON.stringify(localCart)) {
+          syncCartToServer(email, localCart);
         }
       } catch {
-        // ignore
-      } finally {
-        if (active) setInitialCartLoaded(true);
+        // ignore network issues cleanly
       }
     }
 
@@ -136,7 +250,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [user?.email]);
+  }, [user?.email, syncCartToServer]);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -153,24 +267,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Save cart to localStorage AND sync to database when cart updates
-  useEffect(() => {
-    try {
-      localStorage.setItem('yt_cart', JSON.stringify(cart));
-      // If user is signed in, sync cart to their Gmail account on the server
-      if (user?.email && initialCartLoaded) {
-        fetch('/api/user/cart', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email, cart }),
-        }).catch(() => {});
-      }
-    } catch {
-      // ignore
-    }
-  }, [cart, user?.email, initialCartLoaded]);
-
-  // Save currency
   const handleSetCurrency = (c: 'PKR' | 'USD') => {
     setCurrency(c);
     try {
@@ -180,45 +276,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.success) {
-        setSettings(data.settings);
-      }
-    } catch {
-      // fallback
-    }
-  };
-
   const clearCartNotification = () => {
     setCartNotification(null);
   };
 
   const addToCart = (product: Product, quantity = 1) => {
     if (product.isSoldOut) return;
-    setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
-      return [
-        ...prev,
-        {
-          productId: product.id,
-          title: product.title,
-          pricePKR: product.pricePKR,
-          priceUSD: product.priceUSD,
-          quantity,
-          image: product.images[0] || '',
-        },
-      ];
-    });
+    const prev = cartRef.current;
+    const existing = prev.find((item) => item.productId === product.id);
+    const next = existing
+      ? prev.map((item) =>
+          item.productId === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
+      : [
+          ...prev,
+          {
+            productId: product.id,
+            title: product.title,
+            pricePKR: product.pricePKR,
+            priceUSD: product.priceUSD,
+            quantity,
+            image: product.images[0] || '',
+          },
+        ];
 
-    // Show non-intrusive toast notification without opening drawer
+    commitCartChange(next);
+
     setCartNotification({
       id: Date.now().toString(),
       title: product.title,
@@ -232,7 +317,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         const saved = localStorage.getItem('yt_user_session');
         if (saved) currentUser = JSON.parse(saved);
-      } catch {}
+      } catch {
+        // ignore
+      }
 
       fetch('/api/notify', {
         method: 'POST',
@@ -261,7 +348,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.productId !== productId));
+    const next = cartRef.current.filter((item) => item.productId !== productId);
+    commitCartChange(next);
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -269,13 +357,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeFromCart(productId);
       return;
     }
-    setCart((prev) =>
-      prev.map((item) => (item.productId === productId ? { ...item, quantity } : item))
+    const next = cartRef.current.map((item) =>
+      item.productId === productId ? { ...item, quantity } : item
     );
+    commitCartChange(next);
   };
 
   const clearCart = () => {
-    setCart([]);
+    commitCartChange([]);
   };
 
   const openCheckoutWithItems = (items: OrderItem[]) => {
@@ -303,6 +392,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartTotalUSD = cart.reduce((sum, item) => sum + item.priceUSD * item.quantity, 0);
 
   const formatPrice = (pkr: number, _usd?: number) => {
+    void _usd;
     return `Rs ${pkr.toLocaleString()}`;
   };
 

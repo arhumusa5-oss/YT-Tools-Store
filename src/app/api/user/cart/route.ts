@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { OrderItem } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,12 +14,23 @@ export async function GET(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = await db.getUserByEmail(cleanEmail);
+    const user = await db.getUserByEmail(cleanEmail, true);
     if (!user) {
       return NextResponse.json({ success: false, error: 'User not found.' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, cart: user.cart || [] });
+    return NextResponse.json(
+      {
+        success: true,
+        cart: user.cart || [],
+        updatedAt: user.updatedAt || user.createdAt || null,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        },
+      }
+    );
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
@@ -34,17 +47,22 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const user = await db.getUserByEmail(cleanEmail);
+    const user = await db.getUserByEmail(cleanEmail, true);
     if (!user) {
       return NextResponse.json({ success: false, error: 'User not found.' }, { status: 404 });
     }
 
     const sanitizedCart: OrderItem[] = Array.isArray(cart) ? cart : [];
-    await db.updateUser(user.id, {
+    const updatedUser = await db.updateUser(user.id, {
       cart: sanitizedCart,
     });
 
-    return NextResponse.json({ success: true, message: 'Cart synced to user account successfully.', cart: sanitizedCart });
+    return NextResponse.json({
+      success: true,
+      message: 'Cart synced to user account successfully.',
+      cart: sanitizedCart,
+      updatedAt: updatedUser?.updatedAt || new Date().toISOString(),
+    });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
