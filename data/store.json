@@ -1222,7 +1222,8 @@
       "originalPriceUSD": 11,
       "shortDescription": "",
       "imageScale": 75,
-      "imageFit": "contain"
+      "imageFit": "contain",
+      "imageBg": "blur"
     },
     {
       "id": "prod-1792028342441",
@@ -1252,7 +1253,8 @@
       "originalPriceUSD": 11,
       "shortDescription": "",
       "imageScale": 75,
-      "imageFit": "contain"
+      "imageFit": "contain",
+      "imageBg": "blur"
     },
     {
       "id": "prod-1792028261401",
@@ -1280,7 +1282,8 @@
       "originalPriceUSD": 11,
       "shortDescription": "",
       "imageScale": 75,
-      "imageFit": "contain"
+      "imageFit": "contain",
+      "imageBg": "blur"
     },
     {
       "id": "prod-1791711500273",
@@ -1965,7 +1968,10 @@
       "fullDescription": "",
       "originalPricePKR": 1200,
       "originalPriceUSD": 4.285714285714286,
-      "shortDescription": ""
+      "shortDescription": "",
+      "imageScale": 85,
+      "imageFit": "cover",
+      "imageBg": "white"
     }
   ],
   "settings": {

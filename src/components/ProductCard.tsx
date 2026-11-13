@@ -164,12 +164,17 @@ function ProductCard({ product }: ProductCardProps) {
       className="group relative flex flex-col h-full rounded-2xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/70 transition-all duration-200 overflow-hidden shadow-lg shadow-black/40 hover:-translate-y-1 hover:shadow-orange-950/20 cursor-pointer"
     >
       {/* Image Thumbnail with Single Smart Badge & Quick View */}
-      <div className="relative w-full aspect-[16/10] bg-black/60 overflow-hidden flex items-center justify-center">
-        {/* Ambient blurred backdrop if zoom-out or contain is active */}
-        {Boolean(
-          (product.imageScale && product.imageScale < 100) ||
-            product.imageFit === 'contain'
-        ) && (
+      <div
+        className={`relative w-full aspect-[16/10] ${
+          product.imageBg === 'dark'
+            ? 'bg-black'
+            : product.imageBg === 'blur'
+            ? 'bg-black/60'
+            : 'bg-white'
+        } overflow-hidden flex items-center justify-center`}
+      >
+        {/* Ambient blurred backdrop if imageBg === 'blur' */}
+        {product.imageBg === 'blur' && (
           <img
             src={
               product.images[0] ||
@@ -177,7 +182,7 @@ function ProductCard({ product }: ProductCardProps) {
             }
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-125 pointer-events-none"
           />
         )}
         <img
@@ -197,14 +202,16 @@ function ProductCard({ product }: ProductCardProps) {
           }
           className={`w-full h-full ${
             product.imageFit === 'contain' ? 'object-contain p-2.5' : 'object-cover'
-          } transition-transform duration-300 ease-out ${
+          } transition-transform duration-300 ease-out relative z-10 ${
             product.imageScale && product.imageScale < 100
               ? ''
               : 'group-hover:scale-105'
           } ${currentIsSoldOut ? 'grayscale opacity-50' : ''}`}
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+        {product.imageBg !== 'white' && (!product.imageScale || product.imageScale === 100) && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none z-10" />
+        )}
 
         {/* Single Smart Badge (Top Left - No Clutter!) */}
         <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">

@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       variants: Array.isArray(body.variants) && body.variants.length > 0 ? body.variants : undefined,
       imageScale: body.imageScale !== undefined ? Number(body.imageScale) : undefined,
       imageFit: body.imageFit === 'contain' || body.imageFit === 'cover' ? body.imageFit : undefined,
+      imageBg: body.imageBg === 'dark' || body.imageBg === 'blur' || body.imageBg === 'white' ? body.imageBg : 'white',
     });
 
     return NextResponse.json({ success: true, product: newProduct });

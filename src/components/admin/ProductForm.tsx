@@ -80,6 +80,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
   );
   const [imageScale, setImageScale] = useState<number>(initialProduct?.imageScale || 100);
   const [imageFit, setImageFit] = useState<'cover' | 'contain'>(initialProduct?.imageFit || 'cover');
+  const [imageBg, setImageBg] = useState<'white' | 'dark' | 'blur'>(initialProduct?.imageBg || 'white');
   const [newImageInput, setNewImageInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -345,6 +346,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         variants: processedVariants,
         imageScale: Number(imageScale) || 100,
         imageFit: imageFit || 'cover',
+        imageBg: imageBg || 'white',
       };
 
       const url = isEdit ? `/api/products/${initialProduct?.id}` : '/api/products';
@@ -1133,16 +1135,62 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
             })}
           </div>
 
+          {/* Background Color Selector for Zoom Out */}
+          <div className="pt-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-zinc-300">
+                Image Side Background (Jab Zoom Out Ho)
+              </label>
+              <span className="text-[10px] text-zinc-400">
+                {imageBg === 'white' ? 'White Background' : imageBg === 'dark' ? 'Dark Background' : 'Ambient Soft Blur'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'White (Clean White)', value: 'white', desc: 'CapCut, Netflix, ChatGPT' },
+                { label: 'Dark (Black)', value: 'dark', desc: 'Grok, Black Logos' },
+                { label: 'Ambient Blur', value: 'blur', desc: 'VidIQ, Nexlev Gradients' },
+              ].map((opt) => {
+                const isSelected = (imageBg || 'white') === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setImageBg(opt.value as 'white' | 'dark' | 'blur')}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-semibold transition border flex flex-col items-center justify-center gap-0.5 text-center cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-md shadow-orange-500/20'
+                        : 'bg-black border-[#222228] text-zinc-400 hover:text-white hover:border-[#33333F]'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    <span className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-zinc-500'}`}>
+                      {opt.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Live Preview Card */}
           {images.length > 0 && (
             <div className="p-3.5 rounded-xl bg-black/60 border border-[#222228] flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="relative w-44 aspect-[16/10] rounded-xl overflow-hidden bg-black/80 border border-[#282834] flex items-center justify-center shrink-0">
-                {(imageScale < 100 || imageFit === 'contain') && (
+              <div
+                className={`relative w-44 aspect-[16/10] rounded-xl overflow-hidden ${
+                  imageBg === 'dark'
+                    ? 'bg-black'
+                    : imageBg === 'blur'
+                    ? 'bg-black/80'
+                    : 'bg-white'
+                } border border-[#282834] flex items-center justify-center shrink-0`}
+              >
+                {imageBg === 'blur' && (
                   <img
                     src={images[0]}
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-125 pointer-events-none"
                   />
                 )}
                 <img
@@ -1158,7 +1206,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
                   }
                   className={`w-full h-full ${
                     imageFit === 'contain' ? 'object-contain p-2' : 'object-cover'
-                  } transition-transform duration-200`}
+                  } transition-transform duration-200 relative z-10`}
                 />
               </div>
               <div className="text-xs text-zinc-300 space-y-1">
@@ -1168,7 +1216,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
                 <p className="text-[11px] text-zinc-400 leading-relaxed">
                   This preview shows exactly how this image will appear on the store card.
                   {imageScale < 100
-                    ? ` Image is zoomed out to ${imageScale}% to keep all edges, text, and logos fully visible.`
+                    ? ` Image is zoomed out to ${imageScale}% with ${imageBg === 'white' ? 'pure white' : imageBg === 'dark' ? 'black' : 'ambient blur'} side background.`
                     : ' Image is in default edge-to-edge fill mode.'}
                 </p>
               </div>

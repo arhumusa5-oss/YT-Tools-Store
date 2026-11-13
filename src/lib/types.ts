@@ -42,6 +42,7 @@ export interface Product {
   variants?: ProductVariant[]; // Multiple account types/tiers switcher
   imageScale?: number; // e.g. 100 (default), 85, 75, 70
   imageFit?: 'cover' | 'contain'; // 'cover' (default) or 'contain'
+  imageBg?: 'white' | 'dark' | 'blur'; // 'white' (default), 'dark', or 'blur'
 }
 
 export interface OrderItem {

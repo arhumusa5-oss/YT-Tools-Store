@@ -262,16 +262,21 @@ export default function ProductModal() {
           <div className="p-2.5 sm:p-3.5 md:p-6 bg-[#09090C] border-b md:border-b-0 md:border-r border-[#1C1C24] flex flex-col justify-between">
             <div>
               {/* Product Image */}
-              <div className="relative aspect-[16/10] md:aspect-square w-full rounded-xl md:rounded-2xl overflow-hidden bg-black/60 border border-[#222228] flex items-center justify-center">
-                {Boolean(
-                  (product.imageScale && product.imageScale < 100) ||
-                    product.imageFit === 'contain'
-                ) && (
+              <div
+                className={`relative aspect-[16/10] md:aspect-square w-full rounded-xl md:rounded-2xl overflow-hidden ${
+                  product.imageBg === 'dark'
+                    ? 'bg-black'
+                    : product.imageBg === 'blur'
+                    ? 'bg-black/60'
+                    : 'bg-white'
+                } border border-[#222228] flex items-center justify-center`}
+              >
+                {product.imageBg === 'blur' && (
                   <img
                     src={product.images[activeImageIndex] || product.images[0]}
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none"
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-60 scale-125 pointer-events-none"
                   />
                 )}
                 <img
@@ -287,7 +292,7 @@ export default function ProductModal() {
                   }
                   className={`w-full h-full ${
                     product.imageFit === 'contain' ? 'object-contain p-3' : 'object-cover'
-                  } object-center transition-transform duration-300`}
+                  } object-center transition-transform duration-300 relative z-10`}
                 />
                 {isSoldOut && (
                   <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex items-center justify-center">
