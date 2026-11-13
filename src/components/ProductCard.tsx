@@ -209,12 +209,11 @@ function ProductCard({ product }: ProductCardProps) {
           } ${currentIsSoldOut ? 'grayscale opacity-50' : ''}`}
           loading="lazy"
         />
-        {product.imageBg !== 'white' && (!product.imageScale || product.imageScale === 100) && (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none z-10" />
-        )}
+        {/* Standard bottom & top gradient shadow on ALL cards */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none z-20" />
 
         {/* Single Smart Badge (Top Left - No Clutter!) */}
-        <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
+        <div className="absolute top-2.5 left-2.5 z-30 flex items-center gap-1.5">
           {currentIsSoldOut ? (
             <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-black/90 text-red-400 border border-red-500/30 shadow-md">
               Sold Out
@@ -242,7 +241,7 @@ function ProductCard({ product }: ProductCardProps) {
             e.stopPropagation();
             setActiveProductModal(product, activeVariant?.id || null);
           }}
-          className="absolute top-2.5 right-2.5 z-10 p-2 rounded-xl bg-black/60 backdrop-blur-md text-zinc-300 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 shadow-md"
+          className="absolute top-2.5 right-2.5 z-30 p-2 rounded-xl bg-black/60 backdrop-blur-md text-zinc-300 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 shadow-md"
           title="Quick View Details"
         >
           <Eye className="w-3.5 h-3.5" />

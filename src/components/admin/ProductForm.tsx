@@ -1208,6 +1208,8 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
                     imageFit === 'contain' ? 'object-contain p-2' : 'object-cover'
                   } transition-transform duration-200 relative z-10`}
                 />
+                {/* Standard bottom & top gradient shadow matching store cards */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none z-20" />
               </div>
               <div className="text-xs text-zinc-300 space-y-1">
                 <span className="font-bold text-white block text-[11px] uppercase tracking-wider text-[#FF5500]">
