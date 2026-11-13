@@ -152,19 +152,6 @@ async function getCloudData(forceRefresh = false): Promise<DatabaseSchema | null
         needsAutoSeed = true;
       }
 
-      // If bundled store has variants for products, sync them to cloudProducts if missing
-      if (Array.isArray(bundledStoreData.products)) {
-        for (const bp of bundledStoreData.products as Product[]) {
-          if (bp.variants && bp.variants.length > 0) {
-            const cp = cloudProducts.find((p) => p.id === bp.id);
-            if (cp && (!cp.variants || cp.variants.length === 0)) {
-              cp.variants = bp.variants;
-              needsAutoSeed = true;
-            }
-          }
-        }
-      }
-
       const mergedSettings: StoreSettings = {
         ...DEFAULT_SETTINGS,
         ...(bundledStoreData.settings || {}),
@@ -352,7 +339,7 @@ export const db = {
   },
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-    const data = await getData();
+    const data = await getData(true);
     const index = data.products.findIndex((p) => p.id === id);
     if (index === -1) return null;
 
@@ -361,6 +348,18 @@ export const db = {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+
+    if ('variants' in updates) {
+      if (
+        !updates.variants ||
+        (Array.isArray(updates.variants) && updates.variants.length === 0)
+      ) {
+        delete data.products[index].variants;
+      } else {
+        data.products[index].variants = updates.variants;
+      }
+    }
+
     await saveData(data);
     return data.products[index];
   },

@@ -161,7 +161,7 @@ function ProductCard({ product }: ProductCardProps) {
   return (
     <div
       onClick={() => setActiveProductModal(product, activeVariant?.id || null)}
-      className="group relative flex flex-col rounded-2xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/70 transition-all duration-200 overflow-hidden shadow-lg shadow-black/40 hover:-translate-y-1 hover:shadow-orange-950/20 cursor-pointer"
+      className="group relative flex flex-col h-full rounded-2xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/70 transition-all duration-200 overflow-hidden shadow-lg shadow-black/40 hover:-translate-y-1 hover:shadow-orange-950/20 cursor-pointer"
     >
       {/* Image Thumbnail with Single Smart Badge & Quick View */}
       <div className="relative w-full aspect-[16/10] bg-black/60 overflow-hidden">
@@ -246,47 +246,46 @@ function ProductCard({ product }: ProductCardProps) {
             {displayDescription}
           </p>
 
-          {/* Multi-Tier / Variant Segmented Switcher (Single Card Toggle) */}
-          {product.variants && product.variants.length > 1 && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="mt-2.5 p-1 bg-[#15151B] rounded-xl border border-[#252530] flex items-center gap-1 shadow-inner"
-            >
-              {product.variants.map((v) => {
-                const isSelected = activeVariant?.id === v.id;
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedVariantId(v.id);
-                    }}
-                    className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all text-center truncate cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#FF5500] text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                    }`}
-                    title={`${v.name} - ${formatPrice(v.pricePKR, v.priceUSD || 0)}`}
-                  >
-                    {v.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Single Highlight Feature */}
-          {firstFeature && (
-            <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-zinc-300 truncate">
-              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 stroke-[2.5]" />
-              <span className="truncate">{firstFeature}</span>
-            </div>
-          )}
+          {/* Uniform Height Middle Slot (Switcher for Variants OR Feature for Regular) */}
+          <div className="mt-2.5 h-7 flex items-center">
+            {product.variants && product.variants.length > 1 ? (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full h-full p-0.5 bg-[#15151B] rounded-xl border border-[#252530] flex items-center gap-1 shadow-inner"
+              >
+                {product.variants.map((v) => {
+                  const isSelected = activeVariant?.id === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedVariantId(v.id);
+                      }}
+                      className={`flex-1 h-full px-2 rounded-lg text-[10px] font-bold transition-all text-center truncate cursor-pointer flex items-center justify-center ${
+                        isSelected
+                          ? 'bg-[#FF5500] text-white shadow-sm'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                      }`}
+                      title={`${v.name} - ${formatPrice(v.pricePKR, v.priceUSD || 0)}`}
+                    >
+                      {v.name}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : firstFeature ? (
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-300 truncate">
+                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 stroke-[2.5]" />
+                <span className="truncate">{firstFeature}</span>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {/* Price & Action Section */}
-        <div className="pt-3 border-t border-[#1F1F26] flex items-center justify-between gap-2">
+        <div className="mt-auto pt-3 border-t border-[#1F1F26] flex items-center justify-between gap-2">
           {/* Price */}
           <div className="min-w-0">
             <div className="flex items-baseline gap-1.5 flex-wrap">

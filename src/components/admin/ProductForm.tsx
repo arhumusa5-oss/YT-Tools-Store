@@ -274,7 +274,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
     try {
       const selectedCategory = category === 'Other' && customCategory ? customCategory : category;
 
-      let processedVariants: ProductVariant[] | undefined = undefined;
+      let processedVariants: ProductVariant[] = [];
       if (hasVariants) {
         const valid = variants
           .filter(
@@ -357,7 +357,14 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         throw new Error(data.error || 'Failed to save product.');
       }
 
+      try {
+        sessionStorage.removeItem('yt_products_cache_v1');
+      } catch {
+        // ignore
+      }
+
       router.push('/admin/products');
+      router.refresh();
     } catch (err) {
       setErrorMsg((err as Error).message || 'Error occurred while saving product.');
     } finally {

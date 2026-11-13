@@ -460,12 +460,12 @@ export default function StoreHomeView({
             <>
               <div
                 key={`${activeCategory}-${currentPage}-${searchQuery ? 's' : 'all'}`}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 items-stretch"
               >
                 {paginatedProducts.map((prod, idx) => (
                   <div
                     key={prod.id}
-                    className="animate-card-stagger flex flex-col"
+                    className="animate-card-stagger flex flex-col h-full"
                     style={{ animationDelay: `${Math.min(idx, 7) * 35}ms` }}
                   >
                     <ProductCard product={prod} />
