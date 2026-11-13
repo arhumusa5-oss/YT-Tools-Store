@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Product } from '@/lib/types';
+import { Product, ProductVariant } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { Check, Star, Eye, ShoppingCart, Zap, ArrowRight } from 'lucide-react';
@@ -25,6 +24,18 @@ function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth();
 
   const [added, setAdded] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(() => {
+    return product.variants && product.variants.length > 0 ? product.variants[0].id : null;
+  });
+
+  const activeVariant: ProductVariant | null = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) return null;
+    return (
+      product.variants.find((v) => v.id === selectedVariantId) ||
+      product.variants[0] ||
+      null
+    );
+  }, [product.variants, selectedVariantId]);
 
   React.useEffect(() => {
     router.prefetch('/cart');
@@ -32,14 +43,14 @@ function ProductCard({ product }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addToCart(product, 1);
+    addToCart(product, 1, activeVariant || undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
 
   const handleProceedToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    addToCart(product, 1);
+    addToCart(product, 1, activeVariant || undefined);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('yt-nav-start', {
@@ -54,8 +65,32 @@ function ProductCard({ product }: ProductCardProps) {
 
   const isService = (product.category || '').toLowerCase().includes('service');
 
-  const currentPrice = currency === 'USD' ? product.priceUSD : product.pricePKR;
-  const originalPrice = currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
+  const currentPrice = useMemo(() => {
+    if (activeVariant) {
+      return currency === 'USD'
+        ? (activeVariant.priceUSD ?? activeVariant.pricePKR / 280)
+        : activeVariant.pricePKR;
+    }
+    return currency === 'USD' ? product.priceUSD : product.pricePKR;
+  }, [activeVariant, currency, product.priceUSD, product.pricePKR]);
+
+  const originalPrice = useMemo(() => {
+    if (activeVariant) {
+      const origPKR = activeVariant.originalPricePKR ?? product.originalPricePKR;
+      return currency === 'USD'
+        ? (activeVariant.originalPriceUSD ?? (origPKR ? origPKR / 280 : 0))
+        : origPKR;
+    }
+    return currency === 'USD' ? product.originalPriceUSD : product.originalPricePKR;
+  }, [activeVariant, currency, product.originalPriceUSD, product.originalPricePKR]);
+
+  const currentIsDailyRate = activeVariant?.isDailyRate !== undefined
+    ? activeVariant.isDailyRate
+    : product.isDailyRate;
+
+  const currentIsSoldOut = activeVariant?.isSoldOut !== undefined
+    ? activeVariant.isSoldOut
+    : product.isSoldOut;
 
   const discountPercent = useMemo(() => {
     return originalPrice > currentPrice
@@ -68,13 +103,17 @@ function ProductCard({ product }: ProductCardProps) {
   }, [settings?.whatsappNumber]);
 
   const dailyRateWhatsAppUrl = useMemo(() => {
+    const variantSuffix = activeVariant ? ` (${activeVariant.name})` : '';
     const text = encodeURIComponent(
-      `Assalam o Alaikum! Mujhe ${product.title} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
+      `Assalam o Alaikum! Mujhe ${product.title}${variantSuffix} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
     );
     return `https://wa.me/${targetWhatsApp}?text=${text}`;
-  }, [product.title, targetWhatsApp]);
+  }, [product.title, activeVariant, targetWhatsApp]);
 
   const displayDescription = useMemo(() => {
+    if (activeVariant?.shortDescription?.trim()) {
+      return activeVariant.shortDescription.trim();
+    }
     if (product.shortDescription?.trim()) {
       return product.shortDescription.trim();
     }
@@ -94,9 +133,12 @@ function ProductCard({ product }: ProductCardProps) {
       return product.fullDescription.split('\n')[0].replace(/^[-*•✓]\s*/, '').trim();
     }
     return '100% genuine verified tool with instant access and replacement warranty.';
-  }, [product.shortDescription, product.fullDescription]);
+  }, [activeVariant, product.shortDescription, product.fullDescription]);
 
   const firstFeature = useMemo(() => {
+    if (activeVariant?.keyFeatures && activeVariant.keyFeatures.length > 0) {
+      return activeVariant.keyFeatures[0];
+    }
     if (product.keyFeatures && product.keyFeatures.length > 0) {
       return product.keyFeatures[0];
     }
@@ -114,11 +156,11 @@ function ProductCard({ product }: ProductCardProps) {
       if (bullet) return bullet.replace(/^[-*•✓]\s*/, '').trim();
     }
     return !isService ? 'Instant WhatsApp Access' : 'Verified Digital Solution';
-  }, [product.keyFeatures, product.fullDescription, isService]);
+  }, [activeVariant, product.keyFeatures, product.fullDescription, isService]);
 
   return (
     <div
-      onClick={() => setActiveProductModal(product)}
+      onClick={() => setActiveProductModal(product, activeVariant?.id || null)}
       className="group relative flex flex-col rounded-2xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/70 transition-all duration-200 overflow-hidden shadow-lg shadow-black/40 hover:-translate-y-1 hover:shadow-orange-950/20 cursor-pointer"
     >
       {/* Image Thumbnail with Single Smart Badge & Quick View */}
@@ -131,7 +173,7 @@ function ProductCard({ product }: ProductCardProps) {
           alt={product.title}
           decoding="async"
           className={`w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105 ${
-            product.isSoldOut ? 'grayscale opacity-50' : ''
+            currentIsSoldOut ? 'grayscale opacity-50' : ''
           }`}
           loading="lazy"
         />
@@ -139,11 +181,11 @@ function ProductCard({ product }: ProductCardProps) {
 
         {/* Single Smart Badge (Top Left - No Clutter!) */}
         <div className="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5">
-          {product.isSoldOut ? (
+          {currentIsSoldOut ? (
             <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-black/90 text-red-400 border border-red-500/30 shadow-md">
               Sold Out
             </span>
-          ) : product.isDailyRate ? (
+          ) : currentIsDailyRate ? (
             <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black shadow-md flex items-center gap-1">
               <Zap className="w-3 h-3 fill-black text-black" />
               Daily Rate
@@ -164,7 +206,7 @@ function ProductCard({ product }: ProductCardProps) {
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setActiveProductModal(product);
+            setActiveProductModal(product, activeVariant?.id || null);
           }}
           className="absolute top-2.5 right-2.5 z-10 p-2 rounded-xl bg-black/60 backdrop-blur-md text-zinc-300 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover:opacity-100 shadow-md"
           title="Quick View Details"
@@ -204,6 +246,36 @@ function ProductCard({ product }: ProductCardProps) {
             {displayDescription}
           </p>
 
+          {/* Multi-Tier / Variant Segmented Switcher (Single Card Toggle) */}
+          {product.variants && product.variants.length > 1 && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="mt-2.5 p-1 bg-[#15151B] rounded-xl border border-[#252530] flex items-center gap-1 shadow-inner"
+            >
+              {product.variants.map((v) => {
+                const isSelected = activeVariant?.id === v.id;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedVariantId(v.id);
+                    }}
+                    className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold transition-all text-center truncate cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#FF5500] text-white shadow-sm'
+                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    }`}
+                    title={`${v.name} - ${formatPrice(v.pricePKR, v.priceUSD || 0)}`}
+                  >
+                    {v.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Single Highlight Feature */}
           {firstFeature && (
             <div className="mt-2.5 flex items-center gap-1.5 text-[11px] font-medium text-zinc-300 truncate">
@@ -219,28 +291,29 @@ function ProductCard({ product }: ProductCardProps) {
           <div className="min-w-0">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <span className="text-lg sm:text-xl font-black text-white tracking-tight">
-                {formatPrice(product.pricePKR, product.priceUSD)}
+                {formatPrice(currentPrice, 0)}
               </span>
               {originalPrice > currentPrice && (
                 <span className="text-[11px] text-zinc-500 line-through">
-                  {formatPrice(product.originalPricePKR, product.originalPriceUSD)}
+                  {formatPrice(originalPrice, 0)}
                 </span>
               )}
             </div>
-            {product.isDailyRate && (
-              <span className="text-[10px] text-amber-400 font-bold block -mt-0.5">
-                ⚡ Live Market Rate
+            {currentIsDailyRate && (
+              <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1 -mt-0.5">
+                <Zap className="w-2.5 h-2.5 fill-amber-400" />
+                Live Market Rate
               </span>
             )}
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {product.isSoldOut ? (
+            {currentIsSoldOut ? (
               <span className="px-3 py-1.5 rounded-xl bg-[#1A1A20] text-zinc-500 font-bold text-xs border border-[#222228]">
                 Sold Out
               </span>
-            ) : product.isDailyRate ? (
+            ) : currentIsDailyRate ? (
               <a
                 href={dailyRateWhatsAppUrl}
                 target="_blank"

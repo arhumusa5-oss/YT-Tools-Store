@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { Product, OrderItem, Order, StoreSettings } from '@/lib/types';
+import { Product, ProductVariant, OrderItem, Order, StoreSettings } from '@/lib/types';
 import { useAuth } from './AuthContext';
 
 export interface CartNotification {
@@ -18,7 +18,7 @@ interface CartContextType {
   cartTotalUSD: number;
   currency: 'PKR' | 'USD';
   setCurrency: (c: 'PKR' | 'USD') => void;
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: Product, quantity?: number, selectedVariant?: ProductVariant) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -30,9 +30,10 @@ interface CartContextType {
   setIsCheckoutOpen: (open: boolean) => void;
   checkoutItems: OrderItem[];
   openCheckoutWithItems: (items: OrderItem[]) => void;
-  openCheckoutWithProduct: (product: Product, quantity?: number) => void;
+  openCheckoutWithProduct: (product: Product, quantity?: number, selectedVariant?: ProductVariant) => void;
   activeProductModal: Product | null;
-  setActiveProductModal: (product: Product | null) => void;
+  activeModalVariantId: string | null;
+  setActiveProductModal: (product: Product | null, initialVariantId?: string | null) => void;
   orderSuccess: Order | null;
   setOrderSuccess: (order: Order | null) => void;
   settings: StoreSettings | null;
@@ -59,7 +60,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState<OrderItem[]>([]);
   const [activeProductModal, setActiveProductModal] = useState<Product | null>(null);
+  const [activeModalVariantId, setActiveModalVariantId] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<Order | null>(null);
+
+  const handleSetActiveProductModal = useCallback(
+    (product: Product | null, initialVariantId?: string | null) => {
+      setActiveProductModal(product);
+      setActiveModalVariantId(initialVariantId || null);
+    },
+    []
+  );
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
@@ -280,25 +290,38 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartNotification(null);
   };
 
-  const addToCart = (product: Product, quantity = 1) => {
+  const addToCart = (product: Product, quantity = 1, selectedVariant?: ProductVariant) => {
     if (product.isSoldOut) return;
+    if (selectedVariant && selectedVariant.isSoldOut) return;
+
+    const variantId = selectedVariant?.id;
+    const variantName = selectedVariant?.name;
+    const pricePKR = selectedVariant ? selectedVariant.pricePKR : product.pricePKR;
+    const priceUSD = selectedVariant
+      ? (selectedVariant.priceUSD ?? selectedVariant.pricePKR / 280)
+      : product.priceUSD;
+    const itemTitle = variantName ? `${product.title} (${variantName})` : product.title;
+    const cartItemId = variantId ? `${product.id}__${variantId}` : product.id;
+
     const prev = cartRef.current;
-    const existing = prev.find((item) => item.productId === product.id);
+    const existing = prev.find((item) => item.productId === cartItemId);
     const next = existing
       ? prev.map((item) =>
-          item.productId === product.id
+          item.productId === cartItemId
             ? { ...item, quantity: item.quantity + quantity }
             : item
         )
       : [
           ...prev,
           {
-            productId: product.id,
-            title: product.title,
-            pricePKR: product.pricePKR,
-            priceUSD: product.priceUSD,
+            productId: cartItemId,
+            title: itemTitle,
+            pricePKR,
+            priceUSD,
             quantity,
             image: product.images[0] || '',
+            variantId,
+            variantName,
           },
         ];
 
@@ -306,7 +329,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     setCartNotification({
       id: Date.now().toString(),
-      title: product.title,
+      title: itemTitle,
       image: product.images[0] || '',
       quantity,
     });
@@ -328,14 +351,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           type: 'add_to_cart',
           items: [
             {
-              title: product.title,
+              title: itemTitle,
               quantity,
-              pricePKR: product.pricePKR,
-              priceUSD: product.priceUSD,
+              pricePKR,
+              priceUSD,
               image: product.images[0] || '',
+              variantId,
+              variantName,
             },
           ],
-          totalPKR: product.pricePKR * quantity,
+          totalPKR: pricePKR * quantity,
           customerName: currentUser?.name,
           customerWhatsApp: currentUser?.whatsappNumber,
           customerEmail: currentUser?.email,
@@ -372,16 +397,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setIsCheckoutOpen(true);
   };
 
-  const openCheckoutWithProduct = (product: Product, quantity = 1) => {
+  const openCheckoutWithProduct = (product: Product, quantity = 1, selectedVariant?: ProductVariant) => {
     if (product.isSoldOut) return;
+    if (selectedVariant && selectedVariant.isSoldOut) return;
     const finalQty = typeof quantity === 'number' && quantity > 0 ? quantity : 1;
+    const variantId = selectedVariant?.id;
+    const variantName = selectedVariant?.name;
+    const pricePKR = selectedVariant ? selectedVariant.pricePKR : product.pricePKR;
+    const priceUSD = selectedVariant
+      ? (selectedVariant.priceUSD ?? selectedVariant.pricePKR / 280)
+      : product.priceUSD;
+    const itemTitle = variantName ? `${product.title} (${variantName})` : product.title;
+    const cartItemId = variantId ? `${product.id}__${variantId}` : product.id;
+
     const item: OrderItem = {
-      productId: product.id,
-      title: product.title,
-      pricePKR: product.pricePKR,
-      priceUSD: product.priceUSD,
+      productId: cartItemId,
+      title: itemTitle,
+      pricePKR,
+      priceUSD,
       quantity: finalQty,
       image: product.images[0] || '',
+      variantId,
+      variantName,
     };
     setCheckoutItems([item]);
     setIsCheckoutOpen(true);
@@ -419,7 +456,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         openCheckoutWithItems,
         openCheckoutWithProduct,
         activeProductModal,
-        setActiveProductModal,
+        activeModalVariantId,
+        setActiveProductModal: handleSetActiveProductModal,
         orderSuccess,
         setOrderSuccess,
         settings,

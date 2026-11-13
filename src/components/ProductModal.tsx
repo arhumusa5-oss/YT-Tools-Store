@@ -1,18 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
-import { X, Check, Star, Clock, Mail, Share2, ShoppingCart, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Check, Star, Clock, Share2, ShoppingCart, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
 import WhatsAppIcon from './WhatsAppIcon';
-import { Product } from '@/lib/types';
+import { Product, ProductVariant } from '@/lib/types';
 
 export default function ProductModal() {
   const router = useRouter();
   const {
     activeProductModal,
+    activeModalVariantId,
     setActiveProductModal,
     formatPrice,
     settings,
@@ -25,12 +25,59 @@ export default function ProductModal() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [quantity, setQuantity] = useState<number | string>(1);
   const [added, setAdded] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
   useEffect(() => {
     router.prefetch('/cart');
   }, [router]);
 
   const product = activeProductModal;
+
+  // Initialize selected variant whenever modal opens or variant param arrives
+  useEffect(() => {
+    if (!product) {
+      setSelectedVariantId(null);
+      return;
+    }
+    const variants = product.variants;
+    if (variants && variants.length > 0) {
+      if (activeModalVariantId) {
+        const query = activeModalVariantId.toLowerCase().trim();
+        const match = variants.find(
+          (v) =>
+            v.id.toLowerCase() === query ||
+            v.name.toLowerCase() === query ||
+            v.id.toLowerCase().includes(query) ||
+            v.name.toLowerCase().includes(query)
+        );
+        if (match) {
+          setSelectedVariantId(match.id);
+          return;
+        }
+      }
+      setSelectedVariantId(variants[0].id);
+    } else {
+      setSelectedVariantId(null);
+    }
+  }, [product, activeModalVariantId]);
+
+  const activeVariant: ProductVariant | null = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return null;
+    return (
+      product.variants.find((v) => v.id === selectedVariantId) ||
+      product.variants[0] ||
+      null
+    );
+  }, [product?.variants, selectedVariantId]);
+
+  const handleSelectVariant = (variantId: string) => {
+    setSelectedVariantId(variantId);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('variant', variantId);
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+  };
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -39,9 +86,18 @@ export default function ProductModal() {
       const url = new URL(window.location.href);
       if (url.pathname.startsWith('/product/')) {
         window.history.replaceState(null, '', '/' + (url.hash || ''));
-      } else if (url.searchParams.has('product') || url.searchParams.has('tool')) {
+      } else if (
+        url.searchParams.has('product') ||
+        url.searchParams.has('tool') ||
+        url.searchParams.has('variant') ||
+        url.searchParams.has('type') ||
+        url.searchParams.has('plan')
+      ) {
         url.searchParams.delete('product');
         url.searchParams.delete('tool');
+        url.searchParams.delete('variant');
+        url.searchParams.delete('type');
+        url.searchParams.delete('plan');
         const cleanPath = url.pathname + (url.search ? url.search : '') + (url.hash || '');
         window.history.replaceState(null, '', cleanPath);
       }
@@ -53,6 +109,7 @@ export default function ProductModal() {
       setActiveImageIndex(0);
       setCopiedLink(false);
       setQuantity(1);
+      setSelectedVariantId(null);
     }, 200);
   }, [setActiveProductModal]);
 
@@ -75,10 +132,29 @@ export default function ProductModal() {
   if (!product) return null;
 
   const currentQty = typeof quantity === 'number' ? quantity : parseInt(quantity, 10) || 1;
-  const totalPKR = product.pricePKR * (product.allowQuantity ? currentQty : 1);
-  const totalUSD = product.priceUSD * (product.allowQuantity ? currentQty : 1);
-  const totalOriginalPKR = (product.originalPricePKR || 0) * (product.allowQuantity ? currentQty : 1);
-  const totalOriginalUSD = (product.originalPriceUSD || 0) * (product.allowQuantity ? currentQty : 1);
+
+  const currentPricePKR = activeVariant ? activeVariant.pricePKR : product.pricePKR;
+  const currentPriceUSD = activeVariant
+    ? (activeVariant.priceUSD ?? activeVariant.pricePKR / 280)
+    : product.priceUSD;
+  const currentOrigPKR = activeVariant
+    ? (activeVariant.originalPricePKR ?? product.originalPricePKR)
+    : (product.originalPricePKR || 0);
+  const currentOrigUSD = activeVariant
+    ? (activeVariant.originalPriceUSD ?? (currentOrigPKR ? currentOrigPKR / 280 : 0))
+    : (product.originalPriceUSD || 0);
+
+  const totalPKR = currentPricePKR * (product.allowQuantity ? currentQty : 1);
+  const totalUSD = currentPriceUSD * (product.allowQuantity ? currentQty : 1);
+  const totalOriginalPKR = currentOrigPKR * (product.allowQuantity ? currentQty : 1);
+  const totalOriginalUSD = currentOrigUSD * (product.allowQuantity ? currentQty : 1);
+
+  const isDailyRate = activeVariant?.isDailyRate !== undefined
+    ? activeVariant.isDailyRate
+    : product.isDailyRate;
+  const isSoldOut = activeVariant?.isSoldOut !== undefined
+    ? activeVariant.isSoldOut
+    : product.isSoldOut;
 
   const discountPercent =
     totalOriginalPKR > totalPKR
@@ -87,13 +163,15 @@ export default function ProductModal() {
 
   const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
 
+  const variantSuffix = activeVariant ? ` (${activeVariant.name})` : '';
   const dailyRateWhatsAppUrl = `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(
-    `Assalam o Alaikum! Mujhe ${product.title} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
+    `Assalam o Alaikum! Mujhe ${product.title}${variantSuffix} ka aaj ka best discounted rate aur availability Ka Pta Krna Tha`
   )}`;
 
   const handleCopyLink = () => {
     if (typeof window === 'undefined') return;
-    const url = `${window.location.origin}/product/${product.id}`;
+    const variantQuery = activeVariant ? `?variant=${encodeURIComponent(activeVariant.id)}` : '';
+    const url = `${window.location.origin}/product/${product.slug || product.id}${variantQuery}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
@@ -101,13 +179,13 @@ export default function ProductModal() {
   };
 
   const handleAddToCart = () => {
-    addToCart(product, currentQty);
+    addToCart(product, currentQty, activeVariant || undefined);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
 
   const handleProceedToCart = () => {
-    addToCart(product, currentQty);
+    addToCart(product, currentQty, activeVariant || undefined);
     handleClose();
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
@@ -121,7 +199,16 @@ export default function ProductModal() {
     router.push('/cart');
   };
 
-  const isService = (product.category || '').toLowerCase().includes('service');
+  const currentFeatures =
+    activeVariant?.keyFeatures && activeVariant.keyFeatures.length > 0
+      ? activeVariant.keyFeatures
+      : product.keyFeatures;
+
+  const currentDescription =
+    activeVariant?.shortDescription?.trim() ||
+    product.fullDescription ||
+    product.shortDescription ||
+    '100% genuine verified tool with instant access and replacement warranty.';
 
   return (
     <div
@@ -181,7 +268,7 @@ export default function ProductModal() {
                   alt={product.title}
                   className="w-full h-full object-cover object-center"
                 />
-                {product.isSoldOut && (
+                {isSoldOut && (
                   <div className="absolute inset-0 bg-black/75 backdrop-blur-[2px] flex items-center justify-center">
                     <span className="px-3 py-1.5 bg-red-600/90 text-white font-extrabold text-xs uppercase rounded-xl tracking-wider">
                       Sold Out
@@ -225,14 +312,14 @@ export default function ProductModal() {
 
           {/* Right Column: Information, Pricing, & Actions */}
           <div className="p-3.5 sm:p-4 md:p-6 flex flex-col justify-between">
-            <div className="space-y-2 md:space-y-4">
+            <div className="space-y-2.5 md:space-y-4">
               {/* Category, Rating & Live Rate Badge */}
               <div className="flex items-center gap-1.5 md:gap-2 flex-wrap md:pr-24">
                 <span className="px-1.5 md:px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-orange-500/15 text-[#FF5500] border border-orange-500/30">
                   {product.category}
                 </span>
 
-                {product.isDailyRate && (
+                {isDailyRate && (
                   <span className="px-1.5 md:px-2 py-0.5 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1">
                     <Zap className="w-2.5 h-2.5 md:w-3 md:h-3 fill-amber-400" />
                     Daily Live Rate
@@ -253,6 +340,36 @@ export default function ProductModal() {
                 {product.title}
               </h2>
 
+              {/* Multi-Tier / Variant Segmented Switcher */}
+              {product.variants && product.variants.length > 1 && (
+                <div className="p-1 bg-[#14141A] rounded-xl border border-[#252530] flex items-center gap-1 shadow-inner">
+                  {product.variants.map((v) => {
+                    const isSelected = activeVariant?.id === v.id;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => handleSelectVariant(v.id)}
+                        className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#FF5500] text-white shadow-md shadow-orange-500/20'
+                            : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <span>{v.name}</span>
+                        <span
+                          className={`text-[10px] font-medium ${
+                            isSelected ? 'text-white/80' : 'text-zinc-500'
+                          }`}
+                        >
+                          ({formatPrice(v.pricePKR, v.priceUSD || 0)})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Price Row (Clean & Bold) */}
               <div className="flex items-baseline gap-2 md:gap-2.5 flex-wrap">
                 <span className="text-lg sm:text-xl md:text-3xl font-black text-white tracking-tight">
@@ -272,17 +389,17 @@ export default function ProductModal() {
 
               {/* Natural Description */}
               <div className="text-[11px] sm:text-xs md:text-sm text-zinc-300 leading-snug md:leading-relaxed whitespace-pre-line">
-                {product.fullDescription || product.shortDescription || '100% genuine verified tool with instant access and replacement warranty.'}
+                {currentDescription}
               </div>
 
               {/* Key Features Bullet List */}
-              {product.keyFeatures && product.keyFeatures.length > 0 && (
+              {currentFeatures && currentFeatures.length > 0 && (
                 <div className="pt-0.5 md:pt-2">
                   <span className="text-[9px] md:text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
                     What You Get:
                   </span>
                   <div className="grid grid-cols-2 md:grid-cols-1 gap-x-2 gap-y-1 md:gap-y-1.5">
-                    {product.keyFeatures.map((feat, idx) => (
+                    {currentFeatures.map((feat, idx) => (
                       <div key={idx} className="flex items-start gap-1.5 md:gap-2 text-[11px] md:text-xs text-zinc-200 min-w-0">
                         <div className="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
                           <Check className="w-2 h-2 md:w-2.5 md:h-2.5 text-emerald-400 stroke-[3]" />
@@ -309,7 +426,7 @@ export default function ProductModal() {
             {/* Bottom Actions Area */}
             <div className="mt-3 pt-2.5 md:mt-5 md:pt-4 border-t border-[#1C1C24] space-y-2 md:space-y-3">
               {/* Quantity Stepper (if enabled) */}
-              {product.allowQuantity && !product.isSoldOut && (
+              {product.allowQuantity && !isSoldOut && (
                 <div className="flex items-center justify-between p-2 md:p-2.5 rounded-xl bg-[#14141A] border border-[#222228]">
                   <span className="text-[11px] md:text-xs font-bold text-zinc-300">Quantity</span>
                   <div className="flex items-center gap-2">
@@ -334,7 +451,7 @@ export default function ProductModal() {
               )}
 
               {/* Button Bar */}
-              {product.isSoldOut ? (
+              {isSoldOut ? (
                 <div className="text-center py-2.5 md:py-3 rounded-xl bg-[#14141A] text-zinc-500 font-bold text-xs border border-[#222228]">
                   Currently Sold Out — Contact on WhatsApp for restock updates.
                 </div>
@@ -365,7 +482,7 @@ export default function ProductModal() {
                   </button>
 
                   {/* Primary Checkout or WhatsApp Inquire Button */}
-                  {product.isDailyRate ? (
+                  {isDailyRate ? (
                     <a
                       href={dailyRateWhatsAppUrl}
                       target="_blank"

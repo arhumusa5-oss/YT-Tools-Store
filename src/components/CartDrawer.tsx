@@ -291,7 +291,7 @@ export default function CartDrawer() {
 
               {/* Delivery / Warranty Guarantee Notice */}
               <div className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/20 text-[11px] font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold">⚡</span>
+                <Zap className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>Instant delivery directly via WhatsApp after payment confirmation.</span>
               </div>
 

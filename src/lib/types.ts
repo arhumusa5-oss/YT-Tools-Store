@@ -1,3 +1,18 @@
+export interface ProductVariant {
+  id: string; // unique slug/id for URL, e.g. "shared", "private", "1b-tokens", etc.
+  name: string; // e.g. "Shared", "Private", "1B Tokens"
+  pricePKR: number;
+  originalPricePKR?: number;
+  priceUSD?: number;
+  originalPriceUSD?: number;
+  costPKR?: number;
+  keyFeatures?: string[];
+  shortDescription?: string;
+  isDailyRate?: boolean;
+  isSoldOut?: boolean;
+  badge?: string;
+}
+
 export interface Product {
   id: string;
   title: string;
@@ -24,6 +39,7 @@ export interface Product {
   reviewsCount: number;
   createdAt: string;
   updatedAt: string;
+  variants?: ProductVariant[]; // Multiple account types/tiers switcher
 }
 
 export interface OrderItem {
@@ -33,6 +49,8 @@ export interface OrderItem {
   priceUSD: number;
   quantity: number;
   image: string;
+  variantId?: string;
+  variantName?: string;
 }
 
 export interface InvoiceCustomField {

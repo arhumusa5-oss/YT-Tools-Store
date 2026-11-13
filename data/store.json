@@ -1708,9 +1708,39 @@
       "allowQuantity": false,
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "fullDescription": "",
-      "originalPricePKR": 1500,
+      "originalPricePKR": 1900,
       "originalPriceUSD": 5.36,
-      "shortDescription": ""
+      "shortDescription": "",
+      "variants": [
+        {
+          "id": "1b",
+          "name": "1B Tokens",
+          "pricePKR": 1390,
+          "originalPricePKR": 1900,
+          "priceUSD": 4.96,
+          "originalPriceUSD": 6.79,
+          "keyFeatures": [
+            "1 Billion Generation Tokens",
+            "Private and verified access",
+            "Instant Access"
+          ],
+          "shortDescription": "Standard tier with 1 Billion tokens for automation workflows."
+        },
+        {
+          "id": "31b",
+          "name": "31B Tokens",
+          "pricePKR": 3100,
+          "originalPricePKR": 4650,
+          "priceUSD": 11.07,
+          "originalPriceUSD": 16.6,
+          "keyFeatures": [
+            "31 Billion Generation Tokens",
+            "High Volume Automation",
+            "Private Access & Full Warranty"
+          ],
+          "shortDescription": "Heavy-duty power tier with 31 Billion tokens for high capacity agents."
+        }
+      ]
     },
     {
       "id": "prod-1791283313365",
@@ -1848,7 +1878,7 @@
       ],
       "rating": 0,
       "category": "Tools",
-      "pricePKR": 3400,
+      "pricePKR": 850,
       "priceUSD": 12.14,
       "createdAt": "2026-10-06T10:28:53.801Z",
       "isSoldOut": false,
@@ -1865,9 +1895,40 @@
       "reviewsCount": 0,
       "deliveryNotes": "Delivered within 15-30 minutes directly to your WhatsApp ",
       "fullDescription": "\n",
-      "originalPricePKR": 3000,
+      "originalPricePKR": 1200,
       "originalPriceUSD": 10.71,
-      "shortDescription": ""
+      "shortDescription": "",
+      "variants": [
+        {
+          "id": "shared",
+          "name": "Shared",
+          "pricePKR": 850,
+          "originalPricePKR": 1200,
+          "priceUSD": 3.04,
+          "originalPriceUSD": 4.29,
+          "keyFeatures": [
+            "Shared profile access",
+            "28 Days Warranty",
+            "Instant Delivery"
+          ],
+          "shortDescription": "Economical shared account with full ChatGPT Plus access."
+        },
+        {
+          "id": "private",
+          "name": "Private",
+          "pricePKR": 2700,
+          "originalPricePKR": 3500,
+          "priceUSD": 9.64,
+          "originalPriceUSD": 12.5,
+          "keyFeatures": [
+            "Dedicated Private Account",
+            "On Your Email or Fresh Mail",
+            "28 Days Full Warranty",
+            "Priority Access"
+          ],
+          "shortDescription": "100% private account with dedicated login and full privacy."
+        }
+      ]
     },
     {
       "id": "prod-1790168360430",

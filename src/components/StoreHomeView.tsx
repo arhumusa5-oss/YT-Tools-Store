@@ -21,6 +21,7 @@ const CACHE_KEY = 'yt_products_cache_v1';
 
 interface StoreHomeViewProps {
   initialProductParam?: string;
+  initialVariantParam?: string;
   initialProducts?: Product[];
 }
 
@@ -34,11 +35,18 @@ const stripPrivateFields = (p: Product): Product => {
   const { costPKR: _cost, vendorName: _vendor, ...rest } = p;
   void _cost;
   void _vendor;
+  if (rest.variants && Array.isArray(rest.variants)) {
+    rest.variants = rest.variants.map(({ costPKR: _vCost, ...vRest }) => {
+      void _vCost;
+      return vRest;
+    });
+  }
   return rest;
 };
 
 export default function StoreHomeView({
   initialProductParam,
+  initialVariantParam,
   initialProducts,
 }: StoreHomeViewProps) {
   const hasServerProducts = Boolean(initialProducts && initialProducts.length > 0);
@@ -113,6 +121,12 @@ export default function StoreHomeView({
 
     const params = new URLSearchParams(window.location.search);
     const rawParam = initialProductParam || params.get('product') || params.get('tool');
+    const rawVariant =
+      initialVariantParam ||
+      params.get('variant') ||
+      params.get('type') ||
+      params.get('plan') ||
+      '';
     let queryParam = '';
     if (rawParam) {
       try {
@@ -173,7 +187,7 @@ export default function StoreHomeView({
     const timer = setTimeout(() => {
       didFire = true;
       hasOpenedDeepLinkRef.current = queryParam;
-      setActiveProductModal(matched);
+      setActiveProductModal(matched, rawVariant || null);
     }, 200);
 
     return () => {
@@ -181,7 +195,7 @@ export default function StoreHomeView({
         clearTimeout(timer);
       }
     };
-  }, [loading, products, initialProductParam, setActiveProductModal]);
+  }, [loading, products, initialProductParam, initialVariantParam, setActiveProductModal]);
 
   // Smooth scroll to catalog on search submit / Explore CTA
   const handleSearchSubmit = useCallback(() => {

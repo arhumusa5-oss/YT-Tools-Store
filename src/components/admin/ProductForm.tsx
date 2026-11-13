@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Product } from '@/lib/types';
+import { Product, ProductVariant } from '@/lib/types';
 import {
   ArrowLeft,
   Plus,
@@ -12,7 +12,21 @@ import {
   Check,
   UploadCloud,
   Loader2,
+  Layers,
+  Zap,
 } from 'lucide-react';
+
+interface FormVariant {
+  id: string;
+  name: string;
+  pricePKR: string;
+  originalPricePKR: string;
+  costPKR: string;
+  keyFeature: string;
+  shortDescription: string;
+  isDailyRate: boolean;
+  isSoldOut: boolean;
+}
 
 interface ProductFormProps {
   initialProduct?: Product;
@@ -71,6 +85,87 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const [hasVariants, setHasVariants] = useState<boolean>(
+    Boolean(initialProduct?.variants && initialProduct.variants.length > 0)
+  );
+
+  const [variants, setVariants] = useState<FormVariant[]>(() => {
+    if (initialProduct?.variants && initialProduct.variants.length > 0) {
+      return initialProduct.variants.map((v) => ({
+        id: v.id,
+        name: v.name,
+        pricePKR: v.pricePKR.toString(),
+        originalPricePKR: v.originalPricePKR ? v.originalPricePKR.toString() : '',
+        costPKR: v.costPKR !== undefined ? v.costPKR.toString() : '',
+        keyFeature: v.keyFeatures && v.keyFeatures.length > 0 ? v.keyFeatures[0] : '',
+        shortDescription: v.shortDescription || '',
+        isDailyRate: Boolean(v.isDailyRate),
+        isSoldOut: Boolean(v.isSoldOut),
+      }));
+    }
+    return [
+      {
+        id: 'shared',
+        name: 'Shared',
+        pricePKR: '850',
+        originalPricePKR: '1200',
+        costPKR: '',
+        keyFeature: 'Shared Profile Access',
+        shortDescription: '',
+        isDailyRate: false,
+        isSoldOut: false,
+      },
+      {
+        id: 'private',
+        name: 'Private',
+        pricePKR: '2700',
+        originalPricePKR: '3500',
+        costPKR: '',
+        keyFeature: 'Dedicated Private Login',
+        shortDescription: '',
+        isDailyRate: false,
+        isSoldOut: false,
+      },
+    ];
+  });
+
+  const handleAddVariant = () => {
+    const nextIdx = variants.length + 1;
+    setVariants((prev) => [
+      ...prev,
+      {
+        id: `tier-${nextIdx}`,
+        name: `Tier ${nextIdx}`,
+        pricePKR: '1500',
+        originalPricePKR: '2200',
+        costPKR: '',
+        keyFeature: 'Instant verified access',
+        shortDescription: '',
+        isDailyRate: false,
+        isSoldOut: false,
+      },
+    ]);
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateVariant = (index: number, field: keyof FormVariant, val: string | boolean) => {
+    setVariants((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: val };
+      if (field === 'name' && typeof val === 'string') {
+        copy[index].id =
+          val
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '') || `tier-${index + 1}`;
+      }
+      return copy;
+    });
+  };
 
   // Auto-generate slug when title changes (if not in edit mode or slug is empty)
   const handleTitleChange = (val: string) => {
@@ -179,6 +274,51 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
     try {
       const selectedCategory = category === 'Other' && customCategory ? customCategory : category;
 
+      let processedVariants: ProductVariant[] | undefined = undefined;
+      if (hasVariants) {
+        const valid = variants
+          .filter(
+            (v) =>
+              v.name.trim().length > 0 &&
+              !isNaN(Number(v.pricePKR)) &&
+              Number(v.pricePKR) > 0
+          )
+          .map((v, idx) => {
+            const pkr = Number(v.pricePKR);
+            const origPKR =
+              v.originalPricePKR && !isNaN(Number(v.originalPricePKR))
+                ? Number(v.originalPricePKR)
+                : Math.round(pkr * 1.3);
+            const slugId =
+              v.id.trim() ||
+              v.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '') ||
+              `tier-${idx + 1}`;
+            return {
+              id: slugId,
+              name: v.name.trim(),
+              pricePKR: pkr,
+              originalPricePKR: origPKR,
+              priceUSD: Number((pkr / 280).toFixed(2)),
+              originalPriceUSD: Number((origPKR / 280).toFixed(2)),
+              costPKR:
+                v.costPKR !== '' && !isNaN(Number(v.costPKR))
+                  ? Number(v.costPKR)
+                  : undefined,
+              keyFeatures: v.keyFeature.trim() ? [v.keyFeature.trim()] : undefined,
+              shortDescription: v.shortDescription.trim() || undefined,
+              isDailyRate: Boolean(v.isDailyRate),
+              isSoldOut: Boolean(v.isSoldOut),
+            };
+          });
+
+        if (valid.length > 1) {
+          processedVariants = valid;
+        }
+      }
+
       const payload = {
         title: title.trim(),
         slug: slug.trim() || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
@@ -200,6 +340,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         deliveryType,
         deliveryNotes,
         images: images.filter((img) => img.trim().length > 0),
+        variants: processedVariants,
       };
 
       const url = isEdit ? `/api/products/${initialProduct?.id}` : '/api/products';
@@ -458,13 +599,13 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
             />
             <div>
               <span className="font-bold text-white text-xs flex items-center gap-1.5">
-                <span>⚡ Enable &quot;Daily Live Rate&quot; Badge &amp; WhatsApp Inquire</span>
+                <span>Enable &quot;Daily Live Rate&quot; Badge &amp; WhatsApp Inquire</span>
                 <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   Fluctuating Tools
                 </span>
               </span>
               <span className="text-[11px] text-zinc-400 block mt-0.5">
-                Shows &quot;⚡ Daily Live Rate&quot; on product card and adds &quot;Check Today&apos;s Rate on WhatsApp&quot; button with automatic pre-filled query for ChatGPT, Private Accounts, etc.
+                Shows &quot;Daily Live Rate&quot; on product card and adds &quot;Check Today&apos;s Rate on WhatsApp&quot; button with automatic pre-filled query for ChatGPT, Private Accounts, etc.
               </span>
             </div>
           </label>
@@ -512,6 +653,164 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
             </div>
           </label>
         </div>
+      </div>
+
+      {/* Multi-Tier Account Types & Variants Switcher Card */}
+      <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1C1C24]">
+          <div>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#FF5500]" />
+              <span>Multi-Tier Account Types (Single Card Switcher)</span>
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Combine multiple tiers (like Shared vs Private, or 1B vs 31B Tokens) into a single card with an interactive switcher and distinct share links.
+            </p>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={hasVariants}
+              onChange={(e) => setHasVariants(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-[#222228] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF5500]"></div>
+            <span className="ml-2.5 text-xs font-bold text-zinc-300">
+              {hasVariants ? 'Variants Enabled' : 'Disabled'}
+            </span>
+          </label>
+        </div>
+
+        {hasVariants && (
+          <div className="space-y-4 pt-1">
+            <div className="space-y-3">
+              {variants.map((v, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 bg-black/60 rounded-xl border border-[#222228] hover:border-[#2E2E38] transition space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-[#FF5500] uppercase tracking-wider">
+                      Tier #{idx + 1}
+                    </span>
+                    {variants.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVariant(idx)}
+                        className="text-zinc-500 hover:text-red-400 p-1 rounded-lg transition"
+                        title="Remove Tier"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                        Tier / Variant Name <span className="text-[#FF5500]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={v.name}
+                        onChange={(e) => handleUpdateVariant(idx, 'name', e.target.value)}
+                        placeholder="e.g. Shared, Private, 1B Tokens"
+                        className="w-full px-3 py-2 bg-[#121216] border border-[#262630] focus:border-[#FF5500] rounded-lg text-white text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                        Sale Price (PKR) <span className="text-[#FF5500]">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={v.pricePKR}
+                        onChange={(e) => handleUpdateVariant(idx, 'pricePKR', e.target.value)}
+                        placeholder="e.g. 850"
+                        className="w-full px-3 py-2 bg-[#121216] border border-[#262630] focus:border-[#FF5500] rounded-lg text-white text-xs font-bold focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                        Original Price (PKR) <span className="text-zinc-500">(Cut)</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={v.originalPricePKR}
+                        onChange={(e) => handleUpdateVariant(idx, 'originalPricePKR', e.target.value)}
+                        placeholder="e.g. 1200"
+                        className="w-full px-3 py-2 bg-[#121216] border border-[#262630] focus:border-[#FF5500] rounded-lg text-white text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                        Highlight Feature <span className="text-zinc-500">(Shows on Card)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={v.keyFeature}
+                        onChange={(e) => handleUpdateVariant(idx, 'keyFeature', e.target.value)}
+                        placeholder="e.g. Dedicated Email Access / 28 Days Warranty"
+                        className="w-full px-3 py-2 bg-[#121216] border border-[#262630] focus:border-[#FF5500] rounded-lg text-white text-xs focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                        Supplier Cost (PKR) <span className="text-zinc-500">(Optional Profit Calc)</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={v.costPKR}
+                        onChange={(e) => handleUpdateVariant(idx, 'costPKR', e.target.value)}
+                        placeholder="e.g. 600"
+                        className="w-full px-3 py-2 bg-[#121216] border border-[#262630] focus:border-[#FF5500] rounded-lg text-white text-xs focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Toggles */}
+                  <div className="flex items-center gap-4 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer text-[11px] text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={v.isDailyRate}
+                        onChange={(e) => handleUpdateVariant(idx, 'isDailyRate', e.target.checked)}
+                        className="rounded accent-amber-500"
+                      />
+                      <span>Daily Live Rate</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-[11px] text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={v.isSoldOut}
+                        onChange={(e) => handleUpdateVariant(idx, 'isSoldOut', e.target.checked)}
+                        className="rounded accent-red-500"
+                      />
+                      <span>Sold Out</span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddVariant}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#1A1A22] hover:bg-[#22222E] text-zinc-200 hover:text-white text-xs font-bold border border-[#2A2A38] transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#FF5500]" />
+              <span>Add Another Tier</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Key Features Builder Card */}

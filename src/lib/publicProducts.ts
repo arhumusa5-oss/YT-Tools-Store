@@ -5,6 +5,12 @@ export function sanitizePublicProduct(p: Product): Product {
   const { costPKR: _cost, vendorName: _vendor, ...publicFields } = p;
   void _cost;
   void _vendor;
+  if (publicFields.variants && Array.isArray(publicFields.variants)) {
+    publicFields.variants = publicFields.variants.map(({ costPKR: _vCost, ...vRest }) => {
+      void _vCost;
+      return vRest;
+    });
+  }
   return publicFields;
 }
 

@@ -152,6 +152,19 @@ async function getCloudData(forceRefresh = false): Promise<DatabaseSchema | null
         needsAutoSeed = true;
       }
 
+      // If bundled store has variants for products, sync them to cloudProducts if missing
+      if (Array.isArray(bundledStoreData.products)) {
+        for (const bp of bundledStoreData.products as Product[]) {
+          if (bp.variants && bp.variants.length > 0) {
+            const cp = cloudProducts.find((p) => p.id === bp.id);
+            if (cp && (!cp.variants || cp.variants.length === 0)) {
+              cp.variants = bp.variants;
+              needsAutoSeed = true;
+            }
+          }
+        }
+      }
+
       const mergedSettings: StoreSettings = {
         ...DEFAULT_SETTINGS,
         ...(bundledStoreData.settings || {}),

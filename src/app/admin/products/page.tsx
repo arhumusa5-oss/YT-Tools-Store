@@ -197,7 +197,7 @@ export default function AdminProductsPage() {
             title="Open 10-second Quick Bulk Price & Supplier Cost Editor"
           >
             <Zap className="w-4 h-4 fill-white" />
-            <span>⚡ Quick Bulk Price Editor</span>
+            <span>Quick Bulk Price Editor</span>
           </Link>
 
           <button
@@ -313,6 +313,12 @@ export default function AdminProductsPage() {
                               <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-0.5">
                                 <Zap className="w-2.5 h-2.5 fill-amber-400" />
                                 Daily Rate
+                              </span>
+                            )}
+                            {prod.variants && prod.variants.length > 1 && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-0.5" title={prod.variants.map((v) => v.name).join(' / ')}>
+                                <Layers className="w-2.5 h-2.5" />
+                                {prod.variants.length} Tiers
                               </span>
                             )}
                           </div>
