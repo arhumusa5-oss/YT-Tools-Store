@@ -164,7 +164,22 @@ function ProductCard({ product }: ProductCardProps) {
       className="group relative flex flex-col h-full rounded-2xl bg-[#0C0C0E] border border-[#222228] hover:border-[#FF5500]/70 transition-all duration-200 overflow-hidden shadow-lg shadow-black/40 hover:-translate-y-1 hover:shadow-orange-950/20 cursor-pointer"
     >
       {/* Image Thumbnail with Single Smart Badge & Quick View */}
-      <div className="relative w-full aspect-[16/10] bg-black/60 overflow-hidden">
+      <div className="relative w-full aspect-[16/10] bg-black/60 overflow-hidden flex items-center justify-center">
+        {/* Ambient blurred backdrop if zoom-out or contain is active */}
+        {Boolean(
+          (product.imageScale && product.imageScale < 100) ||
+            product.imageFit === 'contain'
+        ) && (
+          <img
+            src={
+              product.images[0] ||
+              'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'
+            }
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none"
+          />
+        )}
         <img
           src={
             product.images[0] ||
@@ -172,9 +187,21 @@ function ProductCard({ product }: ProductCardProps) {
           }
           alt={product.title}
           decoding="async"
-          className={`w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105 ${
-            currentIsSoldOut ? 'grayscale opacity-50' : ''
-          }`}
+          style={
+            product.imageScale && product.imageScale < 100
+              ? {
+                  transform: `scale(${product.imageScale / 100})`,
+                  transformOrigin: 'center center',
+                }
+              : undefined
+          }
+          className={`w-full h-full ${
+            product.imageFit === 'contain' ? 'object-contain p-2.5' : 'object-cover'
+          } transition-transform duration-300 ease-out ${
+            product.imageScale && product.imageScale < 100
+              ? ''
+              : 'group-hover:scale-105'
+          } ${currentIsSoldOut ? 'grayscale opacity-50' : ''}`}
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />

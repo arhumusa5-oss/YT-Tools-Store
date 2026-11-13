@@ -73,6 +73,8 @@ export async function POST(request: Request) {
       rating: Number(body.rating) || 0,
       reviewsCount: Number(body.reviewsCount) || 0,
       variants: Array.isArray(body.variants) && body.variants.length > 0 ? body.variants : undefined,
+      imageScale: body.imageScale !== undefined ? Number(body.imageScale) : undefined,
+      imageFit: body.imageFit === 'contain' || body.imageFit === 'cover' ? body.imageFit : undefined,
     });
 
     return NextResponse.json({ success: true, product: newProduct });

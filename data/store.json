@@ -1220,7 +1220,9 @@
       "fullDescription": "",
       "originalPricePKR": 2700,
       "originalPriceUSD": 11,
-      "shortDescription": ""
+      "shortDescription": "",
+      "imageScale": 75,
+      "imageFit": "contain"
     },
     {
       "id": "prod-1792028342441",
@@ -1248,7 +1250,9 @@
       "fullDescription": "",
       "originalPricePKR": 1348.5,
       "originalPriceUSD": 11,
-      "shortDescription": ""
+      "shortDescription": "",
+      "imageScale": 75,
+      "imageFit": "contain"
     },
     {
       "id": "prod-1792028261401",
@@ -1274,7 +1278,9 @@
       "fullDescription": "",
       "originalPricePKR": 2098.5,
       "originalPriceUSD": 11,
-      "shortDescription": ""
+      "shortDescription": "",
+      "imageScale": 75,
+      "imageFit": "contain"
     },
     {
       "id": "prod-1791711500273",

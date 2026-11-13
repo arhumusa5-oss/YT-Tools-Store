@@ -40,6 +40,8 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   variants?: ProductVariant[]; // Multiple account types/tiers switcher
+  imageScale?: number; // e.g. 100 (default), 85, 75, 70
+  imageFit?: 'cover' | 'contain'; // 'cover' (default) or 'contain'
 }
 
 export interface OrderItem {

@@ -78,6 +78,8 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
       'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80',
     ]
   );
+  const [imageScale, setImageScale] = useState<number>(initialProduct?.imageScale || 100);
+  const [imageFit, setImageFit] = useState<'cover' | 'contain'>(initialProduct?.imageFit || 'cover');
   const [newImageInput, setNewImageInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -341,6 +343,8 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         deliveryNotes,
         images: images.filter((img) => img.trim().length > 0),
         variants: processedVariants,
+        imageScale: Number(imageScale) || 100,
+        imageFit: imageFit || 'cover',
       };
 
       const url = isEdit ? `/api/products/${initialProduct?.id}` : '/api/products';
@@ -1080,6 +1084,96 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
               )}
             </div>
           ))}
+        </div>
+
+        {/* Card Image Display Scale / Zoom Out Control */}
+        <div className="mt-4 pt-4 border-t border-[#1F1F28] space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <label className="text-xs font-bold text-white block">
+                Card Image Zoom Out (For Large / Cropped Logos)
+              </label>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                If the logo or graphic is too big or its edges get cropped inside the card box, zoom it out so it fits comfortably.
+              </p>
+            </div>
+            {imageScale < 100 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FF5500]/15 text-[#FF5500] border border-[#FF5500]/30 self-start sm:self-auto">
+                Zoomed Out: {imageScale}%
+              </span>
+            )}
+          </div>
+
+          {/* Scale Preset Selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: 'Normal Fill (100%)', scale: 100, fit: 'cover' },
+              { label: 'Zoom Out (85%)', scale: 85, fit: 'cover' },
+              { label: 'Zoom Out (75%)', scale: 75, fit: 'contain' },
+              { label: 'Fit Inside (Contain)', scale: 70, fit: 'contain' },
+            ].map((opt) => {
+              const isSelected = imageScale === opt.scale && imageFit === opt.fit;
+              return (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => {
+                    setImageScale(opt.scale);
+                    setImageFit(opt.fit as 'cover' | 'contain');
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center text-center cursor-pointer border ${
+                    isSelected
+                      ? 'bg-[#FF5500] text-white border-[#FF5500] shadow-md shadow-orange-500/20'
+                      : 'bg-black border-[#222228] text-zinc-400 hover:text-white hover:border-[#33333F]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Live Preview Card */}
+          {images.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-black/60 border border-[#222228] flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="relative w-44 aspect-[16/10] rounded-xl overflow-hidden bg-black/80 border border-[#282834] flex items-center justify-center shrink-0">
+                {(imageScale < 100 || imageFit === 'contain') && (
+                  <img
+                    src={images[0]}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none"
+                  />
+                )}
+                <img
+                  src={images[0]}
+                  alt="Live Preview"
+                  style={
+                    imageScale < 100
+                      ? {
+                          transform: `scale(${imageScale / 100})`,
+                          transformOrigin: 'center center',
+                        }
+                      : undefined
+                  }
+                  className={`w-full h-full ${
+                    imageFit === 'contain' ? 'object-contain p-2' : 'object-cover'
+                  } transition-transform duration-200`}
+                />
+              </div>
+              <div className="text-xs text-zinc-300 space-y-1">
+                <span className="font-bold text-white block text-[11px] uppercase tracking-wider text-[#FF5500]">
+                  Live Card Thumbnail Preview
+                </span>
+                <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  This preview shows exactly how this image will appear on the store card.
+                  {imageScale < 100
+                    ? ` Image is zoomed out to ${imageScale}% to keep all edges, text, and logos fully visible.`
+                    : ' Image is in default edge-to-edge fill mode.'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
