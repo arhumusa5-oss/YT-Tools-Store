@@ -37,3 +37,8 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# whatsapp bot session & runtime state
+whatsapp-bot-gateway/auth_session/
+whatsapp-bot-gateway/sent_orders.json
+scratch/

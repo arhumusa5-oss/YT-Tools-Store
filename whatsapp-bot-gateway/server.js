@@ -311,6 +311,177 @@ app.get('/', (req, res) => {
 // Start bot connection and server
 startWhatsAppBot();
 
+// Database Auto-Sync Poller for Orders
+const SENT_ORDERS_FILE = path.join(__dirname, 'sent_orders.json');
+
+function loadSentData() {
+  try {
+    if (fs.existsSync(SENT_ORDERS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(SENT_ORDERS_FILE, 'utf8'));
+      return {
+        newOrders: Array.isArray(data.newOrders) ? data.newOrders : [],
+        completedOrders: Array.isArray(data.completedOrders) ? data.completedOrders : [],
+      };
+    }
+  } catch (e) {}
+  return { newOrders: [], completedOrders: [] };
+}
+
+function saveSentData(data) {
+  try {
+    fs.writeFileSync(SENT_ORDERS_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('[WhatsApp Bot] Error saving sent_orders.json:', e);
+  }
+}
+
+let isPolling = false;
+let pollerInitialized = false;
+
+function getDatabaseUrl() {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  try {
+    const envPath = path.join(__dirname, '..', '.env.local');
+    if (fs.existsSync(envPath)) {
+      const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+      for (const line of lines) {
+        const [k, ...v] = line.trim().split('=');
+        if (k === 'DATABASE_URL' || k === 'POSTGRES_URL') {
+          return v.join('=').trim().replace(/^["']|["']$/g, '');
+        }
+      }
+    }
+  } catch (e) {}
+  return 'postgresql://neondb_owner:npg_u0W2dgHOLfTA@ep-bitter-flower-b868q2v7-pooler.c-14.us-east-1.aws.neon.tech/neondb?sslmode=require';
+}
+
+const dbUrl = getDatabaseUrl();
+let neonSql = null;
+try {
+  const { neon } = require('@neondatabase/serverless');
+  neonSql = neon(dbUrl);
+} catch (e) {
+  console.error('[WhatsApp Bot] Failed to init Neon SQL:', e.message);
+}
+
+async function checkDatabaseForNewOrders() {
+  if (isPolling) return;
+  if (connectionStatus !== 'connected' || !sock || !neonSql) return;
+
+  isPolling = true;
+  try {
+    const rows = await neonSql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
+    if (!rows || rows.length === 0) return;
+
+    const storeData = rows[0].data;
+    const botConfig = storeData?.settings?.whatsappBot;
+    if (botConfig?.enabled === false) return;
+
+    const orders = Array.isArray(storeData.orders) ? storeData.orders : [];
+    const sentData = loadSentData();
+
+    if (!pollerInitialized) {
+      pollerInitialized = true;
+      if (!fs.existsSync(SENT_ORDERS_FILE)) {
+        sentData.newOrders = orders.map((o) => o.id);
+        sentData.completedOrders = orders.filter((o) => o.status === 'completed').map((o) => o.id);
+        saveSentData(sentData);
+        console.log(`[WhatsApp Bot Poller] Initialized. Tracked ${orders.length} previous orders.`);
+        return;
+      }
+    }
+
+    // Check for new orders
+    if (botConfig?.notifyOnNewOrder !== false) {
+      for (const order of orders.slice(0, 10)) {
+        if (!order || !order.id || !order.customerWhatsApp) continue;
+
+        if (!sentData.newOrders.includes(order.id)) {
+          const cleanOrderId = (order.id || '').replace(/^#/, '');
+          const customerName = (order.customerName || 'Customer').trim();
+          const productsString =
+            order.items && order.items.length > 0
+              ? order.items.map((item) => `${item.title} (x${item.quantity})`).join(', ')
+              : 'Digital Tool';
+
+          const message = `*Order Status Processing 📦*
+
+Thank You *${customerName}* For Shopping From YT Tools Store 🛒 
+
+🆔 Your Order ID : #${cleanOrderId}
+📦 Product : ${productsString}
+
+*Our Team Is Working To Complete  Your Order 📦✅*
+
+This Is An Automated Message From YT Tools Store Bot 🌐`;
+
+          const jid = formatWhatsAppJid(order.customerWhatsApp);
+          if (jid) {
+            try {
+              console.log(`[WhatsApp Bot Poller] Sending new order alert to ${jid} for order #${cleanOrderId}...`);
+              await sock.sendMessage(jid, { text: message.trim() });
+              sentData.newOrders.push(order.id);
+              saveSentData(sentData);
+              console.log(`[WhatsApp Bot Poller] Successfully delivered WhatsApp to ${jid} for order #${cleanOrderId}`);
+            } catch (err) {
+              console.error(`[WhatsApp Bot Poller] Error sending to ${jid}:`, err.message);
+            }
+          }
+        }
+      }
+    }
+
+    // Check for completed orders
+    if (botConfig?.notifyOnCompleted === true) {
+      for (const order of orders.slice(0, 10)) {
+        if (!order || !order.id || !order.customerWhatsApp) continue;
+
+        if (order.status === 'completed' && !sentData.completedOrders.includes(order.id)) {
+          const itemsSummary = (order.items || []).map((i) => i.title).join(', ');
+          const deliveryNotes =
+            order.channelOrDeliveryNote ||
+            order.adminNotes ||
+            'Your account credentials have been assigned and verified.';
+
+          const message = `*Assalam o Alaikum ${order.customerName || 'Customer'}!*
+
+Good news! Aapka order *#${order.id}* for *${itemsSummary}* complete ho gaya hai.
+
+*Delivery & Credentials:*
+${deliveryNotes}
+
+Aap kisi bhi waqt apna order status aur receipt yahan verify kar sakte hain:
+https://yt-tools-store.vercel.app/track-order?id=${encodeURIComponent(order.id)}
+
+Agar koi masla ho toh foran reply karein.
+_YT Tools Store Official Support: +92 314 0796993_`;
+
+          const jid = formatWhatsAppJid(order.customerWhatsApp);
+          if (jid) {
+            try {
+              console.log(`[WhatsApp Bot Poller] Sending completion alert to ${jid} for order #${order.id}...`);
+              await sock.sendMessage(jid, { text: message.trim() });
+              sentData.completedOrders.push(order.id);
+              saveSentData(sentData);
+              console.log(`[WhatsApp Bot Poller] Successfully delivered completed alert to ${jid} for order #${order.id}`);
+            } catch (err) {
+              console.error(`[WhatsApp Bot Poller] Error sending to ${jid}:`, err.message);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Ignore transient poll errors
+  } finally {
+    isPolling = false;
+  }
+}
+
+// Poll database every 3.5 seconds
+setInterval(checkDatabaseForNewOrders, 3500);
+
 app.listen(PORT, () => {
   console.log(`====================================================`);
   console.log(`[WhatsApp Bot Gateway] Running on http://localhost:${PORT}`);
