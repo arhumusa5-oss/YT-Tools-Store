@@ -62,7 +62,10 @@ _WhatsApp Support: +92 314 0796993_`;
 
     const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/send-message`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Bypass-Tunnel-Reminder': 'true',
+      },
       body: JSON.stringify({
         to: customerWhatsApp,
         message,
@@ -121,7 +124,10 @@ _YT Tools Store Official Support: +92 314 0796993_`;
 
     const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/send-message`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Bypass-Tunnel-Reminder': 'true',
+      },
       body: JSON.stringify({
         to: customerWhatsApp,
         message,
@@ -144,7 +150,10 @@ export async function testWhatsAppBotGateway(gatewayUrl: string, targetPhone: st
   try {
     const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/send-message`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Bypass-Tunnel-Reminder': 'true',
+      },
       body: JSON.stringify({
         to: targetPhone,
         message: `*Test Message from YT Tools Store!*\n\nWhatsApp Automated Bot Gateway is connected and running successfully.\nTimestamp: ${new Date().toLocaleString()}`,

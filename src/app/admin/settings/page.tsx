@@ -54,20 +54,47 @@ export default function AdminSettingsPage() {
     setTestBotMsg('');
 
     try {
-      const res = await fetch('/api/admin/whatsapp-bot/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gatewayUrl,
-          targetPhone: settings.whatsappNumber || '+92 314 0796993',
-        }),
-      });
+      let data: any = null;
+      try {
+        const res = await fetch('/api/admin/whatsapp-bot/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gatewayUrl,
+            targetPhone: settings.whatsappNumber || '+92 314 0796993',
+          }),
+        });
+        data = await res.json();
+      } catch (e) {
+        // Server fetch failed
+      }
 
-      const data = await res.json();
-      if (data.success) {
+      // If server could not reach localhost (e.g. running on Vercel), try directly from user's browser
+      if (!data?.success && gatewayUrl.includes('localhost')) {
+        try {
+          const directRes = await fetch(`${gatewayUrl.replace(/\/$/, '')}/send-message`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Bypass-Tunnel-Reminder': 'true',
+            },
+            body: JSON.stringify({
+              to: settings.whatsappNumber || '+92 314 0796993',
+              message: `*Test Message from YT Tools Store!*\n\nWhatsApp Automated Bot Gateway is connected and running successfully.\nTimestamp: ${new Date().toLocaleString()}`,
+            }),
+          });
+          data = await directRes.json();
+        } catch (e) {}
+      }
+
+      if (data?.success) {
         setTestBotMsg('Connected! Test message sent to your WhatsApp successfully.');
       } else {
-        setTestBotMsg(`Error: ${data.error || 'Connection failed. Ensure Bot Gateway is running and QR is scanned.'}`);
+        setTestBotMsg(
+          gatewayUrl.includes('localhost') && typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
+            ? 'Note: Store is live on Vercel. For live orders to reach your bot, paste your public URL (e.g. Render.com or tunnel link) instead of localhost.'
+            : `Error: ${data?.error || 'Connection failed. Ensure Bot Gateway is running and QR is scanned.'}`
+        );
       }
     } catch (err) {
       setTestBotMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
