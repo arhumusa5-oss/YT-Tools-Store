@@ -99,7 +99,7 @@ function ProductCard({ product }: ProductCardProps) {
   }, [originalPrice, currentPrice]);
 
   const targetWhatsApp = useMemo(() => {
-    return (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+    return (settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
   }, [settings?.whatsappNumber]);
 
   const dailyRateWhatsAppUrl = useMemo(() => {

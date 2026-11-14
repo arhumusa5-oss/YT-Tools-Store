@@ -636,7 +636,7 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
       'https://yt-tools-store.vercel.app';
     const trackingUrl = `${appUrl}/track-order?id=${encodeURIComponent(payload.orderId)}`;
 
-    const supportPhoneRaw = (settings.whatsappNumber || '+92 3702260919').replace(/\D/g, '');
+    const supportPhoneRaw = (settings.whatsappNumber || '+92 314 0796993').replace(/\D/g, '');
     const templateType = payload.templateType || 'renewal';
 
     // Format expiry date if present
@@ -931,7 +931,7 @@ export async function sendRenewalReminderEmail(payload: RenewalReminderPayload) 
             <em>This is an automated notification from YT Tools Store.</em> You are receiving this because an active digital tool order (#${payload.orderId}) is registered to this email address (${payload.customerEmail}).
           </p>
           <p style="margin: 0; color: #9ca3af;">
-            For instant assistance, reply directly to this email or reach us on WhatsApp at ${settings.whatsappNumber || '+92 3702260919'}.
+            For instant assistance, reply directly to this email or reach us on WhatsApp at ${settings.whatsappNumber || '+92 314 0796993'}.
           </p>
         </div>
       </div>

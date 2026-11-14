@@ -13,7 +13,7 @@ function AnnouncementBar() {
     return null;
   }
 
-  const phone = (settings.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const phone = (settings.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
 
   return (
     <div className="relative bg-gradient-to-r from-[#4d0000] via-[#660000] to-[#4d0000] text-white text-[11px] sm:text-xs py-2 px-3 sm:px-4 pr-10 shadow-[0_2px_10px_rgba(102,0,0,0.25)] border-b border-[#660000]/40 z-50">

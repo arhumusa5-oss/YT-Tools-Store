@@ -161,7 +161,7 @@ export default function ProductModal() {
       ? Math.round(((totalOriginalPKR - totalPKR) / totalOriginalPKR) * 100)
       : 0;
 
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const targetWhatsApp = (settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
 
   const variantSuffix = activeVariant ? ` (${activeVariant.name})` : '';
   const dailyRateWhatsAppUrl = `https://wa.me/${targetWhatsApp}?text=${encodeURIComponent(

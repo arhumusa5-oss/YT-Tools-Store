@@ -30,7 +30,7 @@ const POPUP_MESSAGES = [
 
 function FloatingWhatsApp() {
   const { settings } = useCart();
-  const phone = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const phone = (settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
   const url = `https://wa.me/${phone}?text=Assalam%20o%20Alaikum!%20I%20am%20visiting%20YT%20Tools%20Store%20and%20need%20assistance.`;
 
   const [messageIndex, setMessageIndex] = useState(0);

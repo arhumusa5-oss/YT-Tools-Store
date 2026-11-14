@@ -151,7 +151,7 @@ function TrackOrderContent() {
     }
   };
 
-  const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const targetWhatsApp = (settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16 relative z-20 animate-page-entrance">

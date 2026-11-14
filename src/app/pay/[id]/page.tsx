@@ -53,7 +53,7 @@ export default function DirectPaymentInvoicePage() {
 
   // Settings for payment accounts & contact
   const [paymentAccounts, setPaymentAccounts] = useState<any>(null);
-  const [whatsappNumber, setWhatsappNumber] = useState('+92 3702260919');
+  const [whatsappNumber, setWhatsappNumber] = useState('+92 314 0796993');
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -356,7 +356,7 @@ export default function DirectPaymentInvoicePage() {
   };
 
   const isCancelled = order?.status === 'cancelled';
-  const cleanWhatsApp = (whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const cleanWhatsApp = (whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
   const whatsappCancelMsg = order
     ? encodeURIComponent(
         `Assalam o Alaikum, my Order #${order.id} for "${order.items?.map((i) => i.title).join(', ')}" is marked as Cancelled on the payment invoice. I would like to inquire about this.`

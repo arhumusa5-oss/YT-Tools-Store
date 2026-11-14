@@ -291,7 +291,7 @@ export default function StoreHomeView({
   );
 
   const whatsappInquiryUrl = useMemo(() => {
-    return `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(
+    return `https://wa.me/${(settings?.whatsappNumber || '+92 314 0796993').replace(
       /[^0-9]/g,
       ''
     )}?text=Assalam%20o%20Alaikum!%20I%20am%20looking%20for%20a%20digital%20tool%20on%20YT%20Tools%20Store.`;

@@ -31,7 +31,7 @@ function Navbar({ onSearchClick }: NavbarProps) {
     };
   }, [cartNotification]);
 
-  const whatsappHref = `https://wa.me/${(settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20want%20to%20order%20digital%20tools.`;
+  const whatsappHref = `https://wa.me/${(settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '')}?text=Hi%20YT%20Tools%20Store%2C%20I%20want%20to%20order%20digital%20tools.`;
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/95 dark:bg-[#060608]/95 border-b border-[#e8e1e1] dark:border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.5)] transition-colors duration-200">

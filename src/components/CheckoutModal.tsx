@@ -217,7 +217,7 @@ export default function CheckoutModal() {
 
   // WhatsApp Direct Order Handler
   const handleOrderOnWhatsApp = () => {
-    const targetWhatsApp = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+    const targetWhatsApp = (settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
     const itemsListText = checkoutItems
       .map((item) => `• ${item.title} (x${item.quantity}) - ${formatPrice(item.pricePKR * item.quantity, item.priceUSD * item.quantity)}`)
       .join('\n');

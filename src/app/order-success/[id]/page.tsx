@@ -130,7 +130,7 @@ export default function OrderSuccessPage() {
     );
   }
 
-  const whatsappNumber = (settings?.whatsappNumber || '+92 3702260919').replace(/[^0-9]/g, '');
+  const whatsappNumber = (settings?.whatsappNumber || '+92 314 0796993').replace(/[^0-9]/g, '');
   const whatsappMsg = encodeURIComponent(
     `Assalam o Alaikum! I just placed Order #${displayOrderId} on YT Tools Store. Please confirm delivery and activation instructions.`
   );

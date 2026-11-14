@@ -176,7 +176,7 @@ function BundleContent() {
 
   // WhatsApp Order Link
   const whatsappHref = useMemo(() => {
-    const rawNum = settings?.whatsappNumber || '+92 3702260919';
+    const rawNum = settings?.whatsappNumber || '+92 314 0796993';
     const cleanNum = rawNum.replace(/[^0-9]/g, '');
     const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
