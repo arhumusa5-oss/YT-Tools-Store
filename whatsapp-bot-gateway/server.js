@@ -265,6 +265,9 @@ function formatWhatsAppJid(phone) {
 // -------------------------------------------------------------
 // Database Order Poller (24/7 Automated Notifications)
 // -------------------------------------------------------------
+const BOT_BOOT_TIME = Date.now();
+const MAX_LOOKBACK_MS = 2 * 60 * 1000; // Strictly ignore any orders older than 2 minutes before bot boot
+
 let isPolling = false;
 let sentOrdersCache = new Set();
 let pollerCacheLoaded = false;
@@ -282,23 +285,31 @@ async function checkDatabaseForNewOrders() {
         for (const row of sentRows) {
           sentOrdersCache.add(`${row.order_id}_${row.notification_type}`);
         }
-      } else {
-        // First boot with zero records: pre-seed with existing orders to prevent spamming old orders
-        const stateRows = await neonSql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
-        const existingOrders = stateRows[0]?.data?.orders || [];
-        for (const o of existingOrders) {
-          sentOrdersCache.add(`${o.id}_new_order`);
-          try {
-            await neonSql`
-              INSERT INTO whatsapp_sent_orders (order_id, notification_type)
-              VALUES (${o.id}, 'new_order')
-              ON CONFLICT DO NOTHING
-            `;
-          } catch (e) {}
-        }
       }
+
+      // Pre-seed all existing orders in the database into the sent cache so old orders are 100% untouched
+      const stateRows = await neonSql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
+      const existingOrders = stateRows[0]?.data?.orders || [];
+      for (const o of existingOrders) {
+        if (!o.id) continue;
+        sentOrdersCache.add(`${o.id}_new_order`);
+        sentOrdersCache.add(`${o.id}_completed`);
+        try {
+          await neonSql`
+            INSERT INTO whatsapp_sent_orders (order_id, notification_type)
+            VALUES (${o.id}, 'new_order')
+            ON CONFLICT DO NOTHING
+          `;
+          await neonSql`
+            INSERT INTO whatsapp_sent_orders (order_id, notification_type)
+            VALUES (${o.id}, 'completed')
+            ON CONFLICT DO NOTHING
+          `;
+        } catch (e) {}
+      }
+
       pollerCacheLoaded = true;
-      console.log(`[WhatsApp Bot Poller] Loaded ${sentOrdersCache.size} historic notification records from DB.`);
+      console.log(`[WhatsApp Bot Poller] Initialized. Strictly locked ${sentOrdersCache.size} past orders. Previous orders will NEVER be messaged.`);
     }
 
     // 2. Fetch latest store state from Neon DB
@@ -311,14 +322,22 @@ async function checkDatabaseForNewOrders() {
 
     const orders = Array.isArray(storeData.orders) ? storeData.orders : [];
 
-    // 3. Check for new orders
+    // 3. Check for new orders ONLY (Never touch previous/past orders)
     if (botConfig?.notifyOnNewOrder !== false) {
       for (const order of orders.slice(0, 10)) {
         if (!order || !order.id || !order.customerWhatsApp) continue;
 
+        // STRICT POLICY: Check creation timestamp.
+        // If the order was created before the bot started, NEVER touch or message it.
+        const orderTime = order.createdAt ? new Date(order.createdAt).getTime() : 0;
+        if (isNaN(orderTime) || orderTime < (BOT_BOOT_TIME - MAX_LOOKBACK_MS)) {
+          // This is a previous/historic order. Strictly skip it!
+          continue;
+        }
+
         const cacheKey = `${order.id}_new_order`;
         if (!sentOrdersCache.has(cacheKey)) {
-          const cleanOrderId = (order.id || '').replace(/^#/, '');
+          const cleanOrderId = (order.id || '').replace(/^#+/, '');
           const customerName = (order.customerName || 'Customer').trim();
           const productsString =
             order.items && order.items.length > 0
@@ -348,56 +367,9 @@ This Is An Automated Message From YT Tools Store Bot 🌐`;
                 VALUES (${order.id}, 'new_order')
                 ON CONFLICT DO NOTHING
               `;
-              console.log(`[WhatsApp Bot Poller] Successfully delivered WhatsApp to ${jid} for order #${cleanOrderId}`);
+              console.log(`[WhatsApp Bot Poller] Successfully delivered WhatsApp to ${jid} for new order #${cleanOrderId}`);
             } catch (err) {
               console.error(`[WhatsApp Bot Poller] Error sending to ${jid}:`, err.message);
-            }
-          }
-        }
-      }
-    }
-
-    // 4. Check for completed orders
-    if (botConfig?.notifyOnCompleted === true) {
-      for (const order of orders.slice(0, 10)) {
-        if (!order || !order.id || !order.customerWhatsApp) continue;
-
-        const cacheKey = `${order.id}_completed`;
-        if (order.status === 'completed' && !sentOrdersCache.has(cacheKey)) {
-          const itemsSummary = (order.items || []).map((i) => i.title).join(', ');
-          const deliveryNotes =
-            order.channelOrDeliveryNote ||
-            order.adminNotes ||
-            'Your account credentials have been assigned and verified.';
-
-          const message = `*Assalam o Alaikum ${order.customerName || 'Customer'}!*
-
-Good news! Aapka order *#${order.id}* for *${itemsSummary}* complete ho gaya hai.
-
-*Delivery & Credentials:*
-${deliveryNotes}
-
-Aap kisi bhi waqt apna order status aur receipt yahan verify kar sakte hain:
-https://yt-tools-store.vercel.app/track-order?id=${encodeURIComponent(order.id)}
-
-Agar koi masla ho toh foran reply karein.
-_YT Tools Store Official Support: +92 314 0796993_`;
-
-          const jid = formatWhatsAppJid(order.customerWhatsApp);
-          if (jid) {
-            try {
-              console.log(`[WhatsApp Bot Poller] Sending completion alert to ${jid} for order #${order.id}...`);
-              await sock.sendMessage(jid, { text: message.trim() });
-              sentOrdersCache.add(cacheKey);
-
-              await neonSql`
-                INSERT INTO whatsapp_sent_orders (order_id, notification_type)
-                VALUES (${order.id}, 'completed')
-                ON CONFLICT DO NOTHING
-              `;
-              console.log(`[WhatsApp Bot Poller] Successfully delivered completed alert to ${jid} for order #${order.id}`);
-            } catch (err) {
-              console.error(`[WhatsApp Bot Poller] Error sending completed alert to ${jid}:`, err.message);
             }
           }
         }
