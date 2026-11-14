@@ -29,36 +29,23 @@ export async function sendOrderWhatsAppNotification(order: Order): Promise<{ suc
       return { success: false, error: 'Customer phone number is missing.' };
     }
 
-    // Format items list
-    const itemsList = (order.items || [])
-      .map((item, idx) => `  ${idx + 1}. *${item.title}* (Qty: ${item.quantity}) - Rs ${formatAmount(item.pricePKR * item.quantity)}`)
-      .join('\n');
+    const cleanOrderId = (order.id || '').replace(/^#/, '');
+    const customerName = (order.customerName || 'Customer').trim();
+    const productsString =
+      order.items && order.items.length > 0
+        ? order.items.map((item) => `${item.title} (x${item.quantity})`).join(', ')
+        : 'Digital Tool';
 
-    const appUrl =
-      (process.env.NEXT_PUBLIC_APP_URL ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '') : '') ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL.replace(/\/$/, '')}` : '') ||
-      'https://yt-tools-store.vercel.app';
+    const message = `*Order Status Processing 📦*
 
-    const trackingUrl = `${appUrl}/track-order?id=${encodeURIComponent(order.id)}`;
+Thank You *${customerName}* For Shopping From YT Tools Store 🛒 
 
-    const message = `*Assalam o Alaikum ${order.customerName || 'Customer'}!*
+🆔 Your Order ID : #${cleanOrderId}
+📦 Product : ${productsString}
 
-Aapka order *#${order.id}* YT Tools Store par successfully receive ho gaya hai.
+*Our Team Is Working To Complete  Your Order 📦✅*
 
-*Order Details:*
-${itemsList}
-
-*Total Amount:* Rs ${formatAmount(order.totalPKR)}
-*Payment Method:* ${order.paymentMethod || 'Manual Transfer'}
-*Status:* Pending Verification
-
-Payment verify hotay hi aapke credentials / account delivery instructions is number par send kar di jayengi.
-
-*Order Live Tracking:*
-${trackingUrl}
-
-_YT Tools Store - Digital Subscriptions & Creator Assets_
-_WhatsApp Support: +92 314 0796993_`;
+This Is An Automated Message From YT Tools Store Bot 🌐`;
 
     const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/send-message`, {
       method: 'POST',
@@ -148,6 +135,17 @@ _YT Tools Store Official Support: +92 314 0796993_`;
  */
 export async function testWhatsAppBotGateway(gatewayUrl: string, targetPhone: string) {
   try {
+    const testMessage = `*Order Status Processing 📦*
+
+Thank You *Muhammad Faisal* For Shopping From YT Tools Store 🛒 
+
+🆔 Your Order ID : #2533
+📦 Product : Fresh Gmails (x5)
+
+*Our Team Is Working To Complete  Your Order 📦✅*
+
+This Is An Automated Message From YT Tools Store Bot 🌐`;
+
     const res = await fetch(`${gatewayUrl.replace(/\/$/, '')}/send-message`, {
       method: 'POST',
       headers: {
@@ -156,7 +154,7 @@ export async function testWhatsAppBotGateway(gatewayUrl: string, targetPhone: st
       },
       body: JSON.stringify({
         to: targetPhone,
-        message: `*Test Message from YT Tools Store!*\n\nWhatsApp Automated Bot Gateway is connected and running successfully.\nTimestamp: ${new Date().toLocaleString()}`,
+        message: testMessage,
       }),
     });
 

@@ -80,7 +80,16 @@ export default function AdminSettingsPage() {
             },
             body: JSON.stringify({
               to: settings.whatsappNumber || '+92 314 0796993',
-              message: `*Test Message from YT Tools Store!*\n\nWhatsApp Automated Bot Gateway is connected and running successfully.\nTimestamp: ${new Date().toLocaleString()}`,
+              message: `*Order Status Processing 📦*
+
+Thank You *Muhammad Faisal* For Shopping From YT Tools Store 🛒 
+
+🆔 Your Order ID : #2533
+📦 Product : Fresh Gmails (x5)
+
+*Our Team Is Working To Complete  Your Order 📦✅*
+
+This Is An Automated Message From YT Tools Store Bot 🌐`,
             }),
           });
           data = await directRes.json();
