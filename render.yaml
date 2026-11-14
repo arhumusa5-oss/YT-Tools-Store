@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: yt-tools-whatsapp-bot
+    env: node
+    plan: free
+    region: oregon
+    rootDir: whatsapp-bot-gateway
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_u0W2dgHOLfTA@ep-bitter-flower-b868q2v7-pooler.c-14.us-east-1.aws.neon.tech/neondb?sslmode=require
+      - key: NODE_VERSION
+        value: 20

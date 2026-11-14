@@ -4,6 +4,7 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
+const zlib = require('zlib');
 
 const {
   default: makeWASocket,
@@ -27,17 +28,149 @@ let currentQrDataUrl = null;
 let connectionStatus = 'initializing'; // initializing, qr_ready, connecting, connected, disconnected
 let connectedUser = null;
 let isStarting = false;
+let saveSessionTimeout = null;
 
 // Ensure auth dir exists
 if (!fs.existsSync(AUTH_DIR)) {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 }
 
+// -------------------------------------------------------------
+// Database Connection (Neon PostgreSQL)
+// -------------------------------------------------------------
+function getDatabaseUrl() {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  try {
+    const envPath = path.join(__dirname, '..', '.env.local');
+    if (fs.existsSync(envPath)) {
+      const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+      for (const line of lines) {
+        const [k, ...v] = line.trim().split('=');
+        if (k === 'DATABASE_URL' || k === 'POSTGRES_URL') {
+          return v.join('=').trim().replace(/^["']|["']$/g, '');
+        }
+      }
+    }
+  } catch (e) {}
+  return 'postgresql://neondb_owner:npg_u0W2dgHOLfTA@ep-bitter-flower-b868q2v7-pooler.c-14.us-east-1.aws.neon.tech/neondb?sslmode=require';
+}
+
+const dbUrl = getDatabaseUrl();
+let neonSql = null;
+try {
+  const { neon } = require('@neondatabase/serverless');
+  neonSql = neon(dbUrl);
+} catch (e) {
+  console.error('[WhatsApp Bot] Failed to init Neon SQL client:', e.message);
+}
+
+// Ensure database tables exist for cloud persistence
+async function ensureDatabaseTables() {
+  if (!neonSql) return;
+  try {
+    await neonSql`
+      CREATE TABLE IF NOT EXISTS whatsapp_cloud_session (
+        id VARCHAR(50) PRIMARY KEY,
+        session_data TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await neonSql`
+      CREATE TABLE IF NOT EXISTS whatsapp_sent_orders (
+        order_id VARCHAR(100) NOT NULL,
+        notification_type VARCHAR(50) NOT NULL,
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (order_id, notification_type)
+      )
+    `;
+  } catch (err) {
+    console.error('[WhatsApp Bot] Error ensuring DB tables:', err.message);
+  }
+}
+
+// Restore session files from Neon DB if running fresh on Cloud/Render
+async function restoreSessionFromCloud() {
+  if (!neonSql) return false;
+  try {
+    const credsPath = path.join(AUTH_DIR, 'creds.json');
+    if (fs.existsSync(credsPath)) {
+      return true; // Already exists locally
+    }
+
+    console.log('[WhatsApp Bot] Checking Neon DB for saved cloud session...');
+    const rows = await neonSql`SELECT session_data FROM whatsapp_cloud_session WHERE id = 'primary' LIMIT 1`;
+    if (!rows || rows.length === 0 || !rows[0].session_data) {
+      console.log('[WhatsApp Bot] No saved cloud session found in DB. Ready for initial QR scan.');
+      return false;
+    }
+
+    const gzipped = Buffer.from(rows[0].session_data, 'base64');
+    const jsonStr = zlib.gunzipSync(gzipped).toString('utf8');
+    const bundle = JSON.parse(jsonStr);
+
+    let restoredCount = 0;
+    for (const [filename, content] of Object.entries(bundle)) {
+      fs.writeFileSync(path.join(AUTH_DIR, filename), content, 'utf8');
+      restoredCount++;
+    }
+
+    console.log(`[WhatsApp Bot] Restored ${restoredCount} session files from Neon DB cloud storage!`);
+    return true;
+  } catch (err) {
+    console.error('[WhatsApp Bot] Error restoring session from cloud:', err.message);
+    return false;
+  }
+}
+
+// Save session files to Neon DB in compressed bundle (debounced)
+function scheduleCloudSessionSave() {
+  if (!neonSql) return;
+  if (saveSessionTimeout) clearTimeout(saveSessionTimeout);
+
+  saveSessionTimeout = setTimeout(async () => {
+    try {
+      if (!fs.existsSync(AUTH_DIR)) return;
+      const files = fs.readdirSync(AUTH_DIR);
+      if (files.length === 0) return;
+
+      const credsPath = path.join(AUTH_DIR, 'creds.json');
+      if (!fs.existsSync(credsPath)) return;
+
+      const bundle = {};
+      for (const f of files) {
+        const fullPath = path.join(AUTH_DIR, f);
+        if (fs.statSync(fullPath).isFile()) {
+          bundle[f] = fs.readFileSync(fullPath, 'utf8');
+        }
+      }
+
+      const gzipped = zlib.gzipSync(JSON.stringify(bundle));
+      const base64 = gzipped.toString('base64');
+
+      await neonSql`
+        INSERT INTO whatsapp_cloud_session (id, session_data, updated_at)
+        VALUES ('primary', ${base64}, CURRENT_TIMESTAMP)
+        ON CONFLICT (id) DO UPDATE SET session_data = EXCLUDED.session_data, updated_at = CURRENT_TIMESTAMP
+      `;
+      console.log(`[WhatsApp Bot Cloud Sync] Saved ${files.length} session files to Neon DB (${(base64.length / 1024).toFixed(1)} KB)`);
+    } catch (err) {
+      console.error('[WhatsApp Bot Cloud Sync] Failed to sync session to DB:', err.message);
+    }
+  }, 4000);
+}
+
+// -------------------------------------------------------------
+// Baileys WhatsApp Connection
+// -------------------------------------------------------------
 async function startWhatsAppBot() {
   if (isStarting) return;
   isStarting = true;
 
   try {
+    await ensureDatabaseTables();
+    await restoreSessionFromCloud();
+
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
     const { version } = await fetchLatestBaileysVersion();
 
@@ -45,11 +178,14 @@ async function startWhatsAppBot() {
       version,
       auth: state,
       printQRInTerminal: true,
-      logger: pino({ level: 'silent' }), // Keep console clean
+      logger: pino({ level: 'silent' }),
       browser: ['YT Tools Store Bot', 'Chrome', '1.0.0'],
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async () => {
+      await saveCreds();
+      scheduleCloudSessionSave();
+    });
 
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
@@ -59,7 +195,7 @@ async function startWhatsAppBot() {
         try {
           currentQrDataUrl = await QRCode.toDataURL(qr);
           connectionStatus = 'qr_ready';
-          console.log('[WhatsApp Bot] New QR Code generated. Scan via Linked Devices.');
+          console.log('[WhatsApp Bot] New QR Code generated. Scan via WhatsApp Linked Devices.');
         } catch (err) {
           console.error('[WhatsApp Bot] QR generation error:', err);
         }
@@ -76,6 +212,7 @@ async function startWhatsAppBot() {
         currentQrDataUrl = null;
         connectedUser = sock.user ? sock.user.id.split(':')[0] : 'Connected';
         console.log(`[WhatsApp Bot] Successfully CONNECTED! Logged in as: ${connectedUser}`);
+        scheduleCloudSessionSave();
       }
 
       if (connection === 'close') {
@@ -88,10 +225,15 @@ async function startWhatsAppBot() {
           isStarting = false;
           setTimeout(startWhatsAppBot, 3000);
         } else {
-          console.log('[WhatsApp Bot] Logged out permanently. Clearing session.');
+          console.log('[WhatsApp Bot] Logged out permanently. Clearing local & cloud session.');
           try {
             fs.rmSync(AUTH_DIR, { recursive: true, force: true });
           } catch (e) {}
+          if (neonSql) {
+            try {
+              await neonSql`DELETE FROM whatsapp_cloud_session WHERE id = 'primary'`;
+            } catch (e) {}
+          }
           isStarting = false;
           setTimeout(startWhatsAppBot, 2000);
         }
@@ -111,19 +253,173 @@ function formatWhatsAppJid(phone) {
   if (!phone) return null;
   let cleaned = phone.toString().replace(/[^0-9]/g, '');
 
-  // Handle local Pakistani numbers
   if (cleaned.startsWith('03')) {
     cleaned = '92' + cleaned.slice(1);
   } else if (cleaned.startsWith('3') && cleaned.length === 10) {
     cleaned = '92' + cleaned;
   }
 
-  // JID format
   return `${cleaned}@s.whatsapp.net`;
 }
 
-// REST APIs
-// 1. Status Check
+// -------------------------------------------------------------
+// Database Order Poller (24/7 Automated Notifications)
+// -------------------------------------------------------------
+let isPolling = false;
+let sentOrdersCache = new Set();
+let pollerCacheLoaded = false;
+
+async function checkDatabaseForNewOrders() {
+  if (isPolling) return;
+  if (connectionStatus !== 'connected' || !sock || !neonSql) return;
+
+  isPolling = true;
+  try {
+    // 1. Load sent order IDs from database on first run
+    if (!pollerCacheLoaded) {
+      const sentRows = await neonSql`SELECT order_id, notification_type FROM whatsapp_sent_orders`;
+      if (sentRows && sentRows.length > 0) {
+        for (const row of sentRows) {
+          sentOrdersCache.add(`${row.order_id}_${row.notification_type}`);
+        }
+      } else {
+        // First boot with zero records: pre-seed with existing orders to prevent spamming old orders
+        const stateRows = await neonSql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
+        const existingOrders = stateRows[0]?.data?.orders || [];
+        for (const o of existingOrders) {
+          sentOrdersCache.add(`${o.id}_new_order`);
+          try {
+            await neonSql`
+              INSERT INTO whatsapp_sent_orders (order_id, notification_type)
+              VALUES (${o.id}, 'new_order')
+              ON CONFLICT DO NOTHING
+            `;
+          } catch (e) {}
+        }
+      }
+      pollerCacheLoaded = true;
+      console.log(`[WhatsApp Bot Poller] Loaded ${sentOrdersCache.size} historic notification records from DB.`);
+    }
+
+    // 2. Fetch latest store state from Neon DB
+    const rows = await neonSql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
+    if (!rows || rows.length === 0) return;
+
+    const storeData = rows[0].data;
+    const botConfig = storeData?.settings?.whatsappBot;
+    if (botConfig?.enabled === false) return;
+
+    const orders = Array.isArray(storeData.orders) ? storeData.orders : [];
+
+    // 3. Check for new orders
+    if (botConfig?.notifyOnNewOrder !== false) {
+      for (const order of orders.slice(0, 10)) {
+        if (!order || !order.id || !order.customerWhatsApp) continue;
+
+        const cacheKey = `${order.id}_new_order`;
+        if (!sentOrdersCache.has(cacheKey)) {
+          const cleanOrderId = (order.id || '').replace(/^#/, '');
+          const customerName = (order.customerName || 'Customer').trim();
+          const productsString =
+            order.items && order.items.length > 0
+              ? order.items.map((item) => `${item.title} (x${item.quantity})`).join(', ')
+              : 'Digital Tool';
+
+          const message = `*Order Status Processing 📦*
+
+Thank You *${customerName}* For Shopping From YT Tools Store 🛒 
+
+🆔 Your Order ID : #${cleanOrderId}
+📦 Product : ${productsString}
+
+*Our Team Is Working To Complete  Your Order 📦✅*
+
+This Is An Automated Message From YT Tools Store Bot 🌐`;
+
+          const jid = formatWhatsAppJid(order.customerWhatsApp);
+          if (jid) {
+            try {
+              console.log(`[WhatsApp Bot Poller] Sending new order alert to ${jid} for order #${cleanOrderId}...`);
+              await sock.sendMessage(jid, { text: message.trim() });
+              sentOrdersCache.add(cacheKey);
+
+              await neonSql`
+                INSERT INTO whatsapp_sent_orders (order_id, notification_type)
+                VALUES (${order.id}, 'new_order')
+                ON CONFLICT DO NOTHING
+              `;
+              console.log(`[WhatsApp Bot Poller] Successfully delivered WhatsApp to ${jid} for order #${cleanOrderId}`);
+            } catch (err) {
+              console.error(`[WhatsApp Bot Poller] Error sending to ${jid}:`, err.message);
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Check for completed orders
+    if (botConfig?.notifyOnCompleted === true) {
+      for (const order of orders.slice(0, 10)) {
+        if (!order || !order.id || !order.customerWhatsApp) continue;
+
+        const cacheKey = `${order.id}_completed`;
+        if (order.status === 'completed' && !sentOrdersCache.has(cacheKey)) {
+          const itemsSummary = (order.items || []).map((i) => i.title).join(', ');
+          const deliveryNotes =
+            order.channelOrDeliveryNote ||
+            order.adminNotes ||
+            'Your account credentials have been assigned and verified.';
+
+          const message = `*Assalam o Alaikum ${order.customerName || 'Customer'}!*
+
+Good news! Aapka order *#${order.id}* for *${itemsSummary}* complete ho gaya hai.
+
+*Delivery & Credentials:*
+${deliveryNotes}
+
+Aap kisi bhi waqt apna order status aur receipt yahan verify kar sakte hain:
+https://yt-tools-store.vercel.app/track-order?id=${encodeURIComponent(order.id)}
+
+Agar koi masla ho toh foran reply karein.
+_YT Tools Store Official Support: +92 314 0796993_`;
+
+          const jid = formatWhatsAppJid(order.customerWhatsApp);
+          if (jid) {
+            try {
+              console.log(`[WhatsApp Bot Poller] Sending completion alert to ${jid} for order #${order.id}...`);
+              await sock.sendMessage(jid, { text: message.trim() });
+              sentOrdersCache.add(cacheKey);
+
+              await neonSql`
+                INSERT INTO whatsapp_sent_orders (order_id, notification_type)
+                VALUES (${order.id}, 'completed')
+                ON CONFLICT DO NOTHING
+              `;
+              console.log(`[WhatsApp Bot Poller] Successfully delivered completed alert to ${jid} for order #${order.id}`);
+            } catch (err) {
+              console.error(`[WhatsApp Bot Poller] Error sending completed alert to ${jid}:`, err.message);
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Ignore transient poll errors
+  } finally {
+    isPolling = false;
+  }
+}
+
+// Start auto-poller every 3.5 seconds
+setInterval(checkDatabaseForNewOrders, 3500);
+
+// -------------------------------------------------------------
+// REST Endpoints
+// -------------------------------------------------------------
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
 app.get('/status', (req, res) => {
   res.json({
     success: true,
@@ -134,7 +430,6 @@ app.get('/status', (req, res) => {
   });
 });
 
-// 2. Send Message
 app.post('/send-message', async (req, res) => {
   const { to, message } = req.body;
 
@@ -157,7 +452,7 @@ app.post('/send-message', async (req, res) => {
 
   try {
     const sent = await sock.sendMessage(jid, { text: message.trim() });
-    console.log(`[WhatsApp Bot] Message successfully sent to ${jid}`);
+    console.log(`[WhatsApp Bot] Direct message successfully sent to ${jid}`);
     return res.json({
       success: true,
       messageId: sent.key.id,
@@ -172,7 +467,6 @@ app.post('/send-message', async (req, res) => {
   }
 });
 
-// 3. Logout / Reset
 app.post('/logout', async (req, res) => {
   try {
     if (sock) {
@@ -184,17 +478,22 @@ app.post('/logout', async (req, res) => {
     fs.rmSync(AUTH_DIR, { recursive: true, force: true });
   } catch (e) {}
 
+  if (neonSql) {
+    try {
+      await neonSql`DELETE FROM whatsapp_cloud_session WHERE id = 'primary'`;
+    } catch (e) {}
+  }
+
   currentQr = null;
   currentQrDataUrl = null;
   connectionStatus = 'disconnected';
   connectedUser = null;
 
   setTimeout(startWhatsAppBot, 1500);
-
   res.json({ success: true, message: 'Logged out successfully. Re-initializing new QR.' });
 });
 
-// 4. Clean Web Dashboard for QR Scanning
+// Clean Web Dashboard for Monitoring & QR
 app.get('/', (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -272,7 +571,7 @@ app.get('/', (req, res) => {
 
         if (data.status === 'connected') {
           badge.innerHTML = '<span class="badge badge-connected"><span class="dot"></span> Online & Connected</span>';
-          subTitle.innerText = 'Bot is running and ready to send automated order messages.';
+          subTitle.innerText = 'Bot is running 24/7 and ready to send automated order messages.';
           qrBox.style.display = 'none';
           connectedBox.style.display = 'block';
           if (data.user) userPhone.innerText = '+' + data.user;
@@ -308,183 +607,11 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Start bot connection and server
+// Start bot
 startWhatsAppBot();
-
-// Database Auto-Sync Poller for Orders
-const SENT_ORDERS_FILE = path.join(__dirname, 'sent_orders.json');
-
-function loadSentData() {
-  try {
-    if (fs.existsSync(SENT_ORDERS_FILE)) {
-      const data = JSON.parse(fs.readFileSync(SENT_ORDERS_FILE, 'utf8'));
-      return {
-        newOrders: Array.isArray(data.newOrders) ? data.newOrders : [],
-        completedOrders: Array.isArray(data.completedOrders) ? data.completedOrders : [],
-      };
-    }
-  } catch (e) {}
-  return { newOrders: [], completedOrders: [] };
-}
-
-function saveSentData(data) {
-  try {
-    fs.writeFileSync(SENT_ORDERS_FILE, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error('[WhatsApp Bot] Error saving sent_orders.json:', e);
-  }
-}
-
-let isPolling = false;
-let pollerInitialized = false;
-
-function getDatabaseUrl() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
-  try {
-    const envPath = path.join(__dirname, '..', '.env.local');
-    if (fs.existsSync(envPath)) {
-      const lines = fs.readFileSync(envPath, 'utf8').split('\n');
-      for (const line of lines) {
-        const [k, ...v] = line.trim().split('=');
-        if (k === 'DATABASE_URL' || k === 'POSTGRES_URL') {
-          return v.join('=').trim().replace(/^["']|["']$/g, '');
-        }
-      }
-    }
-  } catch (e) {}
-  return 'postgresql://neondb_owner:npg_u0W2dgHOLfTA@ep-bitter-flower-b868q2v7-pooler.c-14.us-east-1.aws.neon.tech/neondb?sslmode=require';
-}
-
-const dbUrl = getDatabaseUrl();
-let neonSql = null;
-try {
-  const { neon } = require('@neondatabase/serverless');
-  neonSql = neon(dbUrl);
-} catch (e) {
-  console.error('[WhatsApp Bot] Failed to init Neon SQL:', e.message);
-}
-
-async function checkDatabaseForNewOrders() {
-  if (isPolling) return;
-  if (connectionStatus !== 'connected' || !sock || !neonSql) return;
-
-  isPolling = true;
-  try {
-    const rows = await neonSql`SELECT data FROM yt_store_state WHERE id = 'main' LIMIT 1`;
-    if (!rows || rows.length === 0) return;
-
-    const storeData = rows[0].data;
-    const botConfig = storeData?.settings?.whatsappBot;
-    if (botConfig?.enabled === false) return;
-
-    const orders = Array.isArray(storeData.orders) ? storeData.orders : [];
-    const sentData = loadSentData();
-
-    if (!pollerInitialized) {
-      pollerInitialized = true;
-      if (!fs.existsSync(SENT_ORDERS_FILE)) {
-        sentData.newOrders = orders.map((o) => o.id);
-        sentData.completedOrders = orders.filter((o) => o.status === 'completed').map((o) => o.id);
-        saveSentData(sentData);
-        console.log(`[WhatsApp Bot Poller] Initialized. Tracked ${orders.length} previous orders.`);
-        return;
-      }
-    }
-
-    // Check for new orders
-    if (botConfig?.notifyOnNewOrder !== false) {
-      for (const order of orders.slice(0, 10)) {
-        if (!order || !order.id || !order.customerWhatsApp) continue;
-
-        if (!sentData.newOrders.includes(order.id)) {
-          const cleanOrderId = (order.id || '').replace(/^#/, '');
-          const customerName = (order.customerName || 'Customer').trim();
-          const productsString =
-            order.items && order.items.length > 0
-              ? order.items.map((item) => `${item.title} (x${item.quantity})`).join(', ')
-              : 'Digital Tool';
-
-          const message = `*Order Status Processing 📦*
-
-Thank You *${customerName}* For Shopping From YT Tools Store 🛒 
-
-🆔 Your Order ID : #${cleanOrderId}
-📦 Product : ${productsString}
-
-*Our Team Is Working To Complete  Your Order 📦✅*
-
-This Is An Automated Message From YT Tools Store Bot 🌐`;
-
-          const jid = formatWhatsAppJid(order.customerWhatsApp);
-          if (jid) {
-            try {
-              console.log(`[WhatsApp Bot Poller] Sending new order alert to ${jid} for order #${cleanOrderId}...`);
-              await sock.sendMessage(jid, { text: message.trim() });
-              sentData.newOrders.push(order.id);
-              saveSentData(sentData);
-              console.log(`[WhatsApp Bot Poller] Successfully delivered WhatsApp to ${jid} for order #${cleanOrderId}`);
-            } catch (err) {
-              console.error(`[WhatsApp Bot Poller] Error sending to ${jid}:`, err.message);
-            }
-          }
-        }
-      }
-    }
-
-    // Check for completed orders
-    if (botConfig?.notifyOnCompleted === true) {
-      for (const order of orders.slice(0, 10)) {
-        if (!order || !order.id || !order.customerWhatsApp) continue;
-
-        if (order.status === 'completed' && !sentData.completedOrders.includes(order.id)) {
-          const itemsSummary = (order.items || []).map((i) => i.title).join(', ');
-          const deliveryNotes =
-            order.channelOrDeliveryNote ||
-            order.adminNotes ||
-            'Your account credentials have been assigned and verified.';
-
-          const message = `*Assalam o Alaikum ${order.customerName || 'Customer'}!*
-
-Good news! Aapka order *#${order.id}* for *${itemsSummary}* complete ho gaya hai.
-
-*Delivery & Credentials:*
-${deliveryNotes}
-
-Aap kisi bhi waqt apna order status aur receipt yahan verify kar sakte hain:
-https://yt-tools-store.vercel.app/track-order?id=${encodeURIComponent(order.id)}
-
-Agar koi masla ho toh foran reply karein.
-_YT Tools Store Official Support: +92 314 0796993_`;
-
-          const jid = formatWhatsAppJid(order.customerWhatsApp);
-          if (jid) {
-            try {
-              console.log(`[WhatsApp Bot Poller] Sending completion alert to ${jid} for order #${order.id}...`);
-              await sock.sendMessage(jid, { text: message.trim() });
-              sentData.completedOrders.push(order.id);
-              saveSentData(sentData);
-              console.log(`[WhatsApp Bot Poller] Successfully delivered completed alert to ${jid} for order #${order.id}`);
-            } catch (err) {
-              console.error(`[WhatsApp Bot Poller] Error sending to ${jid}:`, err.message);
-            }
-          }
-        }
-      }
-    }
-  } catch (err) {
-    // Ignore transient poll errors
-  } finally {
-    isPolling = false;
-  }
-}
-
-// Poll database every 3.5 seconds
-setInterval(checkDatabaseForNewOrders, 3500);
 
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`[WhatsApp Bot Gateway] Running on http://localhost:${PORT}`);
-  console.log(`Open http://localhost:${PORT} in your browser to scan QR code`);
+  console.log(`[WhatsApp Bot Gateway] Running on port ${PORT}`);
   console.log(`====================================================`);
 });
