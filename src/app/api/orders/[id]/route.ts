@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendCustomerOrderStatusNotification, sendEmailNotification } from '@/lib/emailService';
 import { syncOrderToGoogleSheet, deleteOrderFromGoogleSheet } from '@/lib/googleSheetsService';
+import { sendOrderCompletedWhatsAppNotification } from '@/lib/whatsappBotService';
 import { verifyAdminRequest } from '@/lib/auth';
 
 function sanitizeOrderForPublic(order: any) {
@@ -277,6 +278,13 @@ export async function PUT(
       } catch (err) {
         console.error('[EmailAlert] Status change notification error:', err);
       }
+    }
+
+    // Auto-send WhatsApp completion notification to customer if status changed to completed
+    if (isStatusChanged && updated.status === 'completed') {
+      sendOrderCompletedWhatsAppNotification(updated).catch((err) =>
+        console.error('[WhatsAppBot] Completed notification error:', err)
+      );
     }
 
     // If payment was just submitted via direct link, notify store admin

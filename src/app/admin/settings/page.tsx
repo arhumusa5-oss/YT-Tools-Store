@@ -22,6 +22,8 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Bot,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -40,6 +42,39 @@ export default function AdminSettingsPage() {
   const [syncAllMsg, setSyncAllMsg] = useState('');
   const [copiedScript, setCopiedScript] = useState(false);
   const [showScriptCode, setShowScriptCode] = useState(false);
+
+  // WhatsApp Automated Bot States
+  const [testingBot, setTestingBot] = useState(false);
+  const [testBotMsg, setTestBotMsg] = useState('');
+
+  const handleTestWhatsAppBot = async () => {
+    if (!settings) return;
+    const gatewayUrl = settings.whatsappBot?.gatewayUrl?.trim() || 'http://localhost:3005';
+    setTestingBot(true);
+    setTestBotMsg('');
+
+    try {
+      const res = await fetch('/api/admin/whatsapp-bot/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gatewayUrl,
+          targetPhone: settings.whatsappNumber || '+92 314 0796993',
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setTestBotMsg('Connected! Test message sent to your WhatsApp successfully.');
+      } else {
+        setTestBotMsg(`Error: ${data.error || 'Connection failed. Ensure Bot Gateway is running and QR is scanned.'}`);
+      }
+    } catch (err) {
+      setTestBotMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setTestingBot(false);
+    }
+  };
 
   const handleTestEmail = async () => {
     if (!settings) return;
@@ -1272,6 +1307,142 @@ export default function AdminSettingsPage() {
               </ol>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* WhatsApp Automated Bot (Free) */}
+      <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1C1C24] pb-4">
+          <div>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <Bot className="w-4 h-4 text-[#FF5500]" />
+              <span>WhatsApp Automated Bot (Free Gateway)</span>
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Automatically send instant order confirmations and delivery credentials directly to customer WhatsApp.
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer self-start sm:self-auto">
+            <input
+              type="checkbox"
+              checked={settings.whatsappBot?.enabled !== false}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  whatsappBot: {
+                    ...settings.whatsappBot,
+                    enabled: e.target.checked,
+                  },
+                })
+              }
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF5500]"></div>
+            <span className="ml-3 text-xs font-semibold text-zinc-300">
+              {settings.whatsappBot?.enabled !== false ? 'Enabled' : 'Disabled'}
+            </span>
+          </label>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-zinc-300 mb-1">
+              Bot Gateway URL (Local or Cloud Server)
+            </label>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                type="text"
+                placeholder="http://localhost:3005"
+                value={settings.whatsappBot?.gatewayUrl || ''}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    whatsappBot: {
+                      ...settings.whatsappBot,
+                      gatewayUrl: e.target.value,
+                    },
+                  })
+                }
+                className="flex-1 px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none font-mono"
+              />
+              <a
+                href={settings.whatsappBot?.gatewayUrl || 'http://localhost:3005'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700/60 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open QR Scanner</span>
+              </a>
+              <button
+                type="button"
+                onClick={handleTestWhatsAppBot}
+                disabled={testingBot}
+                className="px-4 py-2.5 bg-[#FF5500]/15 hover:bg-[#FF5500]/25 text-[#FF5500] border border-[#FF5500]/40 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{testingBot ? 'Sending...' : 'Test Bot'}</span>
+              </button>
+            </div>
+            {testBotMsg && (
+              <div
+                className={`mt-2 text-xs font-medium p-2.5 rounded-lg border ${
+                  testBotMsg.startsWith('Connected')
+                    ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
+                    : 'bg-red-950/40 border-red-800/60 text-red-300'
+                }`}
+              >
+                {testBotMsg}
+              </div>
+            )}
+            <p className="text-[11px] text-zinc-400 mt-1.5">
+              Default is <code className="text-zinc-300">http://localhost:3005</code> for local testing, or paste your free Render.com service URL.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#1C1C24]">
+            <label className="flex items-center gap-2 cursor-pointer bg-black/40 border border-[#222228] p-3 rounded-xl hover:border-zinc-700 transition">
+              <input
+                type="checkbox"
+                checked={settings.whatsappBot?.notifyOnNewOrder !== false}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    whatsappBot: {
+                      ...settings.whatsappBot,
+                      notifyOnNewOrder: e.target.checked,
+                    },
+                  })
+                }
+                className="rounded border-[#333] text-[#FF5500] focus:ring-0 bg-black cursor-pointer"
+              />
+              <div>
+                <span className="text-xs font-semibold text-zinc-200 block">Instant Order Confirmation</span>
+                <span className="text-[11px] text-zinc-400">Send WhatsApp confirmation message when customer places order</span>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer bg-black/40 border border-[#222228] p-3 rounded-xl hover:border-zinc-700 transition">
+              <input
+                type="checkbox"
+                checked={settings.whatsappBot?.notifyOnCompleted !== false}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    whatsappBot: {
+                      ...settings.whatsappBot,
+                      notifyOnCompleted: e.target.checked,
+                    },
+                  })
+                }
+                className="rounded border-[#333] text-[#FF5500] focus:ring-0 bg-black cursor-pointer"
+              />
+              <div>
+                <span className="text-xs font-semibold text-zinc-200 block">Order Completed Alert</span>
+                <span className="text-[11px] text-zinc-400">Send delivery credentials when order status is marked completed</span>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
 

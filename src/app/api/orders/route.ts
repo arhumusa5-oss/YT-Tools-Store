@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendEmailNotification } from '@/lib/emailService';
 import { syncOrderToGoogleSheet } from '@/lib/googleSheetsService';
+import { sendOrderWhatsAppNotification } from '@/lib/whatsappBotService';
 import { verifyAdminRequest } from '@/lib/auth';
 
 export async function GET(request: Request) {
@@ -137,6 +138,13 @@ export async function POST(request: Request) {
     syncOrderToGoogleSheet(newOrder).catch((err) =>
       console.error('[GoogleSheetSync] Create order sync error:', err)
     );
+
+    // Auto-send WhatsApp order confirmation to customer (non-blocking)
+    if (!body.isAdminManualEntry) {
+      sendOrderWhatsAppNotification(newOrder).catch((err) =>
+        console.error('[WhatsAppBot] Order notification error:', err)
+      );
+    }
 
     return NextResponse.json({ success: true, order: newOrder });
   } catch (error) {

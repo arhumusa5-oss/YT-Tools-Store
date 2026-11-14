@@ -60,6 +60,12 @@ const DEFAULT_SETTINGS: StoreSettings = {
     webhookUrl: process.env.GOOGLE_SHEETS_WEBHOOK_URL || '',
     lastSyncedAt: undefined,
   },
+  whatsappBot: {
+    enabled: true,
+    gatewayUrl: 'http://localhost:3005',
+    notifyOnNewOrder: true,
+    notifyOnCompleted: true,
+  },
 };
 
 interface DatabaseSchema {

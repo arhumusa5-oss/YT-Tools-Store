@@ -191,6 +191,12 @@ export interface StoreSettings {
     webhookUrl?: string;
     lastSyncedAt?: string;
   };
+  whatsappBot?: {
+    enabled?: boolean;
+    gatewayUrl?: string;
+    notifyOnNewOrder?: boolean;
+    notifyOnCompleted?: boolean;
+  };
 }
 
 export interface Category {
