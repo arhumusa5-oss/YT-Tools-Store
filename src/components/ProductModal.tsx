@@ -455,7 +455,7 @@ export default function ProductModal() {
               {product.allowQuantity && !isSoldOut && (
                 <div className="flex items-center justify-between p-2 md:p-2.5 rounded-xl bg-[#14141A] border border-[#222228]">
                   <span className="text-[11px] md:text-xs font-bold text-zinc-300">Quantity</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 md:gap-2">
                     <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, currentQty - 1))}
@@ -464,7 +464,29 @@ export default function ProductModal() {
                     >
                       –
                     </button>
-                    <span className="w-7 md:w-8 text-center text-xs font-black text-white">{currentQty}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={99999}
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setQuantity('');
+                        } else {
+                          const parsed = parseInt(val.replace(/[^0-9]/g, ''), 10);
+                          if (!isNaN(parsed)) {
+                            setQuantity(Math.max(1, parsed));
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (quantity === '' || Number(quantity) < 1) {
+                          setQuantity(1);
+                        }
+                      }}
+                      className="w-12 md:w-16 h-6 md:h-7 text-center text-xs font-black text-white bg-[#1C1C24] border border-[#2E2E38] rounded-lg px-1 focus:outline-none focus:border-[#FF5500] focus:ring-1 focus:ring-[#FF5500] transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
                     <button
                       type="button"
                       onClick={() => setQuantity(currentQty + 1)}

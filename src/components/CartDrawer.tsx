@@ -245,9 +245,20 @@ export default function CartDrawer() {
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="text-xs font-black text-[#0a0a0a] dark:text-white px-2 min-w-[20px] text-center">
-                            {item.quantity}
-                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={99999}
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
+                              if (!isNaN(num) && num >= 1) {
+                                updateQuantity(item.productId, num);
+                              }
+                            }}
+                            className="w-10 text-center text-xs font-black text-[#0a0a0a] dark:text-white bg-transparent border-0 focus:outline-none focus:ring-1 focus:ring-[#FF5500] rounded px-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.productId, item.quantity + 1)}
