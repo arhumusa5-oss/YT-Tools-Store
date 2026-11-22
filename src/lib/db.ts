@@ -66,6 +66,13 @@ const DEFAULT_SETTINGS: StoreSettings = {
     notifyOnNewOrder: true,
     notifyOnCompleted: true,
   },
+  trendingSection: {
+    enabled: true,
+    title: 'Trending & Top Selling Tools',
+    subtitle: 'Most popular creator tools & subscriptions hand-picked for you.',
+    badgeText: 'TRENDING NOW',
+    productIds: [],
+  },
 };
 
 interface DatabaseSchema {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { StoreSettings } from '@/lib/types';
+import { StoreSettings, Product } from '@/lib/types';
 import { GOOGLE_APPS_SCRIPT_TEMPLATE } from '@/lib/googleSheetsConstants';
 import {
   Save,
@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Bot,
   ExternalLink,
+  Flame,
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -46,6 +47,10 @@ export default function AdminSettingsPage() {
   // WhatsApp Automated Bot States
   const [testingBot, setTestingBot] = useState(false);
   const [testBotMsg, setTestBotMsg] = useState('');
+
+  // Homepage Trending Products Showcase States
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [trendingSearch, setTrendingSearch] = useState('');
 
   const handleTestWhatsAppBot = async () => {
     if (!settings) return;
@@ -232,10 +237,21 @@ This Is An Automated Message From YT Tools Store Bot 🌐`,
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/settings');
-        const data = await res.json();
+        const [settingsRes, prodRes] = await Promise.all([
+          fetch('/api/settings'),
+          fetch('/api/products').catch(() => null),
+        ]);
+
+        const data = await settingsRes.json();
         if (data.success && data.settings) {
           setSettings(data.settings);
+        }
+
+        if (prodRes) {
+          const prodData = await prodRes.json();
+          if (prodData.success && Array.isArray(prodData.products)) {
+            setAllProducts(prodData.products);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -246,6 +262,45 @@ This Is An Automated Message From YT Tools Store Bot 🌐`,
 
     fetchSettings();
   }, []);
+
+  const selectedTrendingIds = settings?.trendingSection?.productIds || [];
+
+  const handleToggleProductTrending = (productId: string) => {
+    if (!settings) return;
+    const current = settings.trendingSection?.productIds || [];
+    const updated = current.includes(productId)
+      ? current.filter((id) => id !== productId)
+      : [...current, productId];
+
+    setSettings({
+      ...settings,
+      trendingSection: {
+        ...(settings.trendingSection || {}),
+        enabled: settings.trendingSection?.enabled !== false,
+        productIds: updated,
+      },
+    });
+  };
+
+  const handleClearAllTrending = () => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      trendingSection: {
+        ...(settings.trendingSection || {}),
+        productIds: [],
+      },
+    });
+  };
+
+  const filteredTrendingProducts = allProducts.filter((p) => {
+    if (!trendingSearch) return true;
+    const q = trendingSearch.toLowerCase();
+    return (
+      p.title.toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q)
+    );
+  });
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,6 +526,176 @@ This Is An Automated Message From YT Tools Store Bot 🌐`,
         <p className="text-xs text-zinc-400 leading-relaxed">
           When disabled (default), the customer reviews section and the &quot;Reviews&quot; navigation link are completely hidden from the public website, keeping your storefront minimal and clean. Toggle this ON whenever you want customer reviews to be visible to store visitors.
         </p>
+      </div>
+
+      {/* Homepage Trending Products Showcase */}
+      <div className="bg-[#0C0C0E] border border-[#222228] rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Flame className="w-4 h-4 text-[#FF5500]" />
+            <span>Homepage Trending Products Section</span>
+          </h3>
+
+          <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
+            <input
+              type="checkbox"
+              checked={settings.trendingSection?.enabled !== false}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  trendingSection: {
+                    ...(settings.trendingSection || {}),
+                    enabled: e.target.checked,
+                  },
+                })
+              }
+              className="w-4 h-4 rounded accent-[#FF5500]"
+            />
+            <span
+              className={
+                settings.trendingSection?.enabled !== false
+                  ? 'text-orange-400 font-bold'
+                  : 'text-zinc-400'
+              }
+            >
+              {settings.trendingSection?.enabled !== false ? 'Enabled on Store' : 'Disabled'}
+            </span>
+          </label>
+        </div>
+
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          Showcases a dedicated, high-converting Trending Tools section on the main page of your store. You can select exactly which products appear and customize the section title.
+        </p>
+
+        {settings.trendingSection?.enabled !== false && (
+          <div className="space-y-4 pt-2 border-t border-[#1C1C24]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  Section Title
+                </label>
+                <input
+                  type="text"
+                  value={settings.trendingSection?.title ?? 'Trending & Top Selling Tools'}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      trendingSection: {
+                        ...(settings.trendingSection || {}),
+                        title: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  Badge Text
+                </label>
+                <input
+                  type="text"
+                  value={settings.trendingSection?.badgeText ?? 'TRENDING PICKS'}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      trendingSection: {
+                        ...(settings.trendingSection || {}),
+                        badgeText: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-300 mb-1">
+                  Subtitle
+                </label>
+                <input
+                  type="text"
+                  value={
+                    settings.trendingSection?.subtitle ??
+                    'Most popular creator tools & subscriptions hand-picked for you.'
+                  }
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      trendingSection: {
+                        ...(settings.trendingSection || {}),
+                        subtitle: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 bg-black border border-[#222228] focus:border-[#FF5500] rounded-xl text-white text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Product Picker */}
+            <div className="pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <label className="block text-xs font-bold text-zinc-200">
+                  Select Products to Feature ({selectedTrendingIds.length} Selected)
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={trendingSearch}
+                    onChange={(e) => setTrendingSearch(e.target.value)}
+                    className="px-2.5 py-1 bg-black border border-[#222228] rounded-lg text-white text-[11px] focus:outline-none focus:border-[#FF5500] w-40"
+                  />
+                  {selectedTrendingIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAllTrending}
+                      className="text-[11px] text-zinc-400 hover:text-zinc-200 underline cursor-pointer"
+                    >
+                      Clear Selection
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto p-2 bg-black/60 rounded-xl border border-[#222228]">
+                {filteredTrendingProducts.map((p) => {
+                  const isSelected = selectedTrendingIds.includes(p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleToggleProductTrending(p.id)}
+                      className={`flex items-center gap-2.5 p-2 rounded-lg border transition cursor-pointer select-none ${
+                        isSelected
+                          ? 'bg-orange-950/20 border-orange-500/50 text-white shadow-sm shadow-orange-500/10'
+                          : 'bg-[#0E0E12] border-[#1E1E24] text-zinc-400 hover:border-zinc-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className="w-4 h-4 rounded accent-[#FF5500] pointer-events-none"
+                      />
+                      <img
+                        src={p.images?.[0] || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800&auto=format&fit=crop&q=80'}
+                        alt={p.title}
+                        className="w-8 h-8 rounded object-cover shrink-0 bg-zinc-900 border border-zinc-800"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold truncate text-white">{p.title}</p>
+                        <p className="text-[10px] text-zinc-500">Rs {p.pricePKR?.toLocaleString()} • {p.category}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* EasyPaisa Settings */}

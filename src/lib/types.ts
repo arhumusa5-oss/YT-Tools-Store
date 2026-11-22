@@ -43,6 +43,7 @@ export interface Product {
   imageScale?: number; // e.g. 100 (default), 85, 75, 70
   imageFit?: 'cover' | 'contain'; // 'cover' (default) or 'contain'
   imageBg?: 'white' | 'dark' | 'blur'; // 'white' (default), 'dark', or 'blur'
+  isTrending?: boolean; // Featured in Homepage Trending Section
 }
 
 export interface OrderItem {
@@ -196,6 +197,13 @@ export interface StoreSettings {
     gatewayUrl?: string;
     notifyOnNewOrder?: boolean;
     notifyOnCompleted?: boolean;
+  };
+  trendingSection?: {
+    enabled?: boolean;
+    title?: string;
+    subtitle?: string;
+    badgeText?: string;
+    productIds?: string[];
   };
 }
 

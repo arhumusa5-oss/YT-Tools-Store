@@ -7,6 +7,7 @@ import Hero from '@/components/Hero';
 import CategoryFilter from '@/components/CategoryFilter';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
+import TrendingSection from '@/components/TrendingSection';
 import ReviewsSection from '@/components/ReviewsSection';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import BackToTopButton from '@/components/BackToTopButton';
@@ -315,6 +316,11 @@ export default function StoreHomeView({
         isSearching={false}
         onExploreClick={handleSearchSubmit}
       />
+
+      {/* Featured Trending Products Section */}
+      {!searchQuery && (
+        <TrendingSection products={products} />
+      )}
 
       {/* Products Catalog Section */}
       <section ref={productsSectionRef} id="products" className="py-16 sm:py-24 bg-transparent">

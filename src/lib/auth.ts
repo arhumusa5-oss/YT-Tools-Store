@@ -146,5 +146,6 @@ export function sanitizeSettingsForPublic(settings: StoreSettings): Partial<Stor
           lastSyncedAt: settings.googleSheetsSync.lastSyncedAt,
         }
       : undefined,
+    trendingSection: settings.trendingSection,
   };
 }

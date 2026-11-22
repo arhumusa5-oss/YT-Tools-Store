@@ -19,6 +19,7 @@ import {
   X,
   Save,
   Zap,
+  Flame,
 } from 'lucide-react';
 
 export default function AdminProductsPage() {
@@ -133,6 +134,30 @@ export default function AdminProductsPage() {
       }
     } catch (err) {
       alert('Failed to update product stock status.');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleToggleTrending = async (prod: Product) => {
+    const newStatus = !prod.isTrending;
+    setTogglingId(prod.id);
+    try {
+      const res = await fetch(`/api/products/${prod.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isTrending: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === prod.id ? { ...p, isTrending: newStatus } : p))
+        );
+      } else {
+        alert(data.error || 'Failed to update trending status');
+      }
+    } catch {
+      alert('Error updating trending status');
     } finally {
       setTogglingId(null);
     }
@@ -286,7 +311,7 @@ export default function AdminProductsPage() {
                   <th className="py-3.5 px-4">Category</th>
                   <th className="py-3.5 px-4">Price (PKR)</th>
                   <th className="py-3.5 px-4">Key Features</th>
-                  <th className="py-3.5 px-4">Stock Status (1-Click)</th>
+                  <th className="py-3.5 px-4">Stock &amp; Highlights</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -422,30 +447,46 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
 
-                    {/* Sold out toggle */}
+                    {/* Sold out & Trending toggle */}
                     <td className="py-3 px-4">
-                      <button
-                        onClick={() => handleToggleSoldOut(prod.id)}
-                        disabled={togglingId === prod.id}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition border ${
-                          prod.isSoldOut
-                            ? 'bg-red-950/40 text-red-400 border-red-800 hover:bg-red-900/40'
-                            : 'bg-emerald-950/40 text-emerald-400 border-emerald-800 hover:bg-emerald-900/40'
-                        }`}
-                        title="Click to toggle Stock status"
-                      >
-                        {prod.isSoldOut ? (
-                          <>
-                            <XCircle className="w-3.5 h-3.5 text-red-400" />
-                            <span>Sold Out</span>
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>In Stock</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <button
+                          onClick={() => handleToggleSoldOut(prod.id)}
+                          disabled={togglingId === prod.id}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition border ${
+                            prod.isSoldOut
+                              ? 'bg-red-950/40 text-red-400 border-red-800 hover:bg-red-900/40'
+                              : 'bg-emerald-950/40 text-emerald-400 border-emerald-800 hover:bg-emerald-900/40'
+                          }`}
+                          title="Click to toggle Stock status"
+                        >
+                          {prod.isSoldOut ? (
+                            <>
+                              <XCircle className="w-3.5 h-3.5 text-red-400" />
+                              <span>Sold Out</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>In Stock</span>
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleTrending(prod)}
+                          disabled={togglingId === prod.id}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-bold text-[10px] transition border cursor-pointer ${
+                            prod.isTrending
+                              ? 'bg-orange-500/20 text-orange-400 border-orange-500/40 hover:bg-orange-500/30'
+                              : 'bg-[#101016] text-zinc-500 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+                          }`}
+                          title="Click to toggle Trending feature on Homepage"
+                        >
+                          <Flame className={`w-3 h-3 ${prod.isTrending ? 'fill-orange-400 text-orange-400' : 'text-zinc-500'}`} />
+                          <span>{prod.isTrending ? 'Trending' : '+ Trending'}</span>
+                        </button>
+                      </div>
                     </td>
 
                     {/* Actions */}

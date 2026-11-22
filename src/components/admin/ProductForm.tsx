@@ -61,6 +61,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
   const [isDailyRate, setIsDailyRate] = useState(initialProduct?.isDailyRate || false);
   const [isSoldOut, setIsSoldOut] = useState(initialProduct?.isSoldOut || false);
   const [allowQuantity, setAllowQuantity] = useState(initialProduct?.allowQuantity || false);
+  const [isTrending, setIsTrending] = useState(initialProduct?.isTrending || false);
   const [badge, setBadge] = useState<Product['badge']>(initialProduct?.badge || '');
   const [buttonText, setButtonText] = useState(
     initialProduct?.buttonText || 'Order on WhatsApp'
@@ -338,6 +339,7 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
         isDailyRate,
         isSoldOut,
         allowQuantity,
+        isTrending,
         badge,
         buttonText: buttonText.trim() || 'Order on WhatsApp',
         deliveryType,
@@ -639,6 +641,29 @@ export default function ProductForm({ initialProduct, isEdit = false }: ProductF
               </span>
               <span className="text-[11px] text-zinc-400">
                 When checked, the product card will show &apos;Sold Out&apos; badge and ordering will be disabled.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        {/* Feature in Trending Section Toggle */}
+        <div className="pt-2">
+          <label className="relative flex items-center gap-3 p-4 rounded-xl bg-black border border-[#222228] cursor-pointer hover:border-orange-500/50 transition">
+            <input
+              type="checkbox"
+              checked={isTrending}
+              onChange={(e) => setIsTrending(e.target.checked)}
+              className="w-5 h-5 rounded accent-[#FF5500]"
+            />
+            <div>
+              <span className="font-bold text-white text-xs block flex items-center gap-2">
+                <span>Feature in Homepage Trending Section</span>
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                  Trending Showcase
+                </span>
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Showcase this tool in the dedicated Trending &amp; Top Selling section on the store main page.
               </span>
             </div>
           </label>
