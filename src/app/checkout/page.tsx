@@ -8,7 +8,6 @@ import Footer from '@/components/Footer';
 import FloatingWhatsApp from '@/components/FloatingWhatsApp';
 import BufferingLoader from '@/components/BufferingLoader';
 import EasyPaisaLogo from '@/components/EasyPaisaLogo';
-import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { unlockOrderAudio } from '@/lib/soundEffects';
@@ -24,15 +23,11 @@ import {
   Building2,
   Smartphone,
   DollarSign,
-  Package,
-  CreditCard,
-  Hash,
   ShieldCheck,
-  User as UserIcon,
   ArrowLeft,
+  Sparkles,
 } from 'lucide-react';
 import { validateWhatsAppNumber, validateEmail } from '@/lib/validation';
-import { Order } from '@/lib/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -346,7 +341,11 @@ export default function CheckoutPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col bg-white text-[#1f2937] relative z-20 transition-colors duration-200">
+    <main className="min-h-screen flex flex-col bg-[#08080C] text-zinc-100 selection:bg-[#FF5500]/30 selection:text-white relative transition-colors duration-200">
+      {/* Background ambient glow */}
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#FF5500]/10 via-orange-600/5 to-transparent blur-[140px] pointer-events-none rounded-full z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-grid-pattern opacity-40 z-0" />
+
       <BufferingLoader
         show={submitting}
         message="Confirming & Placing Order..."
@@ -355,22 +354,34 @@ export default function CheckoutPage() {
 
       <Navbar />
 
-      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full animate-page-entrance">
+      <div className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full animate-page-entrance">
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center gap-2 text-xs sm:text-sm font-semibold mb-6 text-zinc-400">
+          <Link href="/" className="hover:text-white transition">
+            Home
+          </Link>
+          <span className="text-zinc-600">&gt;</span>
+          <Link href="/cart" className="hover:text-white transition">
+            Cart
+          </Link>
+          <span className="text-zinc-600">&gt;</span>
+          <span className="font-bold text-[#FF5500]">Checkout</span>
+        </nav>
+
         {selectedCartItems.length === 0 ? (
           /* Empty Checkout Fallback */
-          /* Empty Checkout Fallback */
-          <div className="p-8 sm:p-14 rounded-3xl bg-white border border-[#e8e1e1] text-center max-w-md mx-auto shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)]">
-            <div className="w-16 h-16 rounded-2xl bg-[#660000]/8 text-[#660000] flex items-center justify-center mx-auto mb-4">
+          <div className="p-8 sm:p-14 rounded-3xl bg-[#0E0E14] border border-[#1F1F28] text-center max-w-md mx-auto shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-[#FF5500]/10 border border-[#FF5500]/20 text-[#FF5500] flex items-center justify-center mx-auto mb-4">
               <ShoppingBag className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-extrabold text-[#0a0a0a]">Your cart is empty</h2>
-            <p className="text-xs text-zinc-500 mt-1 max-w-xs mx-auto">
-              Please add products to your cart before proceeding to checkout.
+            <h2 className="text-xl font-black text-white">Your cart is empty</h2>
+            <p className="text-xs text-zinc-400 mt-1.5 max-w-xs mx-auto">
+              Please add digital tools or subscriptions to your cart before proceeding to checkout.
             </p>
             <div className="mt-6">
               <Link
                 href="/cart"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#660000] to-[#800000] text-white text-xs font-bold"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:brightness-110 text-white text-xs font-black shadow-lg shadow-orange-500/25 active:scale-95 transition"
               >
                 <span>Return to Cart</span>
                 <ArrowRight className="w-4 h-4" />
@@ -383,34 +394,34 @@ export default function CheckoutPage() {
             {/* Left Column: Form Sections (lg:col-span-8) */}
             <div className="lg:col-span-8 space-y-6">
               {formError && (
-                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 text-xs font-bold flex items-center gap-2 animate-shake">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold flex items-center gap-2.5 animate-shake shadow-lg">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                   <span>{formError}</span>
                 </div>
               )}
 
               {/* ================= 1. ADDRESS / BILLING INFORMATION ================= */}
-              <div className="rounded-3xl bg-white border border-[#e8e1e1] overflow-hidden shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] transition-all">
+              <div className="rounded-3xl bg-[#0E0E14] border border-[#1F1F28] overflow-hidden shadow-2xl transition-all">
                 {/* Accordion Header */}
                 <button
                   type="button"
                   onClick={() => setIsAddressOpen(!isAddressOpen)}
-                  className="w-full p-5 sm:p-6 flex items-center justify-between text-left cursor-pointer transition hover:bg-zinc-50/50"
+                  className="w-full p-5 sm:p-6 flex items-center justify-between text-left cursor-pointer transition hover:bg-white/[0.02]"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs text-white bg-[#660000]">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs text-white bg-gradient-to-br from-[#FF5500] to-[#E64A00] shadow-md shadow-orange-500/25">
                       1
                     </div>
                     <div>
-                      <h2 className="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2.5 text-[#0a0a0a]">
+                      <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2.5 text-white">
                         <span>Billing &amp; Delivery Information</span>
                       </h2>
-                      <p className="text-xs text-zinc-500 mt-0.5">
-                        Recipient details for account invitation &amp; activation
+                      <p className="text-xs text-zinc-400 mt-0.5">
+                        Recipient details for account invitation &amp; instant WhatsApp activation
                       </p>
                     </div>
                   </div>
-                  <div className="p-2 rounded-xl bg-zinc-100 text-zinc-600">
+                  <div className="p-2 rounded-xl bg-white/5 border border-white/5 text-zinc-400 hover:text-white transition">
                     {isAddressOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </div>
                 </button>
@@ -419,13 +430,13 @@ export default function CheckoutPage() {
                 {isAddressOpen && (
                   <form
                     onSubmit={handleProceedToPayment}
-                    className="px-5 pb-6 sm:px-6 sm:pb-8 pt-2 space-y-4 border-t border-[#e8e1e1]"
+                    className="px-5 pb-6 sm:px-6 sm:pb-8 pt-2 space-y-5 border-t border-[#1C1C26]"
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Full Name */}
                       <div>
-                        <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 text-zinc-700">
-                          FULL NAME <span className="text-red-600 font-black">*</span>
+                        <label className="block text-[11px] font-black uppercase tracking-wider mb-2 text-zinc-300">
+                          FULL NAME <span className="text-[#FF5500] font-black">*</span>
                         </label>
                         <input
                           type="text"
@@ -433,13 +444,13 @@ export default function CheckoutPage() {
                           placeholder="Your full name"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl text-xs font-semibold placeholder:text-zinc-400 focus:outline-none transition shadow-xs bg-white border border-[#e8e1e1] text-[#0a0a0a] focus:border-[#660000] focus:ring-2 focus:ring-[#660000]/15"
+                          className="w-full px-4 py-3.5 rounded-xl text-xs sm:text-sm font-semibold placeholder:text-zinc-600 focus:outline-none transition shadow-inner bg-[#14141C] border border-[#22222E] text-white focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20"
                         />
                       </div>
 
                       {/* Email */}
                       <div>
-                        <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 text-zinc-700">
+                        <label className="block text-[11px] font-black uppercase tracking-wider mb-2 text-zinc-300">
                           EMAIL <span className="text-zinc-500 font-normal lowercase">(optional)</span>
                         </label>
                         <input
@@ -450,41 +461,42 @@ export default function CheckoutPage() {
                             setCustomerEmail(e.target.value);
                             if (emailError) setEmailError('');
                           }}
-                          className={`w-full px-4 py-3 rounded-xl text-xs font-semibold placeholder:text-zinc-400 focus:outline-none transition shadow-xs ${
+                          className={`w-full px-4 py-3.5 rounded-xl text-xs sm:text-sm font-semibold placeholder:text-zinc-600 focus:outline-none transition shadow-inner ${
                             emailError
-                              ? 'border-red-500 ring-1 ring-red-500'
-                              : 'bg-white border border-[#e8e1e1] text-[#0a0a0a] focus:border-[#660000] focus:ring-2 focus:ring-[#660000]/15'
+                              ? 'border-red-500/80 bg-red-950/20 text-white focus:ring-red-500/20'
+                              : 'bg-[#14141C] border border-[#22222E] text-white focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20'
                           }`}
                         />
                         {emailError && (
-                          <p className="mt-1 text-[11px] font-bold text-red-600">{emailError}</p>
+                          <p className="mt-1 text-[11px] font-bold text-red-400">{emailError}</p>
                         )}
                       </div>
 
                       {/* WhatsApp Number (Full Width) */}
                       <div className="sm:col-span-2">
-                        <label className="block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 text-zinc-700">
-                          WHATSAPP NUMBER <span className="text-red-600 font-black">* (Required For Delivery)</span>
+                        <label className="block text-[11px] font-black uppercase tracking-wider mb-2 text-zinc-300">
+                          WHATSAPP NUMBER <span className="text-[#FF5500] font-black">* (Required For Delivery)</span>
                         </label>
                         <input
                           type="tel"
                           required
-                          placeholder="e.g. +92 12345678910 or 0300 1234567"
+                          placeholder="e.g. +92 300 1234567 or 0333 1234567"
                           value={customerWhatsApp}
                           onChange={(e) => {
                             setCustomerWhatsApp(e.target.value);
                             if (phoneError) setPhoneError('');
                           }}
-                          className={`w-full px-4 py-3 rounded-xl text-xs font-semibold placeholder:text-zinc-400 focus:outline-none transition shadow-xs ${
+                          className={`w-full px-4 py-3.5 rounded-xl text-xs sm:text-sm font-semibold placeholder:text-zinc-600 focus:outline-none transition shadow-inner ${
                             phoneError
-                              ? 'border-red-500 ring-1 ring-red-500'
-                              : 'bg-white border border-[#e8e1e1] text-[#0a0a0a] focus:border-[#660000] focus:ring-2 focus:ring-[#660000]/15'
+                              ? 'border-red-500/80 bg-red-950/20 text-white focus:ring-red-500/20'
+                              : 'bg-[#14141C] border border-[#22222E] text-white focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20'
                           }`}
                         />
                         {phoneError ? (
-                          <p className="mt-1 text-[11px] font-bold text-red-600">{phoneError}</p>
+                          <p className="mt-1.5 text-[11px] font-bold text-red-400">{phoneError}</p>
                         ) : (
-                          <p className="mt-1 text-[10px] text-zinc-500">
+                          <p className="mt-1.5 text-[11px] text-zinc-400 flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                             Digital tool credentials &amp; invite links will be delivered directly to this WhatsApp.
                           </p>
                         )}
@@ -495,9 +507,10 @@ export default function CheckoutPage() {
                     <div className="pt-2">
                       <button
                         type="submit"
-                        className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:from-[#550000] hover:to-[#800000] text-white font-extrabold shadow-md shadow-[#660000]/25 text-xs sm:text-sm cursor-pointer transition active:scale-95"
+                        className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:brightness-110 text-white font-black shadow-lg shadow-orange-500/25 text-xs sm:text-sm cursor-pointer transition active:scale-95 flex items-center justify-center gap-2"
                       >
-                        <span>Proceed To Payment →</span>
+                        <span>Proceed To Payment</span>
+                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                   </form>
@@ -507,25 +520,25 @@ export default function CheckoutPage() {
               {/* ================= 2. PAYMENT METHOD SECTION ================= */}
               <div
                 ref={paymentSectionRef}
-                className="rounded-3xl bg-white border border-[#e8e1e1] overflow-hidden shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] transition-all"
+                className="rounded-3xl bg-[#0E0E14] border border-[#1F1F28] overflow-hidden shadow-2xl transition-all"
               >
                 {/* Header with Place Order Button */}
-                <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e8e1e1]">
+                <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1C1C26]">
                   <div
                     onClick={() => setIsPaymentOpen(!isPaymentOpen)}
                     className="cursor-pointer select-none flex items-center gap-3.5"
                   >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs text-white bg-[#660000]">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs text-white bg-gradient-to-br from-[#FF5500] to-[#E64A00] shadow-md shadow-orange-500/25">
                       2
                     </div>
                     <div>
-                      <h2 className="text-lg sm:text-xl font-extrabold tracking-tight flex items-center gap-2 text-[#0a0a0a]">
+                      <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2 text-white">
                         <span>Payment Method</span>
-                        <span className="p-1 rounded-lg bg-zinc-100 text-zinc-600">
+                        <span className="p-1 rounded-lg bg-white/5 text-zinc-400">
                           {isPaymentOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </span>
                       </h2>
-                      <p className="text-xs text-zinc-500 mt-0.5">
+                      <p className="text-xs text-zinc-400 mt-0.5">
                         Select payment method &amp; enter Transaction ID
                       </p>
                     </div>
@@ -536,7 +549,7 @@ export default function CheckoutPage() {
                     type="button"
                     onClick={handlePlaceOrder}
                     disabled={submitting}
-                    className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:from-[#550000] hover:to-[#800000] text-white font-extrabold shadow-md shadow-[#660000]/25 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition active:scale-95"
+                    className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:brightness-110 text-white font-black shadow-md shadow-orange-500/25 text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition active:scale-95 shrink-0"
                   >
                     <Lock className="w-3.5 h-3.5" />
                     <span>Place Order</span>
@@ -545,7 +558,7 @@ export default function CheckoutPage() {
 
                 {/* Content */}
                 {isPaymentOpen && (
-                  <div className="p-5 sm:p-6 space-y-5">
+                  <div className="p-5 sm:p-6 space-y-6">
                     {/* Payment Cards Grid */}
                     <div className="flex flex-wrap gap-3">
                       {availablePaymentMethods.map((method) => {
@@ -554,25 +567,27 @@ export default function CheckoutPage() {
                           <div
                             key={method.id}
                             onClick={() => setPaymentMethod(method.id)}
-                            className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer transition flex items-center justify-between gap-4 flex-1 min-w-[220px] max-w-sm ${
+                            className={`p-4 rounded-2xl cursor-pointer transition flex items-center justify-between gap-4 flex-1 min-w-[220px] max-w-sm ${
                               isSelected
-                                ? 'border-2 border-[#009E49] bg-[#E8F8F0] shadow-xs'
-                                : 'bg-white border-2 border-[#e8e1e1] hover:border-zinc-300 shadow-xs'
+                                ? 'border-2 border-emerald-500/70 bg-emerald-950/20 shadow-[0_0_24px_rgba(16,185,129,0.12)]'
+                                : 'bg-[#14141C] border-2 border-[#20202A] hover:border-zinc-700 hover:bg-[#181822]'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               {method.id === 'easypaisa' ? (
-                                <EasyPaisaLogo customLogoUrl={method.customLogoUrl} className="w-9 h-9" />
+                                <div className="p-1 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                                  <EasyPaisaLogo customLogoUrl={method.customLogoUrl} className="w-8 h-8" />
+                                </div>
                               ) : (
-                                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-zinc-100 text-zinc-700">
-                                  <method.icon className="w-5 h-5" />
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 border border-white/10 text-zinc-300 shrink-0">
+                                  <method.icon className="w-5 h-5 text-emerald-400" />
                                 </div>
                               )}
                               <div>
-                                <h4 className="text-sm font-extrabold text-[#0a0a0a]">
+                                <h4 className="text-sm font-black text-white">
                                   {method.name}
                                 </h4>
-                                <p className={`text-[11px] ${isSelected ? 'text-[#009E49] font-semibold' : 'text-zinc-500'}`}>
+                                <p className={`text-[11px] ${isSelected ? 'text-emerald-400 font-bold' : 'text-zinc-500 font-medium'}`}>
                                   {method.sub}
                                 </p>
                               </div>
@@ -581,11 +596,11 @@ export default function CheckoutPage() {
                             {/* Radio indicator */}
                             <div
                               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                                isSelected ? 'border-[#009E49]' : 'border-zinc-300'
+                                isSelected ? 'border-emerald-400' : 'border-zinc-700'
                               }`}
                             >
                               {isSelected && (
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#009E49]" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                               )}
                             </div>
                           </div>
@@ -594,22 +609,22 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Method Details Box */}
-                    <div className="p-5 rounded-2xl border border-[#e8e1e1] bg-white shadow-xs space-y-3.5">
+                    <div className="p-5 sm:p-6 rounded-2xl border border-[#22222E] bg-[#12121A] shadow-inner space-y-4">
                       {/* Account Title Row */}
                       <div className="flex items-center justify-between gap-3 text-xs sm:text-sm">
-                        <span className="font-bold text-zinc-500">Account Title:</span>
+                        <span className="font-bold text-zinc-400">Account Title:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-right text-[#0a0a0a]">
+                          <span className="font-black text-right text-white tracking-wide">
                             {activeMethodDetails.title}
                           </span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(activeMethodDetails.title, 'title')}
-                            className="p-1.5 rounded-lg border border-[#e8e1e1] bg-zinc-50 hover:bg-zinc-100 text-zinc-600 transition active:scale-95 cursor-pointer flex items-center justify-center"
+                            className="p-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition active:scale-95 cursor-pointer flex items-center justify-center"
                             title="Copy Account Title"
                           >
                             {copiedField === 'title' ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -619,19 +634,19 @@ export default function CheckoutPage() {
 
                       {/* Number Row */}
                       <div className="flex items-center justify-between gap-3 text-xs sm:text-sm">
-                        <span className="font-bold text-zinc-500">{activeMethodDetails.label}:</span>
+                        <span className="font-bold text-zinc-400">{activeMethodDetails.label}:</span>
                         <div className="flex items-center gap-2">
-                          <span className="font-sans font-black text-base sm:text-lg tracking-normal select-all text-[#009E49]">
+                          <span className="font-mono font-black text-lg sm:text-xl tracking-wider select-all text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)]">
                             {activeMethodDetails.number}
                           </span>
                           <button
                             type="button"
                             onClick={() => copyToClipboard(activeMethodDetails.number, 'number')}
-                            className="p-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[#009E49] transition active:scale-95 cursor-pointer flex items-center justify-center"
+                            className="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition active:scale-95 cursor-pointer flex items-center justify-center"
                             title="Copy Account Number"
                           >
                             {copiedField === 'number' ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
                             ) : (
                               <Copy className="w-3.5 h-3.5" />
                             )}
@@ -639,19 +654,19 @@ export default function CheckoutPage() {
                         </div>
                       </div>
 
-                      <div className="h-px bg-zinc-100" />
+                      <div className="h-px bg-white/5" />
 
-                      <p className="text-xs text-zinc-500 leading-relaxed">
+                      <p className="text-xs text-zinc-400 leading-relaxed">
                         {activeMethodDetails.instructions ||
                           'Send exact amount via EasyPaisa and enter Transaction ID (TID) below.'}
                       </p>
                     </div>
 
                     {/* Transaction ID Input */}
-                    <div className="space-y-1.5">
-                      <label className="block text-[11px] font-extrabold uppercase tracking-wider text-zinc-700">
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-black uppercase tracking-wider text-zinc-300">
                         TRANSACTION ID (TID) / SENDER INFO{' '}
-                        <span className="text-red-600 font-black">* (Required)</span>
+                        <span className="text-[#FF5500] font-black">* (Required)</span>
                       </label>
                       <input
                         type="text"
@@ -659,9 +674,9 @@ export default function CheckoutPage() {
                         placeholder="e.g. EasyPaisa TID: 01928374652 or Sender Mobile: 0300 1234567"
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
-                        className="w-full px-4 py-3.5 rounded-xl text-xs font-sans font-bold placeholder:text-zinc-400 focus:outline-none transition shadow-xs bg-white border-2 border-[#e8e1e1] text-[#0a0a0a] focus:border-[#660000] focus:ring-2 focus:ring-[#660000]/15"
+                        className="w-full px-4 py-3.5 rounded-xl text-xs sm:text-sm font-mono font-bold placeholder:text-zinc-600 focus:outline-none transition shadow-inner bg-[#14141C] border-2 border-[#262636] text-white focus:border-[#FF5500] focus:ring-2 focus:ring-[#FF5500]/20"
                       />
-                      <p className="text-[10px] text-zinc-500">
+                      <p className="text-[11px] text-zinc-400">
                         Send payment using the details above, then enter the transaction ID here.
                       </p>
                     </div>
@@ -672,7 +687,7 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={handlePlaceOrder}
                         disabled={submitting}
-                        className="w-full py-4 px-6 rounded-full bg-gradient-to-r from-[#660000] via-[#800000] to-[#990000] hover:from-[#550000] hover:to-[#800000] text-white font-extrabold shadow-lg shadow-[#660000]/25 text-base flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+                        className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#FF5500] to-[#E64A00] hover:brightness-110 text-white font-black shadow-xl shadow-orange-500/25 text-sm sm:text-base flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-50 active:scale-[0.98]"
                       >
                         <Lock className="w-5 h-5" />
                         <span>Confirm &amp; Place Order</span>
@@ -685,15 +700,15 @@ export default function CheckoutPage() {
             </div>
 
             {/* Right Column: Cart Summary (lg:col-span-4) */}
-            <div className="lg:col-span-4 sticky top-16 space-y-4">
-              <div className="p-6 sm:p-7 rounded-3xl bg-white border border-[#e8e1e1] shadow-[0_8px_30px_-6px_rgba(0,0,0,0.06)] space-y-5">
-                <div className="flex items-center justify-between pb-3 border-b border-[#e8e1e1]">
-                  <h3 className="text-lg sm:text-xl font-extrabold tracking-tight text-[#0a0a0a]">
+            <div className="lg:col-span-4 sticky top-20 space-y-4">
+              <div className="p-6 sm:p-7 rounded-3xl bg-[#0E0E14] border border-[#1F1F28] shadow-2xl space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                  <h3 className="text-lg sm:text-xl font-black tracking-tight text-white">
                     Cart Summary
                   </h3>
                   <Link
                     href="/cart"
-                    className="text-xs font-bold text-[#660000] hover:underline"
+                    className="text-xs font-bold text-[#FF5500] hover:underline"
                   >
                     Edit Cart
                   </Link>
@@ -704,10 +719,10 @@ export default function CheckoutPage() {
                   {selectedCartItems.map((item) => (
                     <div
                       key={item.productId}
-                      className="flex items-center justify-between gap-3 p-2.5 rounded-xl border bg-[#faf8f8] border-[#e8e1e1]"
+                      className="flex items-center justify-between gap-3 p-3 rounded-2xl border bg-[#14141C] border-[#20202A]"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 p-0.5 border flex items-center justify-center bg-white border-[#e8e1e1]">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 p-1 border flex items-center justify-center bg-[#08080C] border-white/10">
                           {item.image ? (
                             <img
                               src={item.image}
@@ -715,22 +730,22 @@ export default function CheckoutPage() {
                               className="w-full h-full object-contain rounded-lg"
                             />
                           ) : (
-                            <span className="text-xs font-black uppercase text-[#660000]">
+                            <span className="text-xs font-black uppercase text-[#FF5500]">
                               {item.title.slice(0, 2)}
                             </span>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold truncate text-[#0a0a0a]">
+                          <p className="text-xs font-bold truncate text-white">
                             {item.title}
                           </p>
-                          <p className="text-[10px] text-zinc-500 font-sans">
+                          <p className="text-[11px] text-zinc-400 font-medium">
                             Qty: {item.quantity}
                           </p>
                         </div>
                       </div>
 
-                      <div className="text-xs font-extrabold font-sans shrink-0 text-[#660000]">
+                      <div className="text-xs font-mono font-black shrink-0 text-white">
                         {formatPrice(
                           item.pricePKR * item.quantity,
                           (item.priceUSD || 0) * item.quantity
@@ -741,19 +756,19 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Totals */}
-                <div className="pt-3 border-t border-[#e8e1e1] space-y-2 text-xs">
+                <div className="pt-3 border-t border-white/5 space-y-2.5 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-zinc-600">Subtotal</span>
-                    <span className="font-bold font-sans text-[#0a0a0a]">
+                    <span className="font-medium text-zinc-400">Subtotal</span>
+                    <span className="font-mono font-bold text-white">
                       {formatPrice(subtotalPKR, subtotalUSD)}
                     </span>
                   </div>
 
-                  <div className="pt-3 border-t border-[#e8e1e1] flex items-center justify-between">
-                    <span className="text-sm font-bold text-zinc-800">
+                  <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-sm font-black text-zinc-200">
                       Grand Total
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-sans text-[#660000]">
+                    <span className="text-xl sm:text-2xl font-mono font-black text-[#FF5500]">
                       {formatPrice(grandTotalPKR, grandTotalUSD)}
                     </span>
                   </div>

@@ -123,9 +123,9 @@ export default function OrderSuccessPage() {
 
   if (!isAuthorized || loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-transparent relative">
-        <div className="fixed inset-0 pointer-events-none bg-grid-pattern z-0" />
-        <div className="relative z-10 w-8 h-8 rounded-full border-2 border-[#660000]/30 border-t-[#660000] animate-spin" />
+      <main className="min-h-screen flex items-center justify-center bg-[#08080C] relative">
+        <div className="fixed inset-0 pointer-events-none bg-grid-pattern opacity-40 z-0" />
+        <div className="relative z-10 w-8 h-8 rounded-full border-2 border-[#FF5500]/30 border-t-[#FF5500] animate-spin" />
       </main>
     );
   }
@@ -159,10 +159,10 @@ export default function OrderSuccessPage() {
     : 'Pay Via EasyPaisa';
 
   return (
-    <main className="min-h-screen flex flex-col bg-transparent text-[#1f2937] relative transition-colors duration-200">
+    <main className="min-h-screen flex flex-col bg-[#08080C] text-zinc-100 relative transition-colors duration-200">
       {/* Geometric Grid Background + Focused Celebration Glow */}
-      <div className="fixed inset-0 pointer-events-none bg-grid-pattern z-0" />
-      <div className="fixed inset-0 pointer-events-none ambient-glow glow-top z-0" />
+      <div className="fixed inset-0 pointer-events-none bg-grid-pattern opacity-40 z-0" />
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#FF5500]/10 via-orange-600/5 to-transparent blur-[140px] pointer-events-none rounded-full z-0" />
 
       <Navbar />
 
@@ -171,13 +171,13 @@ export default function OrderSuccessPage() {
         <div className="relative w-full max-w-xl mx-auto">
           <div
             aria-hidden="true"
-            className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-[#660000]/15 via-emerald-500/10 to-[#660000]/15 blur-2xl pointer-events-none"
+            className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-[#FF5500]/15 via-emerald-500/10 to-[#FF5500]/15 blur-2xl pointer-events-none"
           />
 
           {/* UNIFIED EYE-CATCHING CARD WITH SHADOW + CRISP STROKE */}
-          <div className="animate-order-frame relative overflow-hidden w-full p-6 sm:p-10 rounded-3xl bg-white dark:bg-[#0e0e16] border-2 border-[#660000]/25 dark:border-[#ff4d4d]/30 ring-4 ring-[#660000]/[0.05] dark:ring-white/[0.04] shadow-[0_28px_80px_-12px_rgba(102,0,0,0.28),0_16px_38px_-8px_rgba(0,0,0,0.16)] text-center space-y-5 sm:space-y-6">
+          <div className="animate-order-frame relative overflow-hidden w-full p-6 sm:p-10 rounded-3xl bg-[#0E0E14] border border-[#1F1F28] ring-1 ring-white/10 shadow-[0_28px_80px_-12px_rgba(0,0,0,0.6)] text-center space-y-5 sm:space-y-6">
             {/* Animated Top Celebration Stroke */}
-            <div className="animate-order-sweep absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-[#660000] via-emerald-500 to-[#660000]" />
+            <div className="animate-order-sweep absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FF5500] via-emerald-500 to-[#FF5500]" />
 
             {/* Subtle Top-Right Chime Replay Pill */}
             <button
@@ -188,7 +188,7 @@ export default function OrderSuccessPage() {
               }}
               title="Play Confirmation Chime"
               aria-label="Play Confirmation Sound"
-              className="animate-order-step absolute top-4 right-4 p-2 rounded-full bg-[#faf8f8] dark:bg-[#181824] hover:bg-[#f0e9e9] text-zinc-500 hover:text-[#660000] border border-[#e0d6d6] dark:border-white/10 transition active:scale-90 cursor-pointer"
+              className="animate-order-step absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white border border-white/10 transition active:scale-90 cursor-pointer"
               style={{ animationDelay: '500ms' }}
             >
               <Volume2 className="w-3.5 h-3.5" />
@@ -209,7 +209,7 @@ export default function OrderSuccessPage() {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   {/* Soft emerald disc background */}
-                  <circle cx="48" cy="48" r="40" fill="#ecfdf5" />
+                  <circle cx="48" cy="48" r="40" fill="#064e3b" fillOpacity="0.4" />
                   {/* Self-drawing circular border */}
                   <circle
                     cx="48"
@@ -224,7 +224,7 @@ export default function OrderSuccessPage() {
                   {/* Self-drawing checkmark stroke */}
                   <path
                     d="M31 49.5L42.5 61L66 36.5"
-                    stroke="#059669"
+                    stroke="#34d399"
                     strokeWidth="6.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -240,13 +240,13 @@ export default function OrderSuccessPage() {
                 className="animate-order-step"
                 style={{ animationDelay: '360ms' }}
               >
-                <span className="inline-block px-3.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-xs">
+                <span className="inline-block px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 shadow-xs">
                   Order Placed Successfully
                 </span>
               </div>
 
               <h1
-                className="animate-order-step text-2xl sm:text-3xl font-black tracking-tight text-[#0a0a0a] dark:text-white"
+                className="animate-order-step text-2xl sm:text-3xl font-black tracking-tight text-white"
                 style={{ animationDelay: '440ms' }}
               >
                 Thank You For Choosing Our Store!
@@ -256,22 +256,22 @@ export default function OrderSuccessPage() {
                 className="animate-order-step flex items-center justify-center gap-2 flex-wrap"
                 style={{ animationDelay: '520ms' }}
               >
-                <p className="text-base sm:text-lg font-bold text-zinc-700 dark:text-zinc-200">
+                <p className="text-base sm:text-lg font-bold text-zinc-300">
                   Your order id is{' '}
-                  <span className="font-sans font-black text-[#660000] dark:text-[#ff6b6b]">
+                  <span className="font-mono font-black text-[#FF5500]">
                     #{displayOrderId}
                   </span>
                 </p>
                 <button
                   type="button"
                   onClick={handleCopyOrderId}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#faf8f8] dark:bg-[#181824] hover:bg-[#f0e8e8] border border-[#d8cece] dark:border-white/15 text-[10px] font-bold text-zinc-700 dark:text-zinc-200 transition active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-bold text-zinc-200 transition active:scale-95 cursor-pointer"
                   title="Copy Order ID"
                 >
                   {copiedId ? (
                     <>
-                      <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                      <span className="text-emerald-600">Copied</span>
+                      <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                      <span className="text-emerald-400">Copied</span>
                     </>
                   ) : (
                     <>
@@ -283,7 +283,7 @@ export default function OrderSuccessPage() {
               </div>
 
               <p
-                className="animate-order-step text-xs sm:text-sm max-w-md mx-auto text-zinc-500 dark:text-zinc-400 leading-relaxed"
+                className="animate-order-step text-xs sm:text-sm max-w-md mx-auto text-zinc-400 leading-relaxed"
                 style={{ animationDelay: '580ms' }}
               >
                 Your payment details have been submitted. Account credentials and delivery instructions
@@ -293,45 +293,45 @@ export default function OrderSuccessPage() {
 
             {/* 3. Inner Order Details Receipt Box (Stroke + Elevation Shadow + Line-by-Line Build) */}
             <div
-              className="animate-order-step p-5 sm:p-6 rounded-2xl bg-gradient-to-b from-[#fcfafa] to-[#f5efef] dark:from-[#14141e] dark:to-[#101018] border-2 border-[#d5c8c8] dark:border-white/15 shadow-[0_12px_30px_-8px_rgba(102,0,0,0.12),0_4px_12px_-4px_rgba(0,0,0,0.06)] text-left space-y-3.5"
+              className="animate-order-step p-5 sm:p-6 rounded-2xl bg-[#12121A] border border-[#22222E] shadow-inner text-left space-y-3.5"
               style={{ animationDelay: '640ms' }}
             >
               <div
-                className="animate-receipt-row flex items-center justify-between pb-3 border-b border-[#dfd4d4] dark:border-white/10"
+                className="animate-receipt-row flex items-center justify-between pb-3 border-b border-white/5"
                 style={{ animationDelay: '700ms' }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#660000]/10 text-[#660000] dark:text-[#ff6b6b] border border-[#660000]/20 flex items-center justify-center shadow-xs">
+                  <div className="w-9 h-9 rounded-xl bg-[#FF5500]/10 text-[#FF5500] border border-[#FF5500]/20 flex items-center justify-center shadow-xs">
                     <Package className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-[#0a0a0a] dark:text-white">
+                    <h3 className="text-sm font-black text-white">
                       Order #{displayOrderId}
                     </h3>
-                    <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                    <p className="text-[11px] font-medium text-zinc-400">
                       {displayDate}
                     </p>
                   </div>
                 </div>
 
                 {/* Status Pill */}
-                <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-300 shadow-xs">
+                <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-xs">
                   {order?.status || 'Pending'}
                 </span>
               </div>
 
               {/* Details Rows Cascading In */}
-              <div className="space-y-2.5 text-xs text-zinc-600 dark:text-zinc-300">
+              <div className="space-y-2.5 text-xs text-zinc-300">
                 {order?.customerName && (
                   <div
                     className="animate-receipt-row flex items-center justify-between"
                     style={{ animationDelay: '760ms' }}
                   >
-                    <span className="flex items-center gap-1.5 font-medium text-zinc-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1.5 font-medium text-zinc-400">
                       <User className="w-3.5 h-3.5 opacity-70" />
                       <span>Customer:</span>
                     </span>
-                    <span className="font-bold text-[#0a0a0a] dark:text-white">
+                    <span className="font-bold text-white">
                       {order.customerName}
                     </span>
                   </div>
@@ -341,11 +341,11 @@ export default function OrderSuccessPage() {
                   className="animate-receipt-row flex items-center justify-between"
                   style={{ animationDelay: '820ms' }}
                 >
-                  <span className="flex items-center gap-1.5 font-medium text-zinc-500 dark:text-zinc-400">
+                  <span className="flex items-center gap-1.5 font-medium text-zinc-400">
                     <CreditCard className="w-3.5 h-3.5 opacity-70" />
                     <span>Payment Method:</span>
                   </span>
-                  <span className="font-bold text-[#0a0a0a] dark:text-white">
+                  <span className="font-bold text-white">
                     {paymentLabel}
                   </span>
                 </div>
@@ -355,11 +355,11 @@ export default function OrderSuccessPage() {
                     className="animate-receipt-row flex items-center justify-between"
                     style={{ animationDelay: '880ms' }}
                   >
-                    <span className="flex items-center gap-1.5 font-medium text-zinc-500 dark:text-zinc-400">
+                    <span className="flex items-center gap-1.5 font-medium text-zinc-400">
                       <Hash className="w-3.5 h-3.5 opacity-70" />
                       <span>Transaction ID (TID):</span>
                     </span>
-                    <span className="font-sans font-bold text-[#660000] dark:text-[#ff6b6b]">
+                    <span className="font-mono font-bold text-[#FF5500]">
                       {order.transactionId}
                     </span>
                   </div>
@@ -367,13 +367,13 @@ export default function OrderSuccessPage() {
 
                 {/* Total */}
                 <div
-                  className="animate-receipt-row pt-2.5 border-t border-[#dfd4d4] dark:border-white/10 flex items-center justify-between text-sm"
+                  className="animate-receipt-row pt-2.5 border-t border-white/5 flex items-center justify-between text-sm"
                   style={{ animationDelay: '940ms' }}
                 >
-                  <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                  <span className="font-bold text-zinc-300">
                     Total Amount:
                   </span>
-                  <span className="text-lg sm:text-xl font-black font-sans text-[#660000] dark:text-[#ff6b6b]">
+                  <span className="text-lg sm:text-xl font-black font-mono text-[#FF5500]">
                     {order?.totalPKR
                       ? formatPrice(order.totalPKR, order.totalUSD || 0)
                       : 'Rs 0'}
@@ -389,7 +389,7 @@ export default function OrderSuccessPage() {
             >
               <Link
                 href="/"
-                className="py-3.5 px-6 rounded-full border-2 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm bg-white dark:bg-[#181824] border-[#d8cece] dark:border-white/15 hover:border-[#660000]/40 hover:bg-[#faf8f8] text-[#1f2937] dark:text-white active:scale-95"
+                className="py-3.5 px-6 rounded-full border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shadow-sm bg-[#14141C] border-[#22222E] hover:bg-[#1A1A24] text-zinc-200 active:scale-95"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Continue Shopping</span>
@@ -399,7 +399,7 @@ export default function OrderSuccessPage() {
                 href={whatsappHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-3.5 px-6 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/30 active:scale-95 cursor-pointer"
+                className="py-3.5 px-6 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition shadow-lg shadow-emerald-500/20 active:scale-95 cursor-pointer"
               >
                 <WhatsAppIcon className="w-4 h-4 fill-current text-white shrink-0" />
                 <span>WhatsApp Us</span>
@@ -408,10 +408,10 @@ export default function OrderSuccessPage() {
 
             {/* 5. Official Warranty Line */}
             <p
-              className="animate-order-step text-[11px] flex items-center justify-center gap-1.5 text-zinc-500 dark:text-zinc-400 pt-1"
+              className="animate-order-step text-[11px] flex items-center justify-center gap-1.5 text-zinc-400 pt-1"
               style={{ animationDelay: '1080ms' }}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span>Official 100% Replacement Warranty &amp; WhatsApp Support</span>
             </p>
           </div>
